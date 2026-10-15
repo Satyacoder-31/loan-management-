@@ -184,6 +184,28 @@ export function MobileScreen({ onSuccess }: MobileScreenProps) {
             <p className="text-[11px] text-zinc-500 mt-1">
               We'll send a 6-digit verification code to this number.
             </p>
+            <div className="mt-2.5 p-2.5 rounded-lg bg-zinc-900/70 border border-zinc-800 text-[11px] text-zinc-400 space-y-1.5">
+              <div className="flex items-center justify-between text-zinc-300 font-medium">
+                <span>Official Digitap UAT Test Personas:</span>
+                <span className="text-[10px] text-indigo-400 font-mono">Experian v2.7</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {[
+                  { num: "7908096603", name: "Shubhra (Experian 800)" },
+                  { num: "9305553595", name: "Piyush (Experian 772)" },
+                  { num: "8416986878", name: "Deepti (Experian 785)" }
+                ].map((tc) => (
+                  <button
+                    key={tc.num}
+                    type="button"
+                    onClick={() => setMobile(tc.num)}
+                    className="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/60 transition-colors text-[10px] font-mono cursor-pointer"
+                  >
+                    {tc.name}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div>
