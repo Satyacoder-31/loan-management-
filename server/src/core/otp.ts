@@ -99,10 +99,9 @@ export async function createOtpChallenge(
   const smsResult = await sendSmsOtp(norm, rawOtp);
   console.log(`[OTP CHALLENGE] Issued challenge for +91 ${norm} (Code: ${rawOtp}). SMS gateway status:`, smsResult);
 
-  // When live SMS is successfully dispatched to the phone, do not leak demoOtp
-  // Return demoOtp only if mock OTP is requested, SMS dispatch failed, or on test demo number
+  // When in demo / test environment, or if SMS dispatch had issues, provide demoOtp
   const isDemoNumber = norm === "9876543210" || norm === "9811111111";
-  const showDemo = process.env.SHOW_DEMO_OTP === "true" || isDemoNumber || !smsResult.success;
+  const showDemo = isDemo || process.env.SHOW_DEMO_OTP === "true" || isDemoNumber || !smsResult.success || smsResult.provider === "telecom_queue";
 
   return {
     journeyToken,
@@ -182,15 +181,15 @@ export async function sendSmsOtp(
   otp: string
 ): Promise<{ success: boolean; provider: string; messageId?: string; error?: string }> {
   const norm = normalizeMobile(mobile);
-  const configuredProvider = (process.env.OTP_PROVIDER || "").toLowerCase();
+  const configuredProvider = (process.env.OTP_PROVIDER || "cellx").toLowerCase();
 
   // 1. CellX / SMSGW Gateway (Primary DLT Provider)
-  if (configuredProvider === "cellx" || configuredProvider === "smsgw" || process.env.CELLX_USERNAME || process.env.SMSGW_USERNAME) {
+  if (!configuredProvider || configuredProvider === "cellx" || configuredProvider === "smsgw" || process.env.CELLX_USERNAME || process.env.SMSGW_USERNAME) {
     const res = await sendCellxOtp(norm, otp);
     if (res.success) {
       return res;
     }
-    console.warn("[SMS OTP ENGINE] CellX dispatch did not complete, checking secondary providers...");
+    console.warn("[SMS OTP ENGINE] CellX dispatch did not complete, checking secondary providers...", res.error || "");
   }
 
   // 2. Fast2SMS Integration (Instant Indian Quick SMS & Dedicated OTP Route)
@@ -306,9 +305,9 @@ export async function sendSmsOtp(
   }
 
   console.log(
-    `[SMS OTP ENGINE] Physical SMS dispatched to telecom queue for +91 ${norm} (Code: ${otp}). To deliver live to handset, configure CELLX_USERNAME, FAST2SMS_API_KEY, MSG91_AUTH_KEY, or TWILIO_AUTH_TOKEN.`
+    `[SMS OTP ENGINE] Simulated fallback for +91 ${norm} (Code: ${otp}). No external live SMS gateway succeeded.`
   );
-  return { success: true, provider: "telecom_queue" };
+  return { success: false, provider: "telecom_queue", error: "Simulated fallback queue (live delivery not confirmed)" };
 }
 
 export interface VerifyOtpResult {

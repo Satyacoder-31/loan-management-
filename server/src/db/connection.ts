@@ -5,9 +5,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-if (!process.env.DATABASE_URL) {
+const candidateEnvPaths = [
+  path.resolve(process.cwd(), ".env"),
+  path.resolve(process.cwd(), "server", ".env"),
+  path.resolve(process.cwd(), "..", ".env")
+];
+
+for (const envPath of candidateEnvPaths) {
   try {
-    const envPath = path.resolve(process.cwd(), ".env");
     if (fs.existsSync(envPath)) {
       const lines = fs.readFileSync(envPath, "utf8").split("\n");
       for (const line of lines) {
@@ -17,7 +22,7 @@ if (!process.env.DATABASE_URL) {
         if (eqIdx > 0) {
           const key = trimmed.slice(0, eqIdx).trim();
           const val = trimmed.slice(eqIdx + 1).trim();
-          if (!process.env[key]) process.env[key] = val;
+          if (process.env[key] === undefined) process.env[key] = val;
         }
       }
     }
