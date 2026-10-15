@@ -16,7 +16,7 @@ async function run() {
     mobile: targetMobile,
     otp: targetOtp,
     name: targetName,
-    env: "uat"
+    env: (process.argv[5] as any) || "uat"
   });
 
   console.log("Status:", res.status);

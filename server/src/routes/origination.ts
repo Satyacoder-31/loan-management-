@@ -114,7 +114,7 @@ originationRouter.post(
       const custNo = "CUST" + new Date().getFullYear().toString().slice(2) + String(Math.floor(100000 + Math.random() * 899999));
       const newCustId = (await run(
         `INSERT INTO customers (tenant_id, customer_no, name, mobile, kyc_status, risk_class, credit_score, pan)
-         VALUES (?, ?, ?, ?, 'pending', 'standard', 782, 'BZXPM1234F')`,
+         VALUES (?, ?, ?, ?, 'pending', 'standard', NULL, NULL)`,
         [tenantId, custNo, candidateName, normMobile]
       )).lastId;
       customer = { id: newCustId, name: candidateName };
@@ -129,23 +129,23 @@ originationRouter.post(
     }
 
     const defaultProfile = {
-      full_name: customer.name !== "Applicant" ? customer.name : "Krishna Vinod Mishra",
+      full_name: customer.name !== "Applicant" ? customer.name : "",
       mobile: normMobile,
-      pan: "BZXPM1234F",
-      dob: "1992-08-14",
-      gender: "male",
-      email: (customer.name !== "Applicant" ? customer.name : "krishna.mishra").toLowerCase().replace(/\s+/g, ".") + "@gmail.com",
-      address: "Flat 402, Royal Residency, Andheri West",
-      city: "Mumbai",
-      state: "Maharashtra",
-      pincode: "400053",
-      employment_type: "salaried",
-      employer_name: "Tech Solutions India Ltd",
-      monthly_income: 85000,
-      annual_income: 1020000,
-      credit_score: 782,
-      experian_score: 782,
-      auto_fetched: true
+      pan: "",
+      dob: "",
+      gender: "",
+      email: "",
+      address: "",
+      city: "",
+      state: "",
+      pincode: "",
+      employment_type: "",
+      employer_name: "",
+      monthly_income: null,
+      annual_income: null,
+      credit_score: null,
+      experian_score: null,
+      auto_fetched: false
     };
 
     // Check for an existing unexpired journey or create a fresh one
@@ -289,7 +289,7 @@ originationRouter.post(
       [journey.customer_id]
     );
 
-    let resolvedName = cust?.name && cust.name !== "Applicant" ? cust.name : "Krishna Vinod Mishra";
+    let resolvedName = cust?.name && cust.name !== "Applicant" ? cust.name : "";
     let mnvData: any = null;
     try {
       mnvData = await mnvReport(journey.mobile);
@@ -302,90 +302,128 @@ originationRouter.post(
     try {
       experianData = await pullExperianReport({
         mobile: journey.mobile,
-        name: resolvedName,
+        name: resolvedName || undefined,
         pan: cust?.pan,
         otp: body.otp,
         ip: clientIp(req)
       });
+      if (experianData?.applicantDetails?.fullName && !resolvedName) {
+        resolvedName = experianData.applicantDetails.fullName.trim();
+      }
     } catch (err: any) {
       console.warn("[ORIGINATION BUREAU WARNING]", err.message);
     }
-    const creditScore = experianData?.score || 782;
-    const scoreBand = experianData?.scoreBand || "Prime";
-    const totalAccounts = experianData?.totalAccounts ?? ((experianData?.activeAccounts || 2) + (experianData?.closedAccounts || 2));
-    const activeAccounts = experianData?.activeAccounts ?? 2;
-    const closedAccounts = experianData?.closedAccounts ?? 2;
-    const overdueAccounts = experianData?.overdueAccounts ?? 0;
-    const totalOutstanding = experianData?.totalOutstanding ?? 185000;
-    const creditUtilization = experianData?.creditUtilization ?? 16.5;
-    const enquiries6m = experianData?.enquiries6m ?? 1;
-    const dpdMax = experianData?.dpdMax ?? 0;
+
+    if (!resolvedName) resolvedName = "Applicant";
+
+    const creditScore = typeof experianData?.score === "number" ? experianData.score : null;
+    const scoreBand = experianData?.scoreBand || (creditScore ? (creditScore >= 750 ? "Prime" : "Standard") : "Unavailable");
+    const totalAccounts = experianData?.totalAccounts ?? null;
+    const activeAccounts = experianData?.activeAccounts ?? null;
+    const closedAccounts = experianData?.closedAccounts ?? null;
+    const overdueAccounts = experianData?.overdueAccounts ?? null;
+    const totalOutstanding = experianData?.totalOutstanding ?? null;
+    const creditUtilization = experianData?.creditUtilization ?? null;
+    const enquiries6m = experianData?.enquiries6m ?? null;
+    const dpdMax = experianData?.dpdMax ?? null;
+
+    const applicantPan = cust?.pan || experianData?.applicantDetails?.pan || null;
 
     if (cust) {
       await run(
         `UPDATE customers
          SET name = ?,
              credit_score = ?,
-             pan = COALESCE(pan, 'BZXPM1234F'),
+             pan = COALESCE(pan, ?),
              updated_at = datetime('now')
          WHERE id = ?`,
-        [resolvedName, creditScore, cust.id]
+        [resolvedName !== "Applicant" ? resolvedName : cust.name, creditScore, applicantPan, cust.id]
       );
     }
 
-    // Create or update canonical Experian bureau report
-    const existingBureau = await q1<{ id: number }>(
-      "SELECT id FROM bureau_reports WHERE customer_id = ?",
-      [journey.customer_id]
-    );
+    // Only create or update canonical Experian bureau report if a real bureau score/report is present
+    if (creditScore !== null) {
+      const existingBureau = await q1<{ id: number }>(
+        "SELECT id FROM bureau_reports WHERE customer_id = ?",
+        [journey.customer_id]
+      );
 
-    if (!existingBureau) {
-      await run(
-        `INSERT INTO bureau_reports (
-           tenant_id, customer_id, provider, score, score_band, total_accounts,
-           active_accounts, closed_accounts, overdue_accounts, total_outstanding,
-           credit_utilization, enquiries_6m, dpd_max, is_mock
-         ) VALUES (?, ?, 'Experian', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
-        [journey.tenant_id, journey.customer_id, creditScore, scoreBand, totalAccounts, activeAccounts, closedAccounts, overdueAccounts, totalOutstanding, creditUtilization, enquiries6m, dpdMax]
-      );
-    } else {
-      await run(
-        `UPDATE bureau_reports
-         SET provider = 'Experian', score = ?, score_band = ?,
-             total_accounts = ?, active_accounts = ?, closed_accounts = ?,
-             overdue_accounts = ?, total_outstanding = ?, credit_utilization = ?,
-             enquiries_6m = ?, dpd_max = ?
-         WHERE id = ?`,
-        [creditScore, scoreBand, totalAccounts, activeAccounts, closedAccounts, overdueAccounts, totalOutstanding, creditUtilization, enquiries6m, dpdMax, existingBureau.id]
-      );
+      if (!existingBureau) {
+        await run(
+          `INSERT INTO bureau_reports (
+             tenant_id, customer_id, provider, score, score_band, total_accounts,
+             active_accounts, closed_accounts, overdue_accounts, total_outstanding,
+             credit_utilization, enquiries_6m, dpd_max, is_mock
+           ) VALUES (?, ?, 'Experian', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            journey.tenant_id,
+            journey.customer_id,
+            creditScore,
+            scoreBand,
+            totalAccounts ?? 0,
+            activeAccounts ?? 0,
+            closedAccounts ?? 0,
+            overdueAccounts ?? 0,
+            totalOutstanding ?? 0,
+            creditUtilization ?? 0,
+            enquiries6m ?? 0,
+            dpdMax ?? 0,
+            experianData?.status === "UAT_SAMPLE_PROFILE" ? 1 : 0
+          ]
+        );
+      } else {
+        await run(
+          `UPDATE bureau_reports
+           SET provider = 'Experian', score = ?, score_band = ?,
+               total_accounts = ?, active_accounts = ?, closed_accounts = ?,
+               overdue_accounts = ?, total_outstanding = ?, credit_utilization = ?,
+               enquiries_6m = ?, dpd_max = ?, is_mock = ?
+           WHERE id = ?`,
+          [
+            creditScore,
+            scoreBand,
+            totalAccounts ?? 0,
+            activeAccounts ?? 0,
+            closedAccounts ?? 0,
+            overdueAccounts ?? 0,
+            totalOutstanding ?? 0,
+            creditUtilization ?? 0,
+            enquiries6m ?? 0,
+            dpdMax ?? 0,
+            experianData?.status === "UAT_SAMPLE_PROFILE" ? 1 : 0,
+            existingBureau.id
+          ]
+        );
+      }
     }
 
-    const emailName = resolvedName.toLowerCase().replace(/[^a-z0-9]/g, ".");
-    // Auto-populate journey profile data with all 9 canonical items
+    // Real profile populated with verified data, leaving unverified fields empty for applicant entry
     const autoProfile = {
-      full_name: resolvedName,
+      full_name: resolvedName !== "Applicant" ? resolvedName : (cust?.name !== "Applicant" ? cust?.name : ""),
       mobile: journey.mobile,
-      pan: cust?.pan || "BZXPM1234F",
-      dob: "1992-08-14",
-      gender: "male",
-      email: `${emailName}@gmail.com`,
-      alt_mobile: "9820123456",
-      alt_email: `${emailName}.personal@gmail.com`,
-      aadhaar: "XXXXXXXX4921",
-      address: mnvData?.registeredAddress || "Flat 402, Royal Residency, Andheri West",
-      city: mnvData?.city || "Mumbai",
-      state: mnvData?.state || "Maharashtra",
-      pincode: mnvData?.pincode || "400053",
-      employment_type: "salaried",
-      employer_name: "Tech Solutions India Ltd",
-      monthly_income: 85000,
-      annual_income: 1020000,
+      pan: applicantPan || "",
+      dob: cust?.dob || experianData?.applicantDetails?.dob || "",
+      gender: experianData?.applicantDetails?.gender || "",
+      email: cust?.email || "",
+      alt_mobile: "",
+      alt_email: "",
+      aadhaar: "",
+      address: mnvData?.registeredAddress || cust?.address_line1 || "",
+      city: mnvData?.city || cust?.city || "",
+      state: mnvData?.state || cust?.state || "",
+      pincode: mnvData?.pincode || cust?.pincode || "",
+      employment_type: cust?.employment_type || "",
+      employer_name: cust?.employer || "",
+      monthly_income: cust?.monthly_income || null,
+      annual_income: cust?.annual_income || null,
       credit_score: creditScore,
       experian_score: creditScore,
-      auto_fetched: true,
-      mnv_verified: true,
-      telecom_carrier: mnvData?.carrier || "Jio Telecom",
-      telecom_circle: mnvData?.circle || "Maharashtra & Goa",
+      auto_fetched: Boolean(creditScore || (resolvedName && resolvedName !== "Applicant")),
+      mnv_verified: Boolean(mnvData?.subscriberName),
+      telecom_carrier: mnvData?.carrier || "",
+      telecom_circle: mnvData?.circle || "",
+      bureau_status: experianData?.status || "UNAVAILABLE",
+      bureau_message: experianData?.message || "",
       fetched_at: new Date().toISOString()
     };
 
@@ -396,14 +434,16 @@ originationRouter.post(
 
     // Pre-calculate lender matches
     try {
+      const evalScore = creditScore || 680;
+      const evalIncome = autoProfile.monthly_income || 50000;
       const matches = await matchLenders(journey.tenant_id, {
         amount: journey.requested_amount || 250000,
         tenure: journey.tenure || 36,
-        employmentType: "salaried",
-        monthlyIncome: 85000,
-        creditScore: creditScore,
-        state: "Maharashtra",
-        city: "Mumbai"
+        employmentType: autoProfile.employment_type || "salaried",
+        monthlyIncome: evalIncome,
+        creditScore: evalScore,
+        state: autoProfile.state || "Maharashtra",
+        city: autoProfile.city || "Mumbai"
       });
 
       await run("DELETE FROM lender_matches WHERE journey_id = ?", [journey.id]);
@@ -446,9 +486,9 @@ originationRouter.post(
       current_step: updated!.current_step,
       status: updated!.status,
       next_step: updated!.current_step === "otp" ? "consent" : updated!.current_step,
-      applicant_name: resolvedName,
+      applicant_name: autoProfile.full_name,
       credit_score: creditScore,
-      auto_fetched: true,
+      auto_fetched: autoProfile.auto_fetched,
       profile: autoProfile,
       bureau: experianData
     });
@@ -587,21 +627,21 @@ originationRouter.get(
       dob: cust?.dob || savedProfile.dob || "",
       gender: savedProfile.gender || "",
       email: cust?.email || savedProfile.email || "",
-      alt_email: savedProfile.alt_email || "krishna.personal@gmail.com",
-      alt_mobile: savedProfile.alt_mobile || "9820123456",
+      alt_email: savedProfile.alt_email || "",
+      alt_mobile: savedProfile.alt_mobile || "",
       pan: cust?.pan || savedProfile.pan || "",
-      aadhaar: savedProfile.aadhaar || "XXXXXXXX4921",
-      credit_score: cust?.credit_score || savedProfile.credit_score || 782,
-      experian_score: cust?.credit_score || savedProfile.experian_score || 782,
+      aadhaar: savedProfile.aadhaar || "",
+      credit_score: cust?.credit_score || savedProfile.credit_score || null,
+      experian_score: cust?.credit_score || savedProfile.experian_score || null,
       address: cust?.address_line1 || savedProfile.address || "",
       city: cust?.city || savedProfile.city || "",
       state: cust?.state || savedProfile.state || "",
       pincode: cust?.pincode || savedProfile.pincode || "",
-      employment_type: cust?.employment_type || savedProfile.employment_type || "salaried",
+      employment_type: cust?.employment_type || savedProfile.employment_type || "",
       employer_name: cust?.employer || savedProfile.employer_name || "",
       business_name: cust?.business_name || savedProfile.business_name || "",
-      monthly_income: cust?.monthly_income || savedProfile.monthly_income || 35000,
-      annual_income: cust?.annual_income || savedProfile.annual_income || 420000,
+      monthly_income: cust?.monthly_income || savedProfile.monthly_income || null,
+      annual_income: cust?.annual_income || savedProfile.annual_income || null,
       business_turnover: cust?.business_turnover || savedProfile.business_turnover || 0,
       business_vintage: cust?.business_vintage || savedProfile.business_vintage || 0,
       requested_amount: j.requested_amount,
@@ -942,34 +982,84 @@ originationRouter.post(
   asyncH(async (req: JourneyRequest, res) => {
     const j = req.journey!;
     const cust = await q1<Record<string, any>>("SELECT * FROM customers WHERE id = ?", [j.customer_id]);
+    const existingBureau = await q1<Record<string, any>>(
+      "SELECT * FROM bureau_reports WHERE customer_id = ? ORDER BY id DESC LIMIT 1",
+      [j.customer_id]
+    );
 
-    let score = cust?.credit_score || 782;
-    const scoreBand = score >= 750 ? "Excellent" : score >= 700 ? "Good" : score >= 650 ? "Fair" : "Poor";
+    let score: number | null = typeof cust?.credit_score === "number" ? cust.credit_score : (typeof existingBureau?.score === "number" ? existingBureau.score : null);
+    let experianData: any = null;
 
-    if (!cust?.credit_score) {
+    if (score === null) {
+      try {
+        experianData = await pullExperianReport({
+          mobile: j.mobile,
+          name: cust?.name,
+          pan: cust?.pan,
+          ip: clientIp(req)
+        });
+        if (typeof experianData?.score === "number") {
+          score = experianData.score;
+        }
+      } catch (err: any) {
+        console.warn("[CREDIT CHECK BUREAU ERROR]", err.message);
+      }
+    }
+
+    if (score !== null && !cust?.credit_score) {
       await run("UPDATE customers SET credit_score = ? WHERE id = ?", [score, j.customer_id]);
     }
 
-    // Insert or update bureau report with Experian
-    const existing = await q1<{ id: number }>("SELECT id FROM bureau_reports WHERE customer_id = ?", [j.customer_id]);
-    if (!existing) {
-      await run(
-        `INSERT INTO bureau_reports (
-           tenant_id, customer_id, provider, score, score_band, total_accounts,
-           active_accounts, closed_accounts, overdue_accounts, total_outstanding,
-           credit_utilization, enquiries_6m, dpd_max, is_mock
-         ) VALUES (?, ?, 'Experian', ?, ?, 4, 2, 2, 0, 185000, 16.5, 1, 0, 0)`,
-        [j.tenant_id, j.customer_id, score, scoreBand]
-      );
-    } else {
-      await run(
-        `UPDATE bureau_reports
-         SET provider = 'Experian', score = ?, score_band = ?, active_accounts = 2, total_outstanding = 185000, credit_utilization = 16.5
-         WHERE id = ?`,
-        [score, scoreBand, existing.id]
-      );
+    if (score !== null) {
+      const scoreBand = experianData?.scoreBand || (score >= 750 ? "Excellent" : score >= 700 ? "Good" : score >= 650 ? "Fair" : "Poor");
+      const totalAccounts = experianData?.totalAccounts ?? existingBureau?.total_accounts ?? 0;
+      const activeAccounts = experianData?.activeAccounts ?? existingBureau?.active_accounts ?? 0;
+      const closedAccounts = experianData?.closedAccounts ?? existingBureau?.closed_accounts ?? 0;
+      const overdueAccounts = experianData?.overdueAccounts ?? existingBureau?.overdue_accounts ?? 0;
+      const totalOutstanding = experianData?.totalOutstanding ?? existingBureau?.total_outstanding ?? 0;
+      const creditUtilization = experianData?.creditUtilization ?? existingBureau?.credit_utilization ?? 0;
+      const enquiries6m = experianData?.enquiries6m ?? existingBureau?.enquiries_6m ?? 0;
+
+      if (!existingBureau) {
+        await run(
+          `INSERT INTO bureau_reports (
+             tenant_id, customer_id, provider, score, score_band, total_accounts,
+             active_accounts, closed_accounts, overdue_accounts, total_outstanding,
+             credit_utilization, enquiries_6m, dpd_max, is_mock
+           ) VALUES (?, ?, 'Experian', ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+          [j.tenant_id, j.customer_id, score, scoreBand, totalAccounts, activeAccounts, closedAccounts, overdueAccounts, totalOutstanding, creditUtilization, enquiries6m, experianData?.status === "UAT_SAMPLE_PROFILE" ? 1 : 0]
+        );
+      }
+
+      await transitionJourney({
+        journeyId: j.id,
+        tenantId: j.tenant_id,
+        nextState: "CREDIT_COMPLETED",
+        actor: j.mobile,
+        actorType: "customer",
+        ip: clientIp(req)
+      });
+
+      return res.json({
+        ok: true,
+        status: "completed",
+        provider: "Experian",
+        score,
+        score_band: scoreBand,
+        active_accounts: activeAccounts,
+        closed_accounts: closedAccounts,
+        overdue_accounts: overdueAccounts,
+        total_outstanding: totalOutstanding,
+        credit_utilization: creditUtilization,
+        enquiries_6m: enquiries6m,
+        payment_track: overdueAccounts === 0 ? "100%" : "Under Review",
+        credit_age: totalAccounts > 0 ? "Established" : "New",
+        approval_odds: score >= 750 ? "98%" : score >= 680 ? "85%" : "70%",
+        next_step: "offers"
+      });
     }
 
+    // Score is not available (e.g. IP whitelist needed, thin file, or UAT key unentitled)
     await transitionJourney({
       journeyId: j.id,
       tenantId: j.tenant_id,
@@ -980,19 +1070,21 @@ originationRouter.post(
     });
 
     res.json({
-      status: "completed",
+      ok: true,
+      status: experianData?.status || "UNAVAILABLE",
       provider: "Experian",
-      score,
-      score_band: scoreBand,
-      active_accounts: 2,
-      closed_accounts: 2,
+      score: null,
+      score_band: "Unavailable",
+      message: experianData?.message || "Experian credit score is not available for this record.",
+      active_accounts: 0,
+      closed_accounts: 0,
       overdue_accounts: 0,
-      total_outstanding: 185000,
-      credit_utilization: 16.5,
-      enquiries_6m: 1,
-      payment_track: "100%",
-      credit_age: "4.2 Yrs",
-      approval_odds: "98%",
+      total_outstanding: 0,
+      credit_utilization: 0,
+      enquiries_6m: 0,
+      payment_track: "N/A",
+      credit_age: "N/A",
+      approval_odds: "Standard",
       next_step: "offers"
     });
   })

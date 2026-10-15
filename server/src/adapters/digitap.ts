@@ -1666,28 +1666,24 @@ export async function pullExperianReport(params: PullExperianParams): Promise<Ex
       }
     }
 
-    const isUatOrDemo = config.env === "uat" || process.env.APP_ENV === "demo" || !process.env.APP_ENV;
+    const isUatDemoNumber = Boolean(DIGITAP_UAT_DATASET[mob]);
 
     if (res.status === 403) {
-      if (isUatOrDemo) {
+      if (isUatDemoNumber) {
         const mockProfile = buildUatExperianProfile(mob, params.name || `${firstName} ${lastName}`, resolvedPan, resolvedDob);
         const parsed = parseExperianInProfile(mockProfile, {
           http_response_code: 200,
           result_code: 101,
-          source: "DIGITAP_UAT_CIR_DATASET",
+          source: "DIGITAP_UAT_SAMPLE_CASE",
           gateway_http_code: 403,
           gateway_message: "IP_NOT_WHITELISTED",
           result: { result_json: { INProfileResponse: mockProfile } }
         });
         return {
           ...parsed,
-          status: "FETCHED",
-          message: `Digitap Production contacted (HTTP 403: Egress IP ${deviceIp} awaiting Whitelist). Synthesized official Experian CIR dataset for testing.`,
-          raw: {
-            gateway_error: `Forbidden: IP not allowed — whitelist IP ${deviceIp} on Digitap Production portal`,
-            synthetic_fallback: true,
-            in_profile_response: mockProfile
-          }
+          status: "UAT_SAMPLE_PROFILE",
+          message: `Digitap UAT Sample profile loaded for ${mob} (Live Production requires IP Whitelisting for ${deviceIp}).`,
+          raw: envelope
         };
       }
       return {
@@ -1706,31 +1702,27 @@ export async function pullExperianReport(params: PullExperianParams): Promise<Ex
         providerRef: null,
         tradelines: [],
         status: "IP_BLOCKED",
-        message: `Digitap IP Whitelist: Egress IP not allowed for this Client ID. Ensure testing IP (${deviceIp}) is whitelisted on Digitap production.`,
+        message: `Digitap Production Egress IP Blocked (HTTP 403). Your machine IP is ${deviceIp}. To fetch your real Experian credit score, you must whitelist ${deviceIp} on your Digitap Production Dashboard.`,
         raw: envelope
       };
     }
 
     if (res.status === 401) {
-      if (isUatOrDemo) {
+      if (isUatDemoNumber) {
         const mockProfile = buildUatExperianProfile(mob, params.name || `${firstName} ${lastName}`, resolvedPan, resolvedDob);
         const parsed = parseExperianInProfile(mockProfile, {
           http_response_code: 200,
           result_code: 101,
-          source: "DIGITAP_UAT_CIR_DATASET",
+          source: "DIGITAP_UAT_SAMPLE_CASE",
           gateway_http_code: 401,
           gateway_message: envelope.message || "CLIENT_AUTH_FAILED",
           result: { result_json: { INProfileResponse: mockProfile } }
         });
         return {
           ...parsed,
-          status: "FETCHED",
-          message: `Digitap UAT contacted (HTTP 401: Credit Analytics 1 pending RM product mapping for Client ${config.creds.clientId}). Synthesized official Experian CIR dataset for testing.`,
-          raw: {
-            gateway_error: "Client Authentication Failed on Credit Analytics endpoint — request RM activation for Credit Analytics 1",
-            synthetic_fallback: true,
-            in_profile_response: mockProfile
-          }
+          status: "UAT_SAMPLE_PROFILE",
+          message: `Digitap UAT Sample profile loaded for ${mob} (Live UAT gateway returned 401: Credit Analytics 1 pending RM activation).`,
+          raw: envelope
         };
       }
       return {
@@ -1749,7 +1741,7 @@ export async function pullExperianReport(params: PullExperianParams): Promise<Ex
         providerRef: null,
         tradelines: [],
         status: "AUTH_FAILED",
-        message: envelope.message || "Digitap authentication failed for Client ID.",
+        message: `Digitap UAT returned HTTP 401 (Client Authentication Failed). The "Credit Analytics 1" product is not yet active on client ID ${config.creds.clientId} on Digitap's demo servers. Also, UAT sandboxes never hold real personal credit data.`,
         raw: envelope
       };
     }
@@ -1774,25 +1766,21 @@ export async function pullExperianReport(params: PullExperianParams): Promise<Ex
       raw: envelope
     };
   } catch (err: any) {
-    const isUatOrDemo = config.env === "uat" || process.env.APP_ENV === "demo" || !process.env.APP_ENV;
-    if (isUatOrDemo) {
+    const isUatDemoNumber = Boolean(DIGITAP_UAT_DATASET[mob]);
+    if (isUatDemoNumber) {
       const mockProfile = buildUatExperianProfile(mob, params.name || `${firstName} ${lastName}`, resolvedPan, resolvedDob);
       const parsed = parseExperianInProfile(mockProfile, {
         http_response_code: 200,
         result_code: 101,
-        source: "DIGITAP_UAT_CIR_DATASET",
+        source: "DIGITAP_UAT_SAMPLE_CASE",
         gateway_error: err.message,
         result: { result_json: { INProfileResponse: mockProfile } }
       });
       return {
         ...parsed,
-        status: "FETCHED",
-        message: `Network offline/timeout connecting to Digitap. Synthesized official Experian CIR dataset for testing.`,
-        raw: {
-          network_error: err.message,
-          synthetic_fallback: true,
-          in_profile_response: mockProfile
-        }
+        status: "UAT_SAMPLE_PROFILE",
+        message: `UAT Sample dataset loaded for ${mob} (Network error reaching Digitap).`,
+        raw: { network_error: err.message }
       };
     }
     return {
