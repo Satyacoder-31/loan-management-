@@ -23,6 +23,22 @@ import {
 export const digitapPortalRouter = Router();
 
 /**
+ * 0. CURRENT ACTIVE INTEGRATION CONFIG
+ * Returns current server DIGITAP_ENV and active Client ID
+ */
+digitapPortalRouter.get(
+  "/config",
+  asyncH(async (_req: Request, res: Response) => {
+    const config = digitapConfig();
+    res.json({
+      success: true,
+      env: config.env,
+      clientId: config.creds?.clientId || (config.env === "prod" ? "01338635" : "07625809")
+    });
+  })
+);
+
+/**
  * 1. SEND OTP VIA CELLX SMS GATEWAY
  * Hits SMSGW / CellX HTTP API with DLT template 1007719376278893769
  */
@@ -224,6 +240,7 @@ digitapPortalRouter.post(
     let experianData: any = null;
     let bureauStatus = "FETCHED";
     let bureauMessage: string | null = null;
+    const targetEnv = body.env || digitapConfig().env;
     try {
       const resolvedName = telecomResolvedName || panData?.fullname || panData?.name || panData?.panDisplayName || undefined;
       experianData = await pullExperianReport({
@@ -232,7 +249,7 @@ digitapPortalRouter.post(
         name: resolvedName,
         otp: body.otp || (body.bypassOtp ? "123456" : undefined),
         ip: clientIp(req),
-        env: body.env
+        env: targetEnv
       });
       rawEnvelopes["experian_bureau"] = experianData.raw || experianData;
       bureauStatus = experianData.status || (experianData.score !== null ? "FETCHED" : "NOT_FOUND");
@@ -248,7 +265,7 @@ digitapPortalRouter.post(
     }
 
     // Build response with active Digitap environment configuration
-    const config = digitapConfig(body.env);
+    const config = digitapConfig(targetEnv);
     res.json({
       success: true,
       timestamp: new Date().toISOString(),

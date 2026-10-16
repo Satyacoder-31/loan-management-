@@ -1,3 +1,4 @@
+import "../src/db/connection.js";
 import { pullExperianReport } from "../src/adapters/digitap.js";
 
 async function run() {
@@ -16,7 +17,7 @@ async function run() {
     mobile: targetMobile,
     otp: targetOtp,
     name: targetName,
-    env: (process.argv[5] as any) || "uat"
+    env: (process.argv[5] as any) || undefined
   });
 
   console.log("Status:", res.status);

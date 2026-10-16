@@ -51,10 +51,11 @@ export async function createApp() {
   app.use(cors());
   app.use(express.json({ limit: "10mb" }));
 
-  app.get("/", (_req, res) => res.json({ status: "ok", service: "nexus-api", environment: "DEMO", docs: "/api/health", version: "1.0" }));
-  app.get("/health", (_req, res) => res.json({ status: "ok", service: "nexus-api", environment: "DEMO" }));
-  app.get("/api", (_req, res) => res.json({ status: "ok", service: "nexus-api", environment: "DEMO", docs: "/api/health" }));
-  app.get("/api/health", (_req, res) => res.json({ status: "ok", service: "nexus-api", environment: "DEMO" }));
+  const envLabel = (process.env.APP_ENV || "production").toUpperCase();
+  app.get("/", (_req, res) => res.json({ status: "ok", service: "nexus-api", environment: envLabel, docs: "/api/health", version: "1.0" }));
+  app.get("/health", (_req, res) => res.json({ status: "ok", service: "nexus-api", environment: envLabel }));
+  app.get("/api", (_req, res) => res.json({ status: "ok", service: "nexus-api", environment: envLabel, docs: "/api/health" }));
+  app.get("/api/health", (_req, res) => res.json({ status: "ok", service: "nexus-api", environment: envLabel }));
 
   app.use("/api/auth", authRouter);
   // Public digital origination & webhooks — mounted before auth-guarded routers

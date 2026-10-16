@@ -1,6 +1,7 @@
 {
   "name": "sniper",
   "private": true,
+  "type": "module",
   "version": "0.1.0",
   "description": "SNIPER — India's Intelligent Lending Operating System (LOS + LMS + CRM + Credit + Collections)",
   "workspaces": [
@@ -13,7 +14,7 @@
     "dev:client": "npm run dev -w client",
     "seed": "npm run seed -w server",
     "typecheck": "npm run typecheck -w server && npm run typecheck -w client",
-    "build": "npm run build -w client"
+    "build": "npm run build -w client && npx esbuild server/src/app.ts --bundle --platform=node --format=esm --packages=external --outfile=api/app.bundle.js"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

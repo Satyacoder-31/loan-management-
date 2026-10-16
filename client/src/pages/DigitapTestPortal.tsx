@@ -307,21 +307,19 @@ export default function DigitapTestPortal() {
               <div className="flex bg-slate-900 border border-slate-700/80 rounded-lg p-1">
                 <button
                   onClick={() => setEnv("uat")}
-                  className={`px-3 py-1 rounded text-xs font-bold transition-all ${
-                    env === "uat"
+                  className={`px-3 py-1 rounded text-xs font-bold transition-all ${env === "uat"
                       ? "bg-emerald-500 text-slate-950 shadow"
                       : "text-slate-400 hover:text-white"
-                  }`}
+                    }`}
                 >
                   UAT (07625809)
                 </button>
                 <button
                   onClick={() => setEnv("prod")}
-                  className={`px-3 py-1 rounded text-xs font-bold transition-all ${
-                    env === "prod"
+                  className={`px-3 py-1 rounded text-xs font-bold transition-all ${env === "prod"
                       ? "bg-cyan-500 text-slate-950 shadow"
                       : "text-slate-400 hover:text-white"
-                  }`}
+                    }`}
                 >
                   Production (01338635)
                 </button>
@@ -553,11 +551,10 @@ export default function DigitapTestPortal() {
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 {/* Applicant Identity Card */}
                 <div className="flex items-start sm:items-center gap-4">
-                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl shadow-xl shrink-0 ${
-                    result.identity.subscriberName
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl shadow-xl shrink-0 ${result.identity.subscriberName
                       ? "bg-gradient-to-tr from-emerald-500 to-cyan-500 text-slate-950 shadow-emerald-500/20"
                       : "bg-slate-800 text-slate-400"
-                  }`}>
+                    }`}>
                     {result.identity.subscriberName ? result.identity.subscriberName.charAt(0) : "?"}
                   </div>
                   <div className="space-y-1">
@@ -595,20 +592,19 @@ export default function DigitapTestPortal() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Experian Bureau CIR</span>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
-                        result.experian.score
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${result.experian.score
                           ? "bg-emerald-500/20 text-emerald-300"
                           : result.experian.status === "NO_RECORD_FOUND"
-                          ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                          : "bg-amber-500/20 text-amber-300"
-                      }`}>
+                            ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                            : "bg-amber-500/20 text-amber-300"
+                        }`}>
                         {result.experian.status === "FETCHED"
                           ? (result.experian.scoreBand || "Score Available")
                           : result.experian.status === "NO_RECORD_FOUND"
-                          ? "API Active • Result 102"
-                          : result.experian.status === "IP_BLOCKED"
-                          ? "IP Whitelist Pending"
-                          : "API Connected"}
+                            ? "API Active • Result 102"
+                            : result.experian.status === "IP_BLOCKED"
+                              ? "IP Whitelist Pending"
+                              : "API Connected"}
                       </span>
                     </div>
                     {result.experian.score ? (
@@ -646,11 +642,10 @@ export default function DigitapTestPortal() {
                 <button
                   key={t.id}
                   onClick={() => setActiveTab(t.id as any)}
-                  className={`px-4 py-2.5 rounded-t-xl transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                    activeTab === t.id
+                  className={`px-4 py-2.5 rounded-t-xl transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${activeTab === t.id
                       ? "bg-slate-900 border-t-2 border-emerald-400 text-emerald-400 border-x border-slate-800"
                       : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"
-                  }`}
+                    }`}
                 >
                   <span>{t.label}</span>
                 </button>
@@ -668,9 +663,8 @@ export default function DigitapTestPortal() {
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                       <Smartphone className="w-4 h-4 text-amber-400" /> Telecom Reverse
                     </span>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      result.identity.subscriberName ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-800 text-slate-400"
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${result.identity.subscriberName ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-800 text-slate-400"
+                      }`}>
                       {result.identity.subscriberName ? "FOUND" : "NOT FOUND"}
                     </span>
                   </div>
@@ -700,9 +694,8 @@ export default function DigitapTestPortal() {
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                       <CreditCard className="w-4 h-4 text-cyan-400" /> PAN Card
                     </span>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      result.pan.panNumber ? "bg-cyan-500/20 text-cyan-300" : "bg-slate-800 text-slate-400"
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${result.pan.panNumber ? "bg-cyan-500/20 text-cyan-300" : "bg-slate-800 text-slate-400"
+                      }`}>
                       {result.pan.panNumber ? (result.pan.status || "CHECKED") : "NOT PROVIDED"}
                     </span>
                   </div>
@@ -732,9 +725,8 @@ export default function DigitapTestPortal() {
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                       <ShieldCheck className="w-4 h-4 text-emerald-400" /> Aadhaar Masked
                     </span>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      result.aadhaar.maskedAadhaar ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-800 text-slate-400"
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${result.aadhaar.maskedAadhaar ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-800 text-slate-400"
+                      }`}>
                       {result.aadhaar.maskedAadhaar ? "FOUND" : "NOT RETURNED"}
                     </span>
                   </div>
@@ -764,18 +756,17 @@ export default function DigitapTestPortal() {
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                       <Sparkles className="w-4 h-4 text-purple-400" /> Experian Bureau
                     </span>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      result.experian.score
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${result.experian.score
                         ? "bg-purple-500/20 text-purple-300"
                         : result.experian.status === "NO_RECORD_FOUND"
-                        ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                        : "bg-slate-800 text-slate-400"
-                    }`}>
+                          ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                          : "bg-slate-800 text-slate-400"
+                      }`}>
                       {result.experian.score
                         ? "SCORE FOUND"
                         : result.experian.status === "NO_RECORD_FOUND"
-                        ? "API ACTIVE (RESULT 102)"
-                        : "API CONNECTED"}
+                          ? "API ACTIVE (RESULT 102)"
+                          : "API CONNECTED"}
                     </span>
                   </div>
                   <div>
@@ -785,8 +776,8 @@ export default function DigitapTestPortal() {
                         {result.experian.score !== null
                           ? `${result.experian.score} / 900`
                           : result.experian.status === "NO_RECORD_FOUND"
-                          ? "No History in UAT Sandbox"
-                          : "Connecting..."}
+                            ? "No History in UAT Sandbox"
+                            : "Connecting..."}
                       </span>
                       {result.experian.scoreBand && (
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-sans">
@@ -1157,11 +1148,10 @@ export default function DigitapTestPortal() {
                                   </td>
                                   <td className="p-3 text-center">
                                     <span
-                                      className={`px-2 py-0.5 rounded text-[10.5px] font-bold ${
-                                        tl.status === "Active"
+                                      className={`px-2 py-0.5 rounded text-[10.5px] font-bold ${tl.status === "Active"
                                           ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-sans"
                                           : "bg-slate-800 text-slate-400 font-sans"
-                                      }`}
+                                        }`}
                                     >
                                       {tl.status}
                                     </span>

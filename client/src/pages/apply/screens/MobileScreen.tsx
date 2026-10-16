@@ -94,75 +94,20 @@ export function MobileScreen({ onSuccess }: MobileScreenProps) {
 
       {/* Main Interactive Form Card */}
       <div className="bg-[#161b22] border border-zinc-800 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
-        {/* Loan Amount Slider */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Loan Amount Needed
-            </label>
-            <div className="text-xl sm:text-2xl font-bold font-mono text-emerald-400">
-              ₹{amount.toLocaleString("en-IN")}
-            </div>
+        <div className="rounded-xl bg-zinc-900/60 border border-zinc-800 p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <Shield className="w-5 h-5" />
           </div>
-          <input
-            type="range"
-            min={50000}
-            max={1000000}
-            step={10000}
-            value={amount}
-            onChange={(e) => setAmount(Number(e.target.value))}
-            className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-emerald-400"
-          />
-          <div className="flex justify-between text-[11px] text-zinc-500 font-mono">
-            <span>₹50,000</span>
-            <span>₹5,00,000</span>
-            <span>₹10,00,000</span>
-          </div>
-        </div>
-
-        {/* Tenure Selection */}
-        <div className="space-y-3">
-          <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-            Tenure (Months)
-          </label>
-          <div className="grid grid-cols-5 gap-2">
-            {[12, 24, 36, 48, 60].map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTenure(t)}
-                className={`py-2 text-xs font-medium rounded-lg border transition-all ${
-                  tenure === t
-                    ? "bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30"
-                    : "bg-zinc-800/60 text-zinc-300 border-zinc-700 hover:bg-zinc-700"
-                }`}
-              >
-                {t} Mo
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Live Estimated EMI Callout */}
-        <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-              <Calculator className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs text-zinc-400">Estimated Monthly EMI</p>
-              <p className="text-lg font-bold text-white font-mono">₹{estimatedEmi.toLocaleString("en-IN")}/mo</p>
-            </div>
-          </div>
-          <div className="text-right text-[11px] text-zinc-500">
-            <span>@ 13.5% reducing ROI</span>
-            <br />
-            <span>Zero hidden charges</span>
+          <div>
+            <h3 className="text-sm font-semibold text-white">Instant Digital Verification</h3>
+            <p className="text-xs text-zinc-400">
+              Only mobile number & OTP required. Your profile and Experian rating will be fetched automatically.
+            </p>
           </div>
         </div>
 
         {/* Form Inputs */}
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-1">
           <div>
             <label className="block text-xs font-medium text-zinc-300 mb-1.5">
               Mobile Number <span className="text-red-400">*</span>

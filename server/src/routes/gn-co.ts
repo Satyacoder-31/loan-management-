@@ -5,7 +5,8 @@ import { audit } from "../core/audit.js";
 import { asyncH, authRequired, clientIp, requirePerm, type AuthedRequest } from "../middleware.js";
 import {
   applicantRef, aplEvent, grantConsent, matchApplicant, runCredit, runKyc, runDemoScenario,
-  sendOtp, storeMatches, verifyOtp, createApplication, submitApplication, simulateLender, safeJson
+  sendOtp, storeMatches, verifyOtp, createApplication, submitApplication, simulateLender, safeJson,
+  autoFetchApplicantData
 } from "../core/gn-co.js";
 import { gnTimeline, gnStatusLabel } from "../core/gn.js";
 
@@ -98,21 +99,52 @@ gnCoRouter.get("/gn/co/applicants", requirePerm("gn.co.view"), asyncH(async (req
 }));
 
 const applicantSchema = z.object({
-  name: z.string().min(2), mobile: z.string().optional(), email: z.string().optional(), pan: z.string().optional(),
-  dob: z.string().optional(), gender: z.string().optional(), city: z.string().optional(), state: z.string().optional(), pincode: z.string().optional(),
-  applicant_type: z.string().optional(), employment_type: z.string().optional(),
-  employer: z.string().optional(), designation: z.string().optional(), years_employed: z.number().nullable().optional(),
-  business_name: z.string().optional(), business_type: z.string().optional(), business_vintage: z.number().nullable().optional(),
-  industry: z.string().optional(), employees: z.number().nullable().optional(),
-  monthly_income: z.number().nullable().optional(), annual_income: z.number().nullable().optional(),
-  annual_turnover: z.number().nullable().optional(), net_profit: z.number().nullable().optional(),
-  gst: z.string().optional(), udyam: z.string().optional(),
-  existing_emi: z.number().nullable().optional(), existing_loans: z.number().nullable().optional(),
-  bank_name: z.string().optional(), bank_account: z.string().optional(), ifsc: z.string().optional(),
-  loan_type: z.string().optional(), loan_amount: z.number().nullable().optional(), tenure: z.number().nullable().optional(),
-  purpose: z.string().optional(), collateral: z.string().optional(), property_type: z.string().optional(),
-  source: z.string().optional(), campaign: z.string().optional(), builder: z.string().optional(), oem: z.string().optional(),
-  dsa_code: z.string().optional(), notes: z.string().optional()
+  name: z.string().nullable().optional().default("Applicant"),
+  mobile: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+  pan: z.string().nullable().optional(),
+  dob: z.string().nullable().optional(),
+  gender: z.string().nullable().optional(),
+  address: z.string().nullable().optional(),
+  alt_mobile: z.string().nullable().optional(),
+  alt_email: z.string().nullable().optional(),
+  aadhaar: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+  state: z.string().nullable().optional(),
+  pincode: z.string().nullable().optional(),
+  applicant_type: z.string().nullable().optional(),
+  employment_type: z.string().nullable().optional(),
+  employer: z.string().nullable().optional(),
+  designation: z.string().nullable().optional(),
+  years_employed: z.number().nullable().optional(),
+  business_name: z.string().nullable().optional(),
+  business_type: z.string().nullable().optional(),
+  business_vintage: z.number().nullable().optional(),
+  industry: z.string().nullable().optional(),
+  employees: z.number().nullable().optional(),
+  monthly_income: z.number().nullable().optional(),
+  annual_income: z.number().nullable().optional(),
+  annual_turnover: z.number().nullable().optional(),
+  net_profit: z.number().nullable().optional(),
+  gst: z.string().nullable().optional(),
+  udyam: z.string().nullable().optional(),
+  existing_emi: z.number().nullable().optional(),
+  existing_loans: z.number().nullable().optional(),
+  bank_name: z.string().nullable().optional(),
+  bank_account: z.string().nullable().optional(),
+  ifsc: z.string().nullable().optional(),
+  loan_type: z.string().nullable().optional(),
+  loan_amount: z.number().nullable().optional(),
+  tenure: z.number().nullable().optional(),
+  purpose: z.string().nullable().optional(),
+  collateral: z.string().nullable().optional(),
+  property_type: z.string().nullable().optional(),
+  source: z.string().nullable().optional(),
+  campaign: z.string().nullable().optional(),
+  builder: z.string().nullable().optional(),
+  oem: z.string().nullable().optional(),
+  dsa_code: z.string().nullable().optional(),
+  notes: z.string().nullable().optional()
 });
 
 gnCoRouter.post("/gn/co/applicants", requirePerm("gn.co.create"), asyncH(async (req: AuthedRequest, res) => {
@@ -120,12 +152,14 @@ gnCoRouter.post("/gn/co/applicants", requirePerm("gn.co.create"), asyncH(async (
   const t = T(req);
   const ref = await applicantRef(t);
   const id = (await run(
-    `INSERT INTO gn_applicants (tenant_id, ref, name, mobile, email, pan, dob, gender, city, state, pincode, applicant_type,
+    `INSERT INTO gn_applicants (tenant_id, ref, name, mobile, email, pan, dob, gender, address, alt_mobile, alt_email, aadhaar, city, state, pincode, applicant_type,
        employment_type, employer, designation, years_employed, business_name, business_type, business_vintage, industry, employees,
        monthly_income, annual_income, annual_turnover, net_profit, gst, udyam, existing_emi, existing_loans, bank_name, bank_account, ifsc,
        loan_type, loan_amount, tenure, purpose, collateral, property_type, source, campaign, builder, oem, dsa_code, notes, assigned_to)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [t, ref, b.name, b.mobile ?? null, b.email ?? null, b.pan ?? null, b.dob ?? null, b.gender ?? null, b.city ?? null, b.state ?? null, b.pincode ?? null,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [t, ref, b.name, b.mobile ?? null, b.email ?? null, b.pan ?? null, b.dob ?? null, b.gender ?? null,
+     b.address ?? null, b.alt_mobile ?? null, b.alt_email ?? null, b.aadhaar ?? null,
+     b.city ?? null, b.state ?? null, b.pincode ?? null,
      b.applicant_type ?? "Individual", b.employment_type ?? null, b.employer ?? null, b.designation ?? null, b.years_employed ?? null,
      b.business_name ?? null, b.business_type ?? null, b.business_vintage ?? null, b.industry ?? null, b.employees ?? null,
      b.monthly_income ?? null, b.annual_income ?? null, b.annual_turnover ?? null, b.net_profit ?? null, b.gst ?? null, b.udyam ?? null,
@@ -145,7 +179,13 @@ gnCoRouter.get("/gn/co/applicants/:id", requirePerm("gn.co.view"), asyncH(async 
   const events = await q<Record<string, any>>(`SELECT e.*, u.name AS actor_name FROM gn_applicant_events e LEFT JOIN users u ON u.id = e.actor WHERE e.applicant_id = ? ORDER BY e.id DESC LIMIT 40`, [a.id]);
   const consents = await q<Record<string, any>>("SELECT * FROM gn_consents WHERE applicant_id = ? ORDER BY id DESC", [a.id]);
   const kyc = await q<Record<string, any>>("SELECT * FROM gn_kyc WHERE applicant_id = ? ORDER BY id", [a.id]);
-  const credit = await q<Record<string, any>>("SELECT * FROM gn_credit_profiles WHERE applicant_id = ? ORDER BY id DESC LIMIT 1", [a.id]);
+  const creditRaw = await q1<Record<string, any>>("SELECT * FROM gn_credit_profiles WHERE applicant_id = ? ORDER BY id DESC LIMIT 1", [a.id]);
+  let credit = creditRaw;
+  if (credit && credit.report_json) {
+    try {
+      credit.report = JSON.parse(credit.report_json);
+    } catch {}
+  }
   const matches = await q<Record<string, any>>("SELECT * FROM gn_lender_matches WHERE applicant_id = ? ORDER BY CASE status WHEN 'eligible' THEN 0 WHEN 'maybe' THEN 1 ELSE 2 END, score DESC", [a.id]);
   const apps = await q<Record<string, any>>(
     `SELECT ga.*, l.name AS lender_name, p.name AS product_name, p.category AS product_category, s.name AS scheme_name
@@ -182,14 +222,39 @@ const getApplicant = async (t: number, id: string) => {
 };
 
 gnCoRouter.post("/gn/co/applicants/:id/otp", requirePerm("gn.co.edit"), asyncH(async (req: AuthedRequest, res) => {
-  const b = z.object({ action: z.enum(["send", "verify"]), otp: z.string().optional() }).parse(req.body);
+  const b = z.object({ action: z.enum(["send", "verify"]), otp: z.string().optional(), auto_fetch: z.boolean().optional() }).parse(req.body);
   const t = T(req);
-  await getApplicant(t, req.params.id);
+  const a = await getApplicant(t, req.params.id);
   if (b.action === "send") { res.json(await sendOtp(t, Number(req.params.id), req.user!.id)); return; }
   const out = await verifyOtp(t, Number(req.params.id), b.otp ?? "", req.user!.id);
   if (!out.ok) { res.status(400).json(out); return; }
   await audit({ tenantId: t, userId: req.user!.id, action: "gn.co.otp.verify", entityType: "gn_applicant", entityId: Number(req.params.id), after: { ok: true }, ip: clientIp(req) });
+
+  if (b.auto_fetch) {
+    try {
+      const fetched = await autoFetchApplicantData(t, a.id, req.user!.id, { otp: b.otp, ip: clientIp(req) });
+      const updated = await q1("SELECT * FROM gn_applicants WHERE id = ?", [a.id]);
+      const credit = await q1("SELECT * FROM gn_credit_profiles WHERE applicant_id = ? ORDER BY id DESC LIMIT 1", [a.id]);
+      res.json({ ...out, auto_fetched: true, profile: fetched, applicant: updated, credit });
+      return;
+    } catch (e: any) {
+      console.warn("[OTP verify auto-fetch notice]", e.message);
+    }
+  }
+
   res.json(out);
+}));
+
+gnCoRouter.post("/gn/co/applicants/:id/auto-fetch", requirePerm("gn.co.edit"), asyncH(async (req: AuthedRequest, res) => {
+  const b = z.object({ otp: z.string().optional() }).parse(req.body || {});
+  const t = T(req);
+  const a = await getApplicant(t, req.params.id);
+  const result = await autoFetchApplicantData(t, a.id, req.user!.id, { otp: b.otp, ip: clientIp(req) });
+  const updated = await q1("SELECT * FROM gn_applicants WHERE id = ?", [a.id]);
+  const credit = await q1("SELECT * FROM gn_credit_profiles WHERE applicant_id = ? ORDER BY id DESC LIMIT 1", [a.id]);
+  const kyc = await q("SELECT * FROM gn_kyc WHERE applicant_id = ? ORDER BY id", [a.id]);
+  await audit({ tenantId: t, userId: req.user!.id, action: "gn.co.applicant.auto_fetch", entityType: "gn_applicant", entityId: a.id, after: { score: result.score, pan: result.pan }, ip: clientIp(req) });
+  res.json({ ok: true, profile: result, applicant: updated, credit, kyc });
 }));
 
 gnCoRouter.post("/gn/co/applicants/:id/consent", requirePerm("gn.co.edit"), asyncH(async (req: AuthedRequest, res) => {

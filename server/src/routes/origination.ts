@@ -109,7 +109,7 @@ originationRouter.post(
       try {
         const { name } = await mobileNameLookup(normMobile);
         if (name && name.trim()) candidateName = name.trim();
-      } catch {}
+      } catch { }
 
       const custNo = "CUST" + new Date().getFullYear().toString().slice(2) + String(Math.floor(100000 + Math.random() * 899999));
       const newCustId = (await run(
@@ -125,7 +125,7 @@ originationRouter.post(
           await run("UPDATE customers SET name = ? WHERE id = ?", [name.trim(), customer.id]);
           customer.name = name.trim();
         }
-      } catch {}
+      } catch { }
     }
 
     const defaultProfile = {
@@ -284,8 +284,8 @@ originationRouter.post(
     // EXPERIAN & TELECOM AUTO-FETCH PIPELINE (Digitap Enabled APIs)
     // Automatically retrieve identity, Experian credit bureau score & tradelines
     // =========================================================================
-    const cust = await q1<{ id: number; name: string; pan?: string }>(
-      "SELECT id, name, pan FROM customers WHERE id = ?",
+    const cust = await q1<Record<string, any>>(
+      "SELECT * FROM customers WHERE id = ?",
       [journey.customer_id]
     );
 
@@ -296,7 +296,7 @@ originationRouter.post(
       if (mnvData?.subscriberName && mnvData.subscriberName.trim()) {
         resolvedName = mnvData.subscriberName.trim();
       }
-    } catch {}
+    } catch { }
 
     let experianData: any = null;
     try {
@@ -475,7 +475,7 @@ originationRouter.post(
           ]
         );
       }
-    } catch {}
+    } catch { }
 
     const updated = await q1<OriginationJourneyRow>("SELECT * FROM origination_journeys WHERE id = ?", [journey.id])!;
 
@@ -507,7 +507,7 @@ originationRouter.get(
     let profileData: Record<string, unknown> = {};
     try {
       profileData = JSON.parse(j.profile_data || "{}");
-    } catch {}
+    } catch { }
 
     const completedSteps: string[] = ["mobile"];
     if (j.mobile_verified) completedSteps.push("otp");
@@ -620,7 +620,7 @@ originationRouter.get(
     let savedProfile: Record<string, any> = {};
     try {
       savedProfile = JSON.parse(j.profile_data || "{}");
-    } catch {}
+    } catch { }
 
     res.json({
       full_name: cust?.name !== "Applicant" ? cust?.name : savedProfile.full_name ?? "",
@@ -687,7 +687,7 @@ originationRouter.patch(
     let currentProfile: Record<string, any> = {};
     try {
       currentProfile = JSON.parse(j.profile_data || "{}");
-    } catch {}
+    } catch { }
 
     const updatedProfile = { ...currentProfile, ...body };
 
@@ -1040,7 +1040,7 @@ originationRouter.post(
         ip: clientIp(req)
       });
 
-      return res.json({
+      res.json({
         ok: true,
         status: "completed",
         provider: "Experian",
@@ -1057,6 +1057,7 @@ originationRouter.post(
         approval_odds: score >= 750 ? "98%" : score >= 680 ? "85%" : "70%",
         next_step: "offers"
       });
+      return;
     }
 
     // Score is not available (e.g. IP whitelist needed, thin file, or UAT key unentitled)
@@ -1103,7 +1104,7 @@ originationRouter.post(
     let profile: Record<string, any> = {};
     try {
       profile = JSON.parse(j.profile_data || "{}");
-    } catch {}
+    } catch { }
 
     const matches = await matchLenders(j.tenant_id, {
       amount: j.requested_amount || 250000,
@@ -1175,7 +1176,7 @@ originationRouter.get(
         let reasons: string[] = [];
         try {
           reasons = JSON.parse(m.reasons || "[]");
-        } catch {}
+        } catch { }
         return {
           id: m.id,
           lender_id: m.lender_id,

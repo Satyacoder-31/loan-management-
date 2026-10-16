@@ -403,10 +403,10 @@ function normalizePanDetails(pan: string, r: RawPanDetails): PanDetailsResult {
   const addr = r.address && typeof r.address === "object" ? (r.address as Record<string, any>) : null;
   const address: Record<string, string> | null = addr
     ? Object.fromEntries(
-        ["building_name", "locality", "street_name", "pincode", "city", "state", "country"]
-          .map((k) => [k, String(addr[k] ?? "")])
-          .filter(([, v]) => v !== "")
-      )
+      ["building_name", "locality", "street_name", "pincode", "city", "state", "country"]
+        .map((k) => [k, String(addr[k] ?? "")])
+        .filter(([, v]) => v !== "")
+    )
     : null;
   return {
     panMasked: maskPan(pan),
@@ -513,6 +513,29 @@ export async function mobileNameLookup(mobile: string): Promise<{ name?: string;
   }
 }
 
+export async function getPanToMaskedAadhaar(pan: string): Promise<{ maskedAadhaar: string | null; linked: boolean; providerRef: string }> {
+  try {
+    const creds = await requireCreds();
+    const p = normalizePan(pan);
+    const { envelope, httpStatus } = await post(creds, "/validation/kyc/v1/pan_to_masked_aadhaar", {
+      client_ref_num: clientRef("pan_adh"),
+      pan: p
+    });
+    if (httpStatus === 200 && envelope.result_code === 101) {
+      const res = (envelope.result as Record<string, any>) || {};
+      const num = res.aadhaar_number ? String(res.aadhaar_number) : null;
+      return {
+        maskedAadhaar: num,
+        linked: res.linked === "y" || res.linked === true,
+        providerRef: envelope.request_id || ""
+      };
+    }
+  } catch (err: any) {
+    console.warn("[PAN TO MASKED AADHAAR NOTICE]", err.message);
+  }
+  return { maskedAadhaar: null, linked: false, providerRef: "" };
+}
+
 /* ============================================================
  * MNV (Mobile Number Verification) Suite & Experian Bureau Suite
  * Enabled in UAT & Prod per Digitap entitlement
@@ -569,6 +592,9 @@ export interface ExperianApplicantProfile {
   pincode?: string | null;
   email?: string | null;
   mobile?: string | null;
+  altMobile?: string | null;
+  altEmail?: string | null;
+  aadhaar?: string | null;
 }
 
 export interface ExperianBureauResult {
@@ -590,6 +616,7 @@ export interface ExperianBureauResult {
   providerRef: string | null;
   tradelines?: ExperianTradeline[];
   applicantDetails?: ExperianApplicantProfile | null;
+  creditReport?: any;
   status?: string;
   message?: string;
   raw?: Record<string, any>;
@@ -1328,8 +1355,8 @@ function parseExperianInProfile(resp: Record<string, any>, envelope: Record<stri
     creditAcct.CreditAccountTotal !== undefined
       ? Number(creditAcct.CreditAccountTotal)
       : activeAccounts !== null && closedAccounts !== null
-      ? activeAccounts + closedAccounts
-      : null;
+        ? activeAccounts + closedAccounts
+        : null;
 
   const totalOutstanding =
     balSummary.Outstanding_Balance_All !== undefined ? Number(balSummary.Outstanding_Balance_All) : null;
@@ -1421,35 +1448,163 @@ function parseExperianInProfile(resp: Record<string, any>, envelope: Record<stri
   const phone = tradelinesRaw[0]?.CAIS_Holder_Phone_Details?.[0] || {};
   const appHolder = resp.Current_Application?.Current_Application_Details?.Current_Applicant_Details || {};
 
-  const firstName = holder.First_Name_Non_Normalized || appHolder.First_Name || "";
-  const lastName = holder.Surname_Non_Normalized || appHolder.Last_Name || "";
-  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+  const rawFirst = (holder.First_Name_Non_Normalized || appHolder.First_Name || "").trim();
+  const rawLast = (holder.Surname_Non_Normalized || appHolder.Last_Name || "").trim();
+  let cleanFullName = "";
+  if (rawFirst && rawLast) {
+    if (rawLast.toLowerCase().includes(rawFirst.toLowerCase())) {
+      cleanFullName = rawLast;
+    } else if (rawFirst.toLowerCase().includes(rawLast.toLowerCase())) {
+      cleanFullName = rawFirst;
+    } else {
+      cleanFullName = `${rawFirst} ${rawLast}`;
+    }
+  } else {
+    cleanFullName = rawFirst || rawLast;
+  }
+  cleanFullName = cleanFullName
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 
   let dobFormatted = holder.Date_of_birth
     ? String(holder.Date_of_birth)
     : appHolder.Date_Of_Birth_Applicant
-    ? String(appHolder.Date_Of_Birth_Applicant)
-    : undefined;
+      ? String(appHolder.Date_Of_Birth_Applicant)
+      : undefined;
   if (dobFormatted && dobFormatted.length === 8 && /^\d+$/.test(dobFormatted)) {
     dobFormatted = `${dobFormatted.slice(0, 4)}-${dobFormatted.slice(4, 6)}-${dobFormatted.slice(6, 8)}`;
   }
 
-  const applicantDetails = {
-    firstName: firstName || null,
-    lastName: lastName || null,
-    fullName: fullName || null,
+  // Scan across ALL tradelines for unique phones, emails, UIDs, and addresses
+  const allPhones: string[] = [];
+  const allEmails: string[] = [];
+  const allUids: string[] = [];
+  const allAddresses: Record<string, any>[] = [];
+
+  for (const tl of tradelinesRaw) {
+    const pList = Array.isArray(tl.CAIS_Holder_Phone_Details)
+      ? tl.CAIS_Holder_Phone_Details
+      : tl.CAIS_Holder_Phone_Details
+        ? [tl.CAIS_Holder_Phone_Details]
+        : [];
+    for (const p of pList) {
+      const tel = String(p.Telephone_Number || p.MobilePhoneNumber || "").replace(/\D/g, "");
+      if (tel.length >= 10) {
+        const clean = tel.length === 12 && tel.startsWith("91") ? tel.slice(2) : tel.slice(-10);
+        if (!allPhones.includes(clean)) allPhones.push(clean);
+      }
+      if (p.EMailId && typeof p.EMailId === "string" && p.EMailId.includes("@")) {
+        const em = p.EMailId.trim();
+        if (!allEmails.some((e) => e.toLowerCase() === em.toLowerCase())) allEmails.push(em);
+      }
+    }
+    const idList = Array.isArray(tl.CAIS_Holder_ID_Details)
+      ? tl.CAIS_Holder_ID_Details
+      : tl.CAIS_Holder_ID_Details
+        ? [tl.CAIS_Holder_ID_Details]
+        : [];
+    for (const id of idList) {
+      const uid = id.Universal_ID_Number || id.UID_Number || id.Aadhaar_Number;
+      if (uid && String(uid).trim() && !allUids.includes(String(uid).trim())) {
+        allUids.push(String(uid).trim());
+      }
+    }
+    const aList = Array.isArray(tl.CAIS_Holder_Address_Details)
+      ? tl.CAIS_Holder_Address_Details
+      : tl.CAIS_Holder_Address_Details
+        ? [tl.CAIS_Holder_Address_Details]
+        : [];
+    for (const a of aList) {
+      if (a && typeof a === "object") allAddresses.push(a);
+    }
+  }
+
+  // Primary vs Alternate Mobile
+  const primaryMobileRaw = phone.Telephone_Number || appHolder.MobilePhoneNumber || allPhones[0] || null;
+  const primaryMobileClean = primaryMobileRaw ? String(primaryMobileRaw).replace(/\D/g, "").slice(-10) : null;
+  const alternateMobile = allPhones.find((p) => p !== primaryMobileClean) || null;
+
+  // Primary vs Alternate Email
+  const primaryEmail = phone.EMailId || appHolder.EMailId || allEmails[0] || null;
+  const alternateEmail = allEmails.find((e) => e.toLowerCase() !== (primaryEmail || "").toLowerCase()) || null;
+
+  // Masked Aadhaar (e.g. XXXX-XXXX-1234)
+  let maskedAadhaar: string | null = null;
+  const rawUid = allUids[0] || holder.Universal_ID_Number || holder.UID_Number;
+  if (rawUid) {
+    const digits = String(rawUid).replace(/\D/g, "");
+    if (digits.length >= 4) {
+      maskedAadhaar = `XXXX-XXXX-${digits.slice(-4)}`;
+    } else {
+      maskedAadhaar = String(rawUid);
+    }
+  }
+
+  // Address and State mapping
+  const STATE_CODES: Record<string, string> = {
+    "01": "Jammu & Kashmir", "02": "Himachal Pradesh", "03": "Punjab", "04": "Chandigarh",
+    "05": "Uttarakhand", "06": "Haryana", "07": "Delhi", "08": "Rajasthan",
+    "09": "Uttar Pradesh", "10": "Bihar", "11": "Sikkim", "12": "Arunachal Pradesh",
+    "13": "Nagaland", "14": "Manipur", "15": "Mizoram", "16": "Tripura",
+    "17": "Meghalaya", "18": "Assam", "19": "West Bengal", "20": "Jharkhand",
+    "21": "Odisha", "22": "Chhattisgarh", "23": "Madhya Pradesh", "24": "Gujarat",
+    "25": "Daman & Diu", "26": "Dadra & Nagar Haveli", "27": "Maharashtra", "28": "Andhra Pradesh",
+    "29": "Karnataka", "30": "Goa", "31": "Lakshadweep", "32": "Kerala",
+    "33": "Tamil Nadu", "34": "Puducherry", "35": "Andaman & Nicobar Islands",
+    "36": "Telangana", "37": "Andhra Pradesh", "38": "Ladakh"
+  };
+
+  const rawState = address.State_non_normalized || "";
+  const resolvedState = STATE_CODES[rawState] || rawState || null;
+  const fullAddress = [
+    address.First_Line_Of_Address_non_normalized,
+    address.Second_Line_Of_Address_non_normalized,
+    address.Third_Line_Of_Address_non_normalized
+  ]
+    .filter(Boolean)
+    .join(", ")
+    .trim() || null;
+
+  const applicantDetails: ExperianApplicantProfile = {
+    firstName: rawFirst || null,
+    lastName: rawLast || null,
+    fullName: cleanFullName || null,
     pan: holder.Income_TAX_PAN || appHolder.IncomeTaxPan || null,
     dob: dobFormatted || null,
     gender: holder.Gender_Code === "1" ? "Male" : holder.Gender_Code === "2" ? "Female" : null,
-    address:
-      [address.First_Line_Of_Address_non_normalized, address.Second_Line_Of_Address_non_normalized]
-        .filter(Boolean)
-        .join(", ") || null,
+    address: fullAddress,
     city: address.City_non_normalized || null,
-    state: address.State_non_normalized || null,
+    state: resolvedState,
     pincode: address.ZIP_Postal_Code_non_normalized || null,
-    email: phone.EMailId || appHolder.EMailId || null,
-    mobile: phone.Telephone_Number || appHolder.MobilePhoneNumber || null
+    email: primaryEmail,
+    mobile: primaryMobileClean || primaryMobileRaw,
+    altMobile: alternateMobile,
+    altEmail: alternateEmail,
+    aadhaar: maskedAadhaar
+  };
+
+  const creditReport = {
+    score: scoreNum,
+    scoreBand,
+    provider: "Experian Credit Analytics (Digitap)",
+    providerRef: envelope.request_id || envelope.client_ref_num || "EXP-LIVE",
+    fetchedAt: new Date().toISOString(),
+    totalAccounts: totalAccounts ?? tradelines.length,
+    activeAccounts: activeAccounts ?? tradelines.filter((t) => t.status === "Active").length,
+    closedAccounts: closedAccounts ?? tradelines.filter((t) => t.status === "Closed").length,
+    overdueAccounts: overdueAccounts ?? tradelines.filter((t) => t.dpd > 0).length,
+    totalOutstanding: totalOutstanding ?? tradelines.reduce((s, t) => s + (t.currentBalance || 0), 0),
+    securedOutstanding: securedOutstanding ?? 0,
+    unsecuredOutstanding: unsecuredOutstanding ?? (totalOutstanding || 0),
+    creditUtilization,
+    enquiries6m,
+    dpdMax: maxDpd,
+    repaymentTrack: hasDelinquency ? "Delinquency Recorded" : "100% On-Time",
+    creditAge,
+    tradelines
   };
 
   return {
@@ -1471,6 +1626,7 @@ function parseExperianInProfile(resp: Record<string, any>, envelope: Record<stri
     providerRef: envelope.request_id || envelope.client_ref_num || "EXP-LIVE",
     tradelines,
     applicantDetails,
+    creditReport,
     status: "FETCHED",
     message: "Real Experian CIR report successfully retrieved from Digitap Credit Analytics.",
     raw: envelope

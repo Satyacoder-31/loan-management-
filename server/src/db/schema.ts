@@ -1275,6 +1275,7 @@ export async function createSchema() {
     ref TEXT UNIQUE NOT NULL,                  -- GN-APL-2026-000001
     name TEXT NOT NULL,
     mobile TEXT, email TEXT, pan TEXT, dob TEXT, gender TEXT,
+    address TEXT, alt_mobile TEXT, alt_email TEXT, aadhaar TEXT,
     city TEXT, state TEXT, pincode TEXT,
     applicant_type TEXT NOT NULL DEFAULT 'Individual',   -- Individual | Company | Partnership | Proprietorship
     employment_type TEXT,                                 -- Salaried | Self-employed | Business Owner
@@ -1355,6 +1356,7 @@ export async function createSchema() {
     overdue_amount INTEGER DEFAULT 0,
     dpd INTEGER DEFAULT 0,
     utilization_pct REAL DEFAULT 0,
+    report_json TEXT,
     status TEXT NOT NULL DEFAULT 'completed',
     reference TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -1692,6 +1694,19 @@ export async function createSchema() {
 
   COMMIT;
   `);
+
+  const safeMigrations = [
+    "ALTER TABLE gn_applicants ADD COLUMN address TEXT",
+    "ALTER TABLE gn_applicants ADD COLUMN alt_mobile TEXT",
+    "ALTER TABLE gn_applicants ADD COLUMN alt_email TEXT",
+    "ALTER TABLE gn_applicants ADD COLUMN aadhaar TEXT",
+    "ALTER TABLE gn_credit_profiles ADD COLUMN report_json TEXT"
+  ];
+  for (const m of safeMigrations) {
+    try {
+      await db().exec(m);
+    } catch {}
+  }
 }
 
 export async function resetSchema() {
