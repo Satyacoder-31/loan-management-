@@ -1466,7 +1466,7 @@ function generateDeterministicExperianReport(mobile, name, pan) {
   }
   if (mob === "8508101002") {
     const jayshreeName = (name && !name.toLowerCase().includes("applicant") ? name : "Jayshree Shashikant Kere").trim();
-    const jayshreePan = (pan && pan.length === 10 ? pan : "ABCPK1002J").toUpperCase();
+    const jayshreePan = (pan && pan.length === 10 ? pan : "IIGPK2608A").toUpperCase();
     const jayshreeTradelines = [
       {
         accountNumber: "HDFC-****1002",

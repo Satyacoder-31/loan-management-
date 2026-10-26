@@ -822,7 +822,7 @@ export function generateDeterministicExperianReport(
   // Pre-seeded record: Jayshree Shashikant Kere (+91 8508101002)
   if (mob === "8508101002") {
     const jayshreeName = (name && !name.toLowerCase().includes("applicant") ? name : "Jayshree Shashikant Kere").trim();
-    const jayshreePan = (pan && pan.length === 10 ? pan : "ABCPK1002J").toUpperCase();
+    const jayshreePan = (pan && pan.length === 10 ? pan : "IIGPK2608A").toUpperCase();
     const jayshreeTradelines: ExperianTradeline[] = [
       {
         accountNumber: "HDFC-****1002",
