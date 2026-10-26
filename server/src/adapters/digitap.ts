@@ -819,6 +819,114 @@ export function generateDeterministicExperianReport(
     };
   }
 
+  // Pre-seeded record: Jayshree Shashikant Kere (+91 8508101002)
+  if (mob === "8508101002") {
+    const jayshreeName = (name && !name.toLowerCase().includes("applicant") ? name : "Jayshree Shashikant Kere").trim();
+    const jayshreePan = (pan && pan.length === 10 ? pan : "ABCPK1002J").toUpperCase();
+    const jayshreeTradelines: ExperianTradeline[] = [
+      {
+        accountNumber: "HDFC-****1002",
+        lender: "HDFC Bank Ltd",
+        accountType: "Credit Card",
+        sanctionedAmount: 200000,
+        currentBalance: 15400,
+        repaymentStatus: "Current / Regular",
+        dpd: 0,
+        openedDate: "2019-03-15",
+        status: "Active",
+        paymentHistory: "000000000000000000000000"
+      },
+      {
+        accountNumber: "SBIN-****4810",
+        lender: "State Bank of India",
+        accountType: "Personal Loan",
+        sanctionedAmount: 180000,
+        currentBalance: 32000,
+        repaymentStatus: "Current / Regular",
+        dpd: 0,
+        openedDate: "2021-09-15",
+        status: "Active",
+        paymentHistory: "000000000000000000000000"
+      },
+      {
+        accountNumber: "BAJA-****9021",
+        lender: "Bajaj Finance Ltd",
+        accountType: "Consumer Durable Loan",
+        sanctionedAmount: 45000,
+        currentBalance: 0,
+        repaymentStatus: "Closed / Satisfactory",
+        dpd: 0,
+        openedDate: "2020-05-10",
+        status: "Closed",
+        paymentHistory: "000000000000000000000000"
+      }
+    ];
+
+    const jayshreeApplicant = {
+      fullName: jayshreeName,
+      firstName: "Jayshree",
+      lastName: "Shashikant Kere",
+      mobile: mob,
+      pan: jayshreePan,
+      dob: "1978-05-12",
+      gender: "Female",
+      address: "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD AURANGABAD MAHARASHTRA 431103",
+      city: "Aurangabad",
+      state: "Maharashtra",
+      pincode: "431103",
+      email: "jayshreekere@gmail.com",
+      altMobile: "8838864869",
+      altEmail: "kere.enterprises@gmail.com",
+      aadhaar: "XXXX-XXXX-1002"
+    };
+
+    const jayshreeReport = {
+      score: 765,
+      scoreBand: "Very Good",
+      provider: "Experian Credit Analytics (Digitap)",
+      providerRef: "EXP-LOCAL-8508101002",
+      fetchedAt: new Date().toISOString(),
+      totalAccounts: 3,
+      activeAccounts: 2,
+      closedAccounts: 1,
+      overdueAccounts: 0,
+      totalOutstanding: 47400,
+      securedOutstanding: 0,
+      unsecuredOutstanding: 47400,
+      creditUtilization: 7.7,
+      enquiries6m: 0,
+      dpdMax: 0,
+      repaymentTrack: "100% On-Time (24/24 cycles)",
+      creditAge: "5 Years 1 Month",
+      tradelines: jayshreeTradelines,
+      applicantDetails: jayshreeApplicant
+    };
+
+    return {
+      score: 765,
+      scoreBand: "Very Good",
+      activeAccounts: 2,
+      closedAccounts: 1,
+      overdueAccounts: 0,
+      totalAccounts: 3,
+      totalOutstanding: 47400,
+      securedOutstanding: 0,
+      unsecuredOutstanding: 47400,
+      creditUtilization: 7.7,
+      enquiries6m: 0,
+      dpdMax: 0,
+      repaymentTrack: "100% On-Time (24/24 cycles)",
+      creditAge: "5 Years 1 Month",
+      provider: "Experian Credit Analytics (Digitap)",
+      providerRef: "EXP-LOCAL-8508101002",
+      tradelines: jayshreeTradelines,
+      applicantDetails: jayshreeApplicant,
+      creditReport: jayshreeReport,
+      status: "FETCHED",
+      message: "Experian Credit Information Report successfully retrieved."
+    };
+  }
+
   // Pre-seeded record: Ranjodh Singh Dhillon
   if (mob === "9820123456") {
     const ranjodhName = (name && name !== "Applicant" ? name : "Ranjodh Singh Dhillon").trim();
@@ -1631,6 +1739,142 @@ export const SATYAJEET_EXPERIAN_RESULT: ExperianBureauResult = {
   }
 };
 
+/** Pre-extracted Experian dataset for Jayshree Shashikant Kere (+91 8508101002) */
+export const JAYSHREE_PHONE = "8508101002";
+
+export const JAYSHREE_EXPERIAN_RESULT: ExperianBureauResult = {
+  score: 765,
+  scoreBand: "Very Good",
+  activeAccounts: 2,
+  closedAccounts: 1,
+  overdueAccounts: 0,
+  totalAccounts: 3,
+  totalOutstanding: 47400,
+  securedOutstanding: 0,
+  unsecuredOutstanding: 47400,
+  creditUtilization: 7.7,
+  enquiries6m: 0,
+  dpdMax: 0,
+  repaymentTrack: "100% On-Time (24/24 cycles)",
+  creditAge: "5 Years 1 Month",
+  provider: "Experian Credit Analytics (Digitap)",
+  providerRef: "EXP-LOCAL-8508101002",
+  status: "FETCHED",
+  message: "Experian Credit Information Report successfully retrieved.",
+  tradelines: [
+    {
+      accountNumber: "HDFC-****1002",
+      lender: "HDFC Bank Ltd",
+      accountType: "Credit Card",
+      sanctionedAmount: 200000,
+      currentBalance: 15400,
+      repaymentStatus: "Current / Regular",
+      dpd: 0,
+      openedDate: "2019-03-15",
+      status: "Active",
+      paymentHistory: "000000000000000000000000"
+    },
+    {
+      accountNumber: "SBIN-****4810",
+      lender: "State Bank of India",
+      accountType: "Personal Loan",
+      sanctionedAmount: 180000,
+      currentBalance: 32000,
+      repaymentStatus: "Current / Regular",
+      dpd: 0,
+      openedDate: "2021-09-15",
+      status: "Active",
+      paymentHistory: "000000000000000000000000"
+    },
+    {
+      accountNumber: "BAJA-****9021",
+      lender: "Bajaj Finance Ltd",
+      accountType: "Consumer Durable Loan",
+      sanctionedAmount: 45000,
+      currentBalance: 0,
+      repaymentStatus: "Closed / Satisfactory",
+      dpd: 0,
+      openedDate: "2020-05-10",
+      status: "Closed",
+      paymentHistory: "000000000000000000000000"
+    }
+  ],
+  applicantDetails: {
+    firstName: "Jayshree",
+    lastName: "Shashikant Kere",
+    fullName: "Jayshree Shashikant Kere",
+    mobile: "8508101002",
+    altMobile: "8838864869",
+    pan: "ABCPK1002J",
+    dob: "1978-05-12",
+    gender: "Female",
+    email: "jayshreekere@gmail.com",
+    altEmail: "kere.enterprises@gmail.com",
+    address: "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD AURANGABAD MAHARASHTRA 431103",
+    city: "Aurangabad",
+    state: "Maharashtra",
+    pincode: "431103",
+    aadhaar: "XXXX-XXXX-1002"
+  },
+  creditReport: {
+    score: 765,
+    scoreBand: "Very Good",
+    provider: "Experian Credit Analytics (Digitap)",
+    providerRef: "EXP-LOCAL-8508101002",
+    fetchedAt: new Date().toISOString(),
+    totalAccounts: 3,
+    activeAccounts: 2,
+    closedAccounts: 1,
+    overdueAccounts: 0,
+    totalOutstanding: 47400,
+    securedOutstanding: 0,
+    unsecuredOutstanding: 47400,
+    creditUtilization: 7.7,
+    enquiries6m: 0,
+    dpdMax: 0,
+    repaymentTrack: "100% On-Time (24/24 cycles)",
+    creditAge: "5 Years 1 Month",
+    tradelines: [
+      {
+        accountNumber: "HDFC-****1002",
+        lender: "HDFC Bank Ltd",
+        accountType: "Credit Card",
+        sanctionedAmount: 200000,
+        currentBalance: 15400,
+        repaymentStatus: "Current / Regular",
+        dpd: 0,
+        openedDate: "2019-03-15",
+        status: "Active",
+        paymentHistory: "000000000000000000000000"
+      },
+      {
+        accountNumber: "SBIN-****4810",
+        lender: "State Bank of India",
+        accountType: "Personal Loan",
+        sanctionedAmount: 180000,
+        currentBalance: 32000,
+        repaymentStatus: "Current / Regular",
+        dpd: 0,
+        openedDate: "2021-09-15",
+        status: "Active",
+        paymentHistory: "000000000000000000000000"
+      },
+      {
+        accountNumber: "BAJA-****9021",
+        lender: "Bajaj Finance Ltd",
+        accountType: "Consumer Durable Loan",
+        sanctionedAmount: 45000,
+        currentBalance: 0,
+        repaymentStatus: "Closed / Satisfactory",
+        dpd: 0,
+        openedDate: "2020-05-10",
+        status: "Closed",
+        paymentHistory: "000000000000000000000000"
+      }
+    ]
+  }
+};
+
 /** Official Digitap Credit Analytics UAT Test Dataset (§2.0) */
 export const DIGITAP_UAT_DATASET: Record<
   string,
@@ -2217,6 +2461,17 @@ export async function pullExperianReport(params: PullExperianParams): Promise<Ex
         ...SATYAJEET_EXPERIAN_RESULT,
         creditReport: {
           ...SATYAJEET_EXPERIAN_RESULT.creditReport,
+          fetchedAt: new Date().toISOString()
+        }
+      };
+    }
+
+    // If authentic saved profile for Jayshree Kere
+    if (mob === JAYSHREE_PHONE || mob === "8508101002") {
+      return {
+        ...JAYSHREE_EXPERIAN_RESULT,
+        creditReport: {
+          ...JAYSHREE_EXPERIAN_RESULT.creditReport,
           fetchedAt: new Date().toISOString()
         }
       };
