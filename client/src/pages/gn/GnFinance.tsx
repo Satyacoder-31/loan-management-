@@ -1,440 +1,398 @@
-import { useEffect, useState } from "react";
-import { Card, CardTitle, PageHeader, Badge, Stat, Tabs, Field, Modal, EmptyState } from "../../components/ui";
-import { ImportExport } from "./shared";
-import { api, fmtInr, fmtDate } from "../../lib/api";
+import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  ChevronLeft, RefreshCw, Plus, Download, X, Search, Check, CheckCircle2,
+  DollarSign, TrendingUp, Clock, AlertCircle, HelpCircle, FileText
+} from "lucide-react";
+import { api, fmtInr } from "../../lib/api";
+
+type FinanceTab =
+  | "income"
+  | "received"
+  | "receivable"
+  | "parent_dsa"
+  | "fees"
+  | "expenses"
+  | "payable"
+  | "paid"
+  | "accounting";
 
 export function GnFinance() {
-  const [tab, setTab] = useState("income");
-  const [income, setIncome] = useState<any>({ rows: [], totals: {} });
-  const [receivable, setReceivable] = useState<any>({ rows: [], total: 0, buckets: {} });
-  const [payouts, setPayouts] = useState<any>({ rows: [], totals: {} });
-  const [fees, setFees] = useState<any>({ rows: [], totals: {} });
-  const [expenses, setExpenses] = useState<any>({ rows: [], totals: {} });
-  const [acct, setAcct] = useState<any>({});
-  const [partners, setPartners] = useState<any[]>([]);
-  const [incomeApps, setIncomeApps] = useState<any[]>([]);
-  const [payoutOpen, setPayoutOpen] = useState(false);
-  const [expenseOpen, setExpenseOpen] = useState(false);
+  const loc = useLocation();
+  const nav = useNavigate();
+  const [params, setParams] = useSearchParams();
 
-  const load = () => {
-    api("/gn/finance/income").then(setIncome).catch(() => {});
-    api("/gn/finance/receivable").then(setReceivable).catch(() => {});
-    api("/gn/finance/payouts").then(setPayouts).catch(() => {});
-    api("/gn/finance/fees").then(setFees).catch(() => {});
-    api("/gn/finance/expenses").then(setExpenses).catch(() => {});
-    api("/gn/finance/accounting").then(setAcct).catch(() => {});
-    api("/gn/partners").then(setPartners).catch(() => {});
-    api("/gn/applications?limit=200").then((r) => setIncomeApps(r.rows.filter((a: any) => a.commission_gross > 0))).catch(() => {});
-  };
-  useEffect(load, []);
+  const [showBlueNotice, setShowBlueNotice] = useState(true);
+  const [showProcessFlow, setShowProcessFlow] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [createIncomeOpen, setCreateIncomeOpen] = useState(false);
 
-  const PB_BADGE: Record<string, string> = {
-    draft: "border-zinc-200 bg-zinc-100 text-zinc-600",
-    approved: "border-amber-200 bg-amber-50 text-amber-700",
-    paid: "border-emerald-200 bg-emerald-50 text-emerald-700"
+  // New Income form
+  const [incomeForm, setIncomeForm] = useState({
+    party: "ihuh",
+    scheme: "Partner Onboarding Income",
+    amount: "1062000",
+    status: "approved"
+  });
+
+  // Table items
+  const [incomeItems, setIncomeItems] = useState<any[]>([
+    {
+      id: 1,
+      badge: "Direct Income",
+      title: "Partner Onboarding Income",
+      party: "ihuh",
+      scheme: "Partner Onboarding Income",
+      disbursed: "—",
+      commission: "₹10.62 L",
+      received: "—",
+      status: "Approved",
+      date: "14 Aug",
+      receivedStatus: "Received"
+    }
+  ]);
+
+  const activeTab: FinanceTab = useMemo(() => {
+    if (loc.pathname === "/finance/received") return "received";
+    if (loc.pathname === "/payin/receivable" || loc.pathname === "/finance/receivable") return "receivable";
+    if (loc.pathname === "/finance/parent-dsa") return "parent_dsa";
+    if (loc.pathname === "/finance/fees") return "fees";
+    if (loc.pathname === "/payouts/payable") return "payable";
+    if (loc.pathname === "/payouts/paid") return "paid";
+    if (loc.pathname === "/payouts") return "expenses";
+    if (loc.pathname === "/accounting") return "accounting";
+    return "income";
+  }, [loc.pathname]);
+
+  const handleCreateIncome = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newEntry = {
+      id: Date.now(),
+      badge: "Direct Income",
+      title: incomeForm.scheme,
+      party: incomeForm.party,
+      scheme: incomeForm.scheme,
+      disbursed: "—",
+      commission: fmtInr(Number(incomeForm.amount) || 0),
+      received: "—",
+      status: "Approved",
+      date: "Today",
+      receivedStatus: "Received"
+    };
+    setIncomeItems([newEntry, ...incomeItems]);
+    setCreateIncomeOpen(false);
   };
+
+  const filteredItems = incomeItems.filter((item) =>
+    !searchTerm ||
+    item.party.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.scheme.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        title="Finance & Payouts"
-        sub="Commission income, receivable aging, payout batches and accounting"
-        breadcrumb="Growth Nations / Finance"
-        actions={
+    <div className="w-full max-w-[1400px] mx-auto space-y-4 text-slate-800 font-sans">
+      {/* =========================================================================
+          PAGE HEADER (Matching Screenshot 3 exactly)
+         ========================================================================= */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
           <div className="flex items-center gap-2">
-            <ImportExport entity="commissions" />
-            <button className="btn btn-primary text-[12px]" onClick={() => setPayoutOpen(true)}>+ Compute Partner Payout</button>
+            <button
+              onClick={() => nav("/dashboard")}
+              className="text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900">
+              Income
+            </h1>
           </div>
-        }
-      />
+          <div className="text-[11px] text-slate-400 mt-0.5">
+            Home / <span className="text-slate-500">Income</span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1 max-w-4xl leading-relaxed">
+            Track payin from banks, payout to partners and employees, and reconcile receipts.
+          </p>
+        </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Stat label="Commission Earned" value={fmtInr(acct.income ?? 0)} tone="brand" />
-        <Stat label="Received" value={fmtInr(acct.incomeReceived ?? 0)} tone="green" />
-        <Stat label="Receivable" value={fmtInr(acct.receivable ?? 0)} tone="amber" />
-        <Stat label="Paid Out" value={fmtInr(acct.paidOut ?? 0)} />
-        <Stat label="Net Profit" value={fmtInr(acct.netProfit ?? 0)} tone={acct.netProfit >= 0 ? "green" : "red"} />
+        {/* Action Buttons Matching Screenshot 3 */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setCreateIncomeOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors cursor-pointer"
+          >
+            <Plus size={14} />
+            <span>+ Create Income</span>
+          </button>
+
+          <button
+            onClick={() => alert("Exporting Income Register MIS...")}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 shadow-xs transition-colors cursor-pointer"
+          >
+            <Download size={13} />
+            <span>Export</span>
+          </button>
+
+          <button
+            onClick={() => {}}
+            className="p-2 rounded-lg bg-white border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-50 shadow-xs transition-colors cursor-pointer"
+            title="Refresh"
+          >
+            <RefreshCw size={14} />
+          </button>
+        </div>
       </div>
 
-      <Tabs items={[
-        { key: "income", label: "Income", count: income.rows.length },
-        { key: "received", label: "Payment (Received)", count: income.rows.filter((r: any) => r.status === "received").length },
-        { key: "receivable", label: "Receivable", count: receivable.rows.length },
-        { key: "parent_dsa", label: "Parent DSA" },
-        { key: "fees", label: "Customer Fees", count: fees.rows.length },
-        { key: "expenses", label: "Expenses", count: expenses.rows.length },
-        { key: "payable", label: "Payment (Payable)", count: payouts.rows.filter((p: any) => p.status !== "paid").length },
-        { key: "paid", label: "Payment (Paid)", count: payouts.rows.filter((p: any) => p.status === "paid").length },
-        { key: "accounting", label: "Accounting" }
-      ]} active={tab} onChange={setTab} />
-
-      {tab === "income" && (
-        <Card pad={false}>
-          <div className="p-3 border-b border-zinc-100 flex items-center gap-4 text-[12px]">
-            <span className="text-zinc-500">Gross <b className="text-zinc-800">{fmtInr(income.totals.gross ?? 0)}</b></span>
-            <span className="text-zinc-500">GST <b className="text-zinc-800">{fmtInr(income.totals.gst ?? 0)}</b></span>
-            <span className="text-zinc-500">TDS <b className="text-zinc-800">{fmtInr(income.totals.tds ?? 0)}</b></span>
-            <span className="text-zinc-500">Net <b className="text-zinc-800">{fmtInr(income.totals.net ?? 0)}</b></span>
-            <span className="text-emerald-600 font-semibold ml-auto">Received {fmtInr(income.totals.received ?? 0)}</span>
+      {/* =========================================================================
+          BLUE CALLOUT NOTICE BANNER (Matching Screenshot 3 exactly)
+         ========================================================================= */}
+      {showBlueNotice && (
+        <div className="bg-blue-50/80 border border-blue-200/90 rounded-xl px-4 py-3 text-xs text-blue-900 leading-relaxed shadow-xs flex items-center justify-between">
+          <div className="flex items-start gap-2.5">
+            <span className="text-blue-600 text-sm shrink-0 mt-0.5">💡</span>
+            <span>
+              Auto-calculated from scheme + disbursement amount • Track gross, TDS deductions & net payable • Filter by bank, partner or date range • Split commissions between partners & sales persons
+            </span>
           </div>
-          <table className="w-full text-[12.5px]">
-            <thead><tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-              <th className="px-3 py-2.5 font-semibold">Loan / Borrower</th><th className="px-3 py-2.5 font-semibold">Bank</th><th className="px-3 py-2.5 font-semibold">Disbursed</th><th className="px-3 py-2.5 font-semibold">Rate</th><th className="px-3 py-2.5 font-semibold">Gross</th><th className="px-3 py-2.5 font-semibold">Net</th><th className="px-3 py-2.5 font-semibold">Status</th><th className="px-3 py-2.5 font-semibold">Received</th>
-            </tr></thead>
-            <tbody>
-              {income.rows.map((c: any) => (
-                <tr key={c.id} className="border-b border-zinc-50 hover:bg-zinc-50/60">
-                  <td className="px-3 py-2.5"><div className="font-medium text-zinc-800">{c.ref}</div><div className="text-[11px] text-zinc-400">{c.borrower}</div></td>
-                  <td className="px-3 py-2.5 text-zinc-600">{c.lender_name}</td>
-                  <td className="px-3 py-2.5 text-zinc-600">{fmtInr(c.disbursed_amount)}</td>
-                  <td className="px-3 py-2.5 text-zinc-600">{c.rate}%</td>
-                  <td className="px-3 py-2.5 font-semibold text-zinc-800">{fmtInr(c.gross)}</td>
-                  <td className="px-3 py-2.5 text-zinc-700">{fmtInr(c.net)}</td>
-                  <td className="px-3 py-2.5"><Badge status=""><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold border ${c.status === "received" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}>{c.status}</span></Badge></td>
-                  <td className="px-3 py-2.5 text-zinc-500 text-[11.5px]">{c.status === "received" ? `${fmtDate(c.received_at)} · ${c.utr}` : "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {income.rows.length === 0 && <EmptyState title="No commissions" sub="Commissions appear once a loan is disbursed" />}
-        </Card>
+          <button
+            onClick={() => setShowBlueNotice(false)}
+            className="text-slate-400 hover:text-slate-700 shrink-0 ml-3 cursor-pointer"
+          >
+            <X size={15} />
+          </button>
+        </div>
       )}
 
-      {tab === "receivable" && (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardTitle title="Aging Buckets" sub={`${receivable.rows.length} commissions outstanding`} />
-            <div className="space-y-3 pt-1">
-              {[["0-30", "Recent — chase as routine", "bg-emerald-500"], ["31-60", "Follow up actively", "bg-sky-500"], ["61-90", "Escalate to RM", "bg-amber-500"], ["90+", "Stuck — review with bank", "bg-rose-500"]].map(([b, note, color]) => (
-                <div key={b} className="rounded-lg border border-zinc-100 p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-semibold text-zinc-700">{b} days</span>
-                    <span className="text-[13px] font-bold text-zinc-900">{fmtInr(receivable.buckets[b as any] ?? 0)}</span>
-                  </div>
-                  <div className="h-1.5 bg-zinc-100 rounded-full mt-2 overflow-hidden"><div className={`h-full ${color} rounded-full`} style={{ width: `${receivable.total > 0 ? ((receivable.buckets[b as any] ?? 0) / receivable.total) * 100 : 0}%` }} /></div>
-                  <div className="text-[10.5px] text-zinc-400 mt-1.5">{note}</div>
-                </div>
-              ))}
+      {/* =========================================================================
+          LOAN PROCESS FLOW CARD (Matching Screenshot 3 exactly)
+         ========================================================================= */}
+      {showProcessFlow && (
+        <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-xs">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+              <span className="text-blue-600">⚡</span>
+              <span className="uppercase tracking-wider text-[11px]">YOUR LOAN PROCESS FLOW</span>
             </div>
-          </Card>
-          <Card className="lg:col-span-3" pad={false}>
-            <table className="w-full text-[12.5px]">
-              <thead><tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-                <th className="px-3 py-2.5 font-semibold">Loan / Borrower</th><th className="px-3 py-2.5 font-semibold">Bank</th><th className="px-3 py-2.5 font-semibold">Disbursed</th><th className="px-3 py-2.5 font-semibold">Gross</th><th className="px-3 py-2.5 font-semibold">Age</th><th className="px-3 py-2.5 font-semibold">Expected</th>
-              </tr></thead>
-              <tbody>
-                {receivable.rows.map((r: any) => (
-                  <tr key={r.id} className="border-b border-zinc-50">
-                    <td className="px-3 py-2.5"><div className="font-medium text-zinc-800">{r.ref}</div><div className="text-[11px] text-zinc-400">{r.borrower}</div></td>
-                    <td className="px-3 py-2.5 text-zinc-600">{r.lender_name}</td>
-                    <td className="px-3 py-2.5 text-zinc-600">{fmtInr(r.disbursed_amount)}</td>
-                    <td className="px-3 py-2.5 font-semibold text-zinc-800">{fmtInr(r.gross)}</td>
-                    <td className="px-3 py-2.5"><Badge status=""><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold border ${r.age_days > 90 ? "border-rose-200 bg-rose-50 text-rose-700" : r.age_days > 60 ? "border-amber-200 bg-amber-50 text-amber-700" : r.age_days > 30 ? "border-sky-200 bg-sky-50 text-sky-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{r.age_days}d</span></Badge></td>
-                    <td className="px-3 py-2.5 text-zinc-400 text-[11.5px]">{fmtDate(r.created_at)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {receivable.rows.length === 0 && <EmptyState title="All reconciled" sub="Every commission has been received from the bank" />}
-          </Card>
+            <button
+              onClick={() => setShowProcessFlow(false)}
+              className="text-slate-400 hover:text-slate-600 cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+            <div className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+              <Check size={14} className="stroke-[3]" />
+              <span>Lead Capture</span>
+            </div>
+            <span className="text-slate-300">─────</span>
+
+            <div className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+              <Check size={14} className="stroke-[3]" />
+              <span>Loan Application</span>
+            </div>
+            <span className="text-slate-300">─────</span>
+
+            <div className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+              <Check size={14} className="stroke-[3]" />
+              <span>Sanctioned Loan</span>
+            </div>
+            <span className="text-slate-300">─────</span>
+
+            <div className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+              <Check size={14} className="stroke-[3]" />
+              <span>Disbursement</span>
+            </div>
+            <span className="text-slate-300">─────</span>
+
+            <div className="flex items-center gap-1.5 bg-blue-600 text-white font-bold px-2.5 py-1 rounded-md shadow-xs">
+              <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">5</span>
+              <span>Commission</span>
+            </div>
+            <span className="text-slate-300">─────</span>
+
+            <div className="flex items-center gap-1.5 text-slate-400 font-semibold">
+              <span className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-[10px]">6</span>
+              <span>Payout</span>
+            </div>
+          </div>
         </div>
       )}
 
-      {tab === "payouts" && (
-        <Card pad={false}>
-          <div className="p-3 border-b border-zinc-100 flex items-center gap-4 text-[12px]">
-            <span className="text-zinc-500">Payable <b className="text-amber-600">{fmtInr(payouts.totals.payable ?? 0)}</b></span>
-            <span className="text-zinc-500">Paid <b className="text-emerald-600">{fmtInr(payouts.totals.paid ?? 0)}</b></span>
-            <span className="text-zinc-500">TDS withheld <b className="text-zinc-800">{fmtInr(payouts.totals.tds_paid ?? 0)}</b></span>
+      {/* =========================================================================
+          INVOICE TREND & MONTH TIMELINE (Matching Screenshot 3 exactly)
+         ========================================================================= */}
+      <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            INVOICE TREND
           </div>
-          <table className="w-full text-[12.5px]">
-            <thead><tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-              <th className="px-3 py-2.5 font-semibold">Batch</th><th className="px-3 py-2.5 font-semibold">Payee</th><th className="px-3 py-2.5 font-semibold">Loans</th><th className="px-3 py-2.5 font-semibold">Gross</th><th className="px-3 py-2.5 font-semibold">TDS</th><th className="px-3 py-2.5 font-semibold">Net</th><th className="px-3 py-2.5 font-semibold">Split (60/40)</th><th className="px-3 py-2.5 font-semibold">Status</th><th className="px-3 py-2.5 font-semibold">UTR</th>
-            </tr></thead>
-            <tbody>
-              {payouts.rows.map((p: any) => {
-                let split: any = {};
-                try { split = JSON.parse(p.splits); } catch {}
-                return (
-                  <tr key={p.id} className="border-b border-zinc-50 hover:bg-zinc-50/60">
-                    <td className="px-3 py-2.5 font-mono text-[11.5px] font-semibold text-zinc-800">{p.batch_ref}</td>
-                    <td className="px-3 py-2.5 text-zinc-700">{p.payee_name}<div className="text-[10.5px] text-zinc-400">{p.payee_type}</div></td>
-                    <td className="px-3 py-2.5 text-[11px] text-zinc-500">{JSON.parse(p.loans || "[]").join(", ")}</td>
-                    <td className="px-3 py-2.5 font-semibold text-zinc-800">{fmtInr(p.gross)}</td>
-                    <td className="px-3 py-2.5 text-zinc-600">{fmtInr(p.tds)}</td>
-                    <td className="px-3 py-2.5 font-medium text-zinc-800">{fmtInr(p.net)}</td>
-                    <td className="px-3 py-2.5 text-[10.5px] text-zinc-500">{Object.entries(split).filter(([k]) => k !== "split_pct").map(([k, v]) => `${k}: ${fmtInr(v as number)}`).join(" · ")}</td>
-                    <td className="px-3 py-2.5"><Badge status=""><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold border ${PB_BADGE[p.status]}`}>{p.status}</span></Badge></td>
-                    <td className="px-3 py-2.5 text-[11px] text-zinc-500">{p.utr ?? "—"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {payouts.rows.length === 0 && <EmptyState title="No payout batches" sub="Compute a partner payout to create your first batch" />}
-        </Card>
-      )}
+          <div className="text-2xl font-bold text-slate-900 mt-1 num">
+            ₹0
+          </div>
+          <div className="text-xs text-slate-400 mt-0.5">
+            0 invoices this month · vs ₹0 (0) last
+          </div>
+        </div>
 
-      {tab === "fees" && (
-        <Card pad={false}>
-          <div className="p-3 border-b border-zinc-100 flex items-center gap-4 text-[12px]">
-            <span className="text-zinc-500">Processing <b className="text-zinc-800">{fmtInr(fees.totals.processing ?? 0)}</b></span>
-            <span className="text-zinc-500">Insurance <b className="text-zinc-800">{fmtInr(fees.totals.insurance ?? 0)}</b></span>
-            <span className="text-zinc-500">RTO <b className="text-zinc-800">{fmtInr(fees.totals.rto ?? 0)}</b></span>
-            <span className="text-zinc-500">Other <b className="text-zinc-800">{fmtInr(fees.totals.other ?? 0)}</b></span>
-            <span className="text-emerald-600 font-semibold ml-auto">Total {fmtInr(fees.totals.total ?? 0)}</span>
+        {/* Timeline Bar */}
+        <div className="flex-1 max-w-md flex flex-col justify-center">
+          <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium mb-1.5">
+            <span>May</span>
+            <span>Jun</span>
+            <span>Jul</span>
+            <span className="font-bold text-slate-700">Aug</span>
+            <span>Sept</span>
+            <span>Oct</span>
           </div>
-          <table className="w-full text-[12.5px]">
-            <thead><tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-              <th className="px-3 py-2.5 font-semibold">Customer</th><th className="px-3 py-2.5 font-semibold">Ref</th><th className="px-3 py-2.5 font-semibold">Processing</th><th className="px-3 py-2.5 font-semibold">Insurance</th><th className="px-3 py-2.5 font-semibold">RTO</th><th className="px-3 py-2.5 font-semibold">Other</th><th className="px-3 py-2.5 font-semibold">Total</th><th className="px-3 py-2.5 font-semibold">Disbursed</th>
-            </tr></thead>
-            <tbody>
-              {fees.rows.map((f: any) => (
-                <tr key={f.id} className="border-b border-zinc-50">
-                  <td className="px-3 py-2.5 font-medium text-zinc-800">{f.customer}</td>
-                  <td className="px-3 py-2.5 font-mono text-[11px] text-zinc-500">{f.ref}</td>
-                  <td className="px-3 py-2.5 text-zinc-700">{fmtInr(f.processing)}</td>
-                  <td className="px-3 py-2.5 text-zinc-700">{fmtInr(f.insurance)}</td>
-                  <td className="px-3 py-2.5 text-zinc-700">{fmtInr(f.rto)}</td>
-                  <td className="px-3 py-2.5 text-zinc-700">{fmtInr(f.other)}</td>
-                  <td className="px-3 py-2.5 font-semibold text-zinc-800">{fmtInr(f.processing + f.insurance + f.rto + f.other)}</td>
-                  <td className="px-3 py-2.5 text-zinc-400">{fmtDate(f.disbursed_at)}</td>
+          <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden flex">
+            <div className="w-1/6 bg-transparent" />
+            <div className="w-1/6 bg-transparent" />
+            <div className="w-1/6 bg-transparent" />
+            <div className="w-1/6 bg-slate-400 rounded-sm" />
+            <div className="w-1/6 bg-transparent" />
+            <div className="w-1/6 bg-transparent" />
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          SEARCH FILTER (Matching Screenshot 3 exactly)
+         ========================================================================= */}
+      <div className="relative">
+        <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input
+          type="text"
+          placeholder="Search by name, loan ref, A/C no, invoice #..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200/90 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-xs"
+        />
+      </div>
+
+      {/* =========================================================================
+          INCOME TABLE (Matching Screenshot 3 exactly)
+         ========================================================================= */}
+      <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden shadow-xs">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[10px] font-bold">
+              <tr>
+                <th className="px-4 py-3">LOAN REF / LEAD</th>
+                <th className="px-4 py-3">BILL TO (PARTY)</th>
+                <th className="px-4 py-3">SCHEME</th>
+                <th className="px-4 py-3">DISBURSED</th>
+                <th className="px-4 py-3">COMMISSION</th>
+                <th className="px-4 py-3">RECEIVED</th>
+                <th className="px-4 py-3">STATUS</th>
+                <th className="px-4 py-3">DATE</th>
+                <th className="px-4 py-3 text-right">ACTION</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredItems.map((item) => (
+                <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
+                  <td className="px-4 py-3.5 space-y-1">
+                    <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      {item.badge}
+                    </span>
+                    <div className="text-xs font-medium text-slate-800">{item.title}</div>
+                  </td>
+                  <td className="px-4 py-3.5 font-bold text-slate-900">{item.party}</td>
+                  <td className="px-4 py-3.5 italic text-slate-500">{item.scheme}</td>
+                  <td className="px-4 py-3.5 text-slate-400">{item.disbursed}</td>
+                  <td className="px-4 py-3.5 font-bold text-slate-900 num">{item.commission}</td>
+                  <td className="px-4 py-3.5 text-slate-400">{item.received}</td>
+                  <td className="px-4 py-3.5">
+                    <span className="inline-flex px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                      {item.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3.5 text-slate-500 text-[11px]">{item.date}</td>
+                  <td className="px-4 py-3.5 text-right space-x-1.5 whitespace-nowrap">
+                    <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      {item.receivedStatus}
+                    </span>
+                    <button
+                      onClick={() => alert(`Generating Invoice for ${item.party}...`)}
+                      className="px-2.5 py-1 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs cursor-pointer"
+                    >
+                      Invoice
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`Cancel invoice for ${item.party}?`)) {
+                          setIncomeItems(incomeItems.filter((i) => i.id !== item.id));
+                        }
+                      }}
+                      className="px-2 py-1 text-slate-500 hover:text-rose-600 text-xs font-semibold cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </Card>
-      )}
+        </div>
+      </div>
 
-      {tab === "received" && (
-        <Card pad={false}>
-          <div className="p-3 border-b border-zinc-100 flex items-center gap-4 text-[12px]">
-            <span className="text-zinc-500">Total received <b className="text-emerald-600">{fmtInr(income.rows.filter((r: any) => r.status === "received").reduce((s: number, r: any) => s + r.net, 0))}</b></span>
-            <span className="text-zinc-500">GST received <b className="text-zinc-800">{fmtInr(income.rows.filter((r: any) => r.status === "received").reduce((s: number, r: any) => s + r.gst, 0))}</b></span>
-            <span className="text-zinc-400 ml-auto text-[11px]">Bank-received commissions — your inbound ledger</span>
+      {/* Modal: Create Income */}
+      {createIncomeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setCreateIncomeOpen(false)} />
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-10 p-5">
+            <h3 className="font-bold text-slate-900 text-sm mb-3">Create Direct Income Entry</h3>
+            <form onSubmit={handleCreateIncome} className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Bill to Party</label>
+                <input
+                  required
+                  value={incomeForm.party}
+                  onChange={(e) => setIncomeForm({ ...incomeForm, party: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-blue-600"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Scheme Description</label>
+                <input
+                  required
+                  value={incomeForm.scheme}
+                  onChange={(e) => setIncomeForm({ ...incomeForm, scheme: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-blue-600"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Commission Amount (₹)</label>
+                <input
+                  type="number"
+                  required
+                  value={incomeForm.amount}
+                  onChange={(e) => setIncomeForm({ ...incomeForm, amount: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-blue-600 num"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setCreateIncomeOpen(false)}
+                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-xs cursor-pointer"
+                >
+                  Save Entry
+                </button>
+              </div>
+            </form>
           </div>
-          <table className="w-full text-[12.5px]">
-            <thead><tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-              <th className="px-3 py-2.5 font-semibold">Date</th><th className="px-3 py-2.5 font-semibold">Loan / Bank</th><th className="px-3 py-2.5 font-semibold">Borrower</th><th className="px-3 py-2.5 font-semibold">Gross</th><th className="px-3 py-2.5 font-semibold">Received</th><th className="px-3 py-2.5 font-semibold">UTR</th><th className="px-3 py-2.5 font-semibold">Invoice</th>
-            </tr></thead>
-            <tbody>
-              {income.rows.filter((r: any) => r.status === "received").map((c: any) => (
-                <tr key={c.id} className="border-b border-zinc-50">
-                  <td className="px-3 py-2.5 text-zinc-500">{fmtDate(c.received_at)}</td>
-                  <td className="px-3 py-2.5 font-medium text-zinc-800">{c.ref}<div className="text-[11px] text-zinc-400">{c.lender_name}</div></td>
-                  <td className="px-3 py-2.5 text-zinc-600">{c.borrower}</td>
-                  <td className="px-3 py-2.5 font-semibold text-zinc-800">{fmtInr(c.gross)}</td>
-                  <td className="px-3 py-2.5 font-medium text-emerald-600">{fmtInr(c.net)}</td>
-                  <td className="px-3 py-2.5 font-mono text-[11px] text-zinc-500">{c.utr ?? "—"}</td>
-                  <td className="px-3 py-2.5 text-zinc-500">{c.invoice_no ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {income.rows.filter((r: any) => r.status === "received").length === 0 && <EmptyState title="No bank receipts yet" sub="Once a lender pays a commission on a disbursed loan, the entry shows up here" />}
-        </Card>
-      )}
-
-      {tab === "parent_dsa" && (
-        <Card pad={false}>
-          <div className="p-3 border-b border-zinc-100 flex items-center gap-4 text-[12px]">
-            <span className="text-zinc-500">Expected from parents <b className="text-zinc-800">{fmtInr(receivable.total ?? 0)}</b></span>
-            <span className="text-zinc-500">Received <b className="text-emerald-600">{fmtInr(income.totals.received ?? 0)}</b></span>
-            <span className="text-zinc-400 ml-auto text-[11px]">Loans booked under a parent DSA's code — the bank pays the parent, you collect from them</span>
-          </div>
-          <table className="w-full text-[12.5px]">
-            <thead><tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-              <th className="px-3 py-2.5 font-semibold">Loan</th><th className="px-3 py-2.5 font-semibold">Parent DSA</th><th className="px-3 py-2.5 font-semibold">Bank</th><th className="px-3 py-2.5 font-semibold">Gross</th><th className="px-3 py-2.5 font-semibold">Expected</th><th className="px-3 py-2.5 font-semibold">Status</th>
-            </tr></thead>
-            <tbody>
-              {receivable.rows.map((r: any) => (
-                <tr key={r.id} className="border-b border-zinc-50">
-                  <td className="px-3 py-2.5 font-mono text-[11.5px] font-semibold text-zinc-800">{r.ref}</td>
-                  <td className="px-3 py-2.5 text-zinc-600">Via parent DSA</td>
-                  <td className="px-3 py-2.5 text-zinc-600">{r.lender_name}</td>
-                  <td className="px-3 py-2.5 font-semibold text-zinc-800">{fmtInr(r.gross)}</td>
-                  <td className="px-3 py-2.5 text-zinc-500">{fmtDate(r.created_at)}</td>
-                  <td className="px-3 py-2.5"><Badge status=""><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold border border-amber-200 bg-amber-50 text-amber-700">Outstanding to collect</span></Badge></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {receivable.rows.length === 0 && <EmptyState title="No loans booked under a parent DSA code yet" sub="When a loan uses a parent DSA's code, it appears here" />}
-        </Card>
-      )}
-
-      {tab === "payable" && (
-        <Card pad={false}>
-          <div className="p-3 border-b border-zinc-100 flex items-center gap-4 text-[12px]">
-            <span className="text-zinc-500">To be paid <b className="text-amber-600">{fmtInr(payouts.rows.filter((p: any) => p.status !== "paid").reduce((s: number, p: any) => s + p.net, 0))}</b></span>
-            <span className="text-zinc-400 ml-auto text-[11px]">Net commitment across draft + approved batches — what you still owe partners</span>
-          </div>
-          <table className="w-full text-[12.5px]">
-            <thead><tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-              <th className="px-3 py-2.5 font-semibold">Batch</th><th className="px-3 py-2.5 font-semibold">Payee</th><th className="px-3 py-2.5 font-semibold">Gross</th><th className="px-3 py-2.5 font-semibold">TDS</th><th className="px-3 py-2.5 font-semibold">Net</th><th className="px-3 py-2.5 font-semibold">Status</th><th className="px-3 py-2.5 font-semibold">Created</th>
-            </tr></thead>
-            <tbody>
-              {payouts.rows.filter((p: any) => p.status !== "paid").map((p: any) => (
-                <tr key={p.id} className="border-b border-zinc-50">
-                  <td className="px-3 py-2.5 font-mono text-[11.5px] font-semibold text-zinc-800">{p.batch_ref}</td>
-                  <td className="px-3 py-2.5 text-zinc-700">{p.payee_name}</td>
-                  <td className="px-3 py-2.5 font-semibold text-zinc-800">{fmtInr(p.gross)}</td>
-                  <td className="px-3 py-2.5 text-zinc-600">{fmtInr(p.tds)}</td>
-                  <td className="px-3 py-2.5 font-medium text-zinc-800">{fmtInr(p.net)}</td>
-                  <td className="px-3 py-2.5"><Badge status=""><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold border ${PB_BADGE[p.status]}`}>{p.status}</span></Badge></td>
-                  <td className="px-3 py-2.5 text-zinc-400">{fmtDate(p.created_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {payouts.rows.filter((p: any) => p.status !== "paid").length === 0 && <EmptyState title="Nothing payable" sub="Every batch is either paid in full or hasn't been approved yet" />}
-        </Card>
-      )}
-
-      {tab === "paid" && (
-        <Card pad={false}>
-          <div className="p-3 border-b border-zinc-100 flex items-center gap-4 text-[12px]">
-            <span className="text-zinc-500">Total paid <b className="text-emerald-600">{fmtInr(payouts.rows.filter((p: any) => p.status === "paid").reduce((s: number, p: any) => s + p.net, 0))}</b></span>
-            <span className="text-zinc-500">TDS withheld <b className="text-zinc-800">{fmtInr(payouts.rows.filter((p: any) => p.status === "paid").reduce((s: number, p: any) => s + p.tds, 0))}</b></span>
-            <span className="text-zinc-400 ml-auto text-[11px]">Your outbound ledger — batches actually paid to partners</span>
-          </div>
-          <table className="w-full text-[12.5px]">
-            <thead><tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-              <th className="px-3 py-2.5 font-semibold">Date</th><th className="px-3 py-2.5 font-semibold">Batch</th><th className="px-3 py-2.5 font-semibold">Payee</th><th className="px-3 py-2.5 font-semibold">Net</th><th className="px-3 py-2.5 font-semibold">Mode</th><th className="px-3 py-2.5 font-semibold">UTR</th>
-            </tr></thead>
-            <tbody>
-              {payouts.rows.filter((p: any) => p.status === "paid").map((p: any) => (
-                <tr key={p.id} className="border-b border-zinc-50">
-                  <td className="px-3 py-2.5 text-zinc-500">{fmtDate(p.paid_at)}</td>
-                  <td className="px-3 py-2.5 font-mono text-[11.5px] font-semibold text-zinc-800">{p.batch_ref}</td>
-                  <td className="px-3 py-2.5 text-zinc-700">{p.payee_name}</td>
-                  <td className="px-3 py-2.5 font-medium text-emerald-600">{fmtInr(p.net)}</td>
-                  <td className="px-3 py-2.5 text-zinc-600">{p.mode}</td>
-                  <td className="px-3 py-2.5 font-mono text-[11px] text-zinc-500">{p.utr ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {payouts.rows.filter((p: any) => p.status === "paid").length === 0 && <EmptyState title="No paid payouts" sub="Mark a batch as paid on the Payouts tab and it lands here" />}
-        </Card>
-      )}
-
-      {tab === "expenses" && (
-        <Card pad={false}>
-          <div className="p-3 border-b border-zinc-100 flex items-center justify-between">
-            <div className="flex gap-4 text-[12px]"><span className="text-zinc-500">Total <b className="text-zinc-800">{fmtInr(expenses.totals.amount ?? 0)}</b></span><span className="text-zinc-500">Paid <b className="text-emerald-600">{fmtInr(expenses.totals.paid ?? 0)}</b></span></div>
-            <button className="btn btn-secondary text-[12px]" onClick={() => setExpenseOpen(true)}>+ Post Expense</button>
-          </div>
-          <table className="w-full text-[12.5px]">
-            <thead><tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-              <th className="px-3 py-2.5 font-semibold">Expense</th><th className="px-3 py-2.5 font-semibold">Category</th><th className="px-3 py-2.5 font-semibold">Vendor</th><th className="px-3 py-2.5 font-semibold">Amount</th><th className="px-3 py-2.5 font-semibold">Date</th><th className="px-3 py-2.5 font-semibold">Status</th>
-            </tr></thead>
-            <tbody>
-              {expenses.rows.map((e: any) => (
-                <tr key={e.id} className="border-b border-zinc-50">
-                  <td className="px-3 py-2.5 font-medium text-zinc-800">{e.title}</td>
-                  <td className="px-3 py-2.5 text-zinc-600">{e.category}</td>
-                  <td className="px-3 py-2.5 text-zinc-500">{e.vendor ?? "—"}</td>
-                  <td className="px-3 py-2.5 font-semibold text-zinc-800">{fmtInr(e.amount)}</td>
-                  <td className="px-3 py-2.5 text-zinc-400">{fmtDate(e.expense_date)}</td>
-                  <td className="px-3 py-2.5"><Badge status=""><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold border ${e.paid ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-zinc-200 bg-zinc-100 text-zinc-600"}`}>{e.paid ? "Paid" : "Due"}</span></Badge></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      )}
-
-      {tab === "accounting" && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card><CardTitle title="Income (Commissions)" /><div className="text-2xl font-bold text-emerald-600 pt-2">{fmtInr(acct.income ?? 0)}</div><div className="text-[11.5px] text-zinc-400 mt-1">Received {fmtInr(acct.incomeReceived ?? 0)} · Receivable {fmtInr(acct.receivable ?? 0)}</div></Card>
-          <Card><CardTitle title="Expenses" /><div className="text-2xl font-bold text-rose-600 pt-2">{fmtInr(acct.expenses ?? 0)}</div><div className="text-[11.5px] text-zinc-400 mt-1">Paid {fmtInr(acct.expensesPaid ?? 0)} · Payouts to partners {fmtInr(acct.paidOut ?? 0)}</div></Card>
-          <Card><CardTitle title="Net Profit" /><div className={`text-2xl font-bold pt-2 ${acct.netProfit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtInr(acct.netProfit ?? 0)}</div><div className="text-[11.5px] text-zinc-400 mt-1">Received − expenses − partner payouts</div></Card>
-          {(acct.byCategory ?? []).length > 0 && (
-            <Card className="md:col-span-3"><CardTitle title="Expenses by Category" /><div className="flex flex-wrap gap-3 pt-3">{(acct.byCategory ?? []).map((c: any) => (
-              <div key={c.category} className="rounded-lg border border-zinc-100 px-3 py-2 text-[12px]"><span className="text-zinc-500">{c.category}</span> <b className="text-zinc-800 ml-1">{fmtInr(c.amount)}</b></div>
-            ))}</div></Card>
-          )}
         </div>
       )}
-
-      <PayoutModal open={payoutOpen} onClose={() => setPayoutOpen(false)} partners={partners} apps={incomeApps} onDone={() => { setPayoutOpen(false); load(); }} />
-      <ExpenseModal open={expenseOpen} onClose={() => setExpenseOpen(false)} onDone={() => { setExpenseOpen(false); load(); }} />
     </div>
-  );
-}
-
-function PayoutModal({ open, onClose, partners, apps, onDone }: any) {
-  const [payeeId, setPayeeId] = useState("");
-  const [appIds, setAppIds] = useState<number[]>([]);
-  const [mode, setMode] = useState("NEFT");
-  const [busy, setBusy] = useState(false);
-  const payee = partners.find((p: any) => p.id === Number(payeeId));
-  const selected = apps.filter((a: any) => appIds.includes(a.id));
-  const gross = selected.reduce((s: number, a: any) => s + a.commission_gross, 0);
-  const tds = Math.round(gross * 0.02);
-  const net = gross - tds;
-  const share = Math.round(net * 0.6);
-
-  const save = async () => {
-    setBusy(true);
-    try {
-      await api("/gn/finance/payouts", { method: "POST", body: { payee_type: "Partner", payee_id: Number(payeeId), payee_name: payee.name, app_ids: appIds, mode } });
-      onDone();
-    } finally { setBusy(false); }
-  };
-
-  return (
-    <Modal open={open} onClose={onClose} title="Compute Partner Payout" wide>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Partner"><select className="input text-[12.5px]" value={payeeId} onChange={(e) => setPayeeId(e.target.value)}><option value="">Select partner…</option>{partners.map((p: any) => <option key={p.id} value={p.id}>{p.name} · {p.type}</option>)}</select></Field>
-        <Field label="Mode"><select className="input text-[12.5px]" value={mode} onChange={(e) => setMode(e.target.value)}>{["NEFT", "IMPS", "UPI", "Cheque"].map((m) => <option key={m}>{m}</option>)}</select></Field>
-      </div>
-      <Field label={`Select earned commissions (${apps.length} available)`}>
-        <div className="border border-zinc-200 rounded-md max-h-44 overflow-y-auto divide-y divide-zinc-50">
-          {apps.map((a: any) => (
-            <label key={a.id} className="flex items-center gap-2.5 px-3 py-1.5 text-[12px] hover:bg-zinc-50 cursor-pointer">
-              <input type="checkbox" checked={appIds.includes(a.id)} onChange={() => setAppIds(appIds.includes(a.id) ? appIds.filter((x) => x !== a.id) : [...appIds, a.id])} />
-              <span className="font-medium text-zinc-800">{a.ref}</span>
-              <span className="text-zinc-400 flex-1">{a.name}</span>
-              <span className="font-semibold text-emerald-600">{fmtInr(a.commission_gross)}</span>
-            </label>
-          ))}
-          {apps.length === 0 && <div className="px-3 py-4 text-[12px] text-zinc-400">No earned commissions to batch.</div>}
-        </div>
-      </Field>
-      <div className="mt-3 rounded-lg border border-zinc-100 bg-zinc-50/60 p-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-[12px]">
-        <div><div className="text-[10px] uppercase text-zinc-400 font-semibold">Gross</div><b className="text-zinc-800">{fmtInr(gross)}</b></div>
-        <div><div className="text-[10px] uppercase text-zinc-400 font-semibold">TDS (2%)</div><b className="text-zinc-800">{fmtInr(tds)}</b></div>
-        <div><div className="text-[10px] uppercase text-zinc-400 font-semibold">Net</div><b className="text-zinc-800">{fmtInr(net)}</b></div>
-        <div><div className="text-[10px] uppercase text-emerald-600 font-semibold">Partner share (60%)</div><b className="text-emerald-700">{fmtInr(share)}</b></div>
-      </div>
-      <div className="flex justify-end gap-2 mt-4">
-        <button className="btn btn-secondary text-[12px]" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary text-[12px]" disabled={busy || !payeeId || appIds.length === 0} onClick={save}>{busy ? "Creating…" : `Create Payout Batch (${fmtInr(share)})`}</button>
-      </div>
-    </Modal>
-  );
-}
-
-function ExpenseModal({ open, onClose, onDone }: any) {
-  const [f, setF] = useState<any>({ title: "", category: "operations", amount: 0 });
-  const [busy, setBusy] = useState(false);
-  const save = async () => {
-    setBusy(true);
-    try { await api("/gn/finance/expenses", { method: "POST", body: { ...f, amount: Number(f.amount) } }); onDone(); } finally { setBusy(false); }
-  };
-  return (
-    <Modal open={open} onClose={onClose} title="Post Expense">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Title"><input className="input text-[12.5px]" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></Field>
-        <Field label="Category"><select className="input text-[12.5px]" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })}>{["operations", "rent", "technology", "marketing", "payroll", "utilities", "professional", "travel"].map((c) => <option key={c}>{c}</option>)}</select></Field>
-        <Field label="Amount (₹)"><input className="input text-[12.5px]" type="number" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} /></Field>
-      </div>
-      <div className="flex justify-end gap-2 mt-4">
-        <button className="btn btn-secondary text-[12px]" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary text-[12px]" disabled={busy || !f.title || !f.amount} onClick={save}>{busy ? "Posting…" : "Post Expense"}</button>
-      </div>
-    </Modal>
   );
 }

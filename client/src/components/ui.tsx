@@ -10,8 +10,8 @@ export function CardTitle({ title, sub, right }: { title: string; sub?: ReactNod
   return (
     <div className="flex items-start justify-between mb-3">
       <div>
-        <h3 className="text-[13px] font-semibold text-zinc-900">{title}</h3>
-        {sub && <p className="text-[11.5px] text-zinc-500 mt-0.5">{sub}</p>}
+        <h3 className="text-[13.5px] font-semibold text-white tracking-tight">{title}</h3>
+        {sub && <div className="text-[11.5px] text-slate-400 mt-0.5">{sub}</div>}
       </div>
       {right}
     </div>
@@ -22,9 +22,9 @@ export function PageHeader({ title, sub, actions, breadcrumb }: { title: string;
   return (
     <div className="flex items-end justify-between gap-4 mb-5 flex-wrap">
       <div>
-        {breadcrumb && <div className="text-[11px] text-zinc-400 mb-1">{breadcrumb}</div>}
-        <h1 className="text-[19px] font-semibold tracking-tight text-zinc-900">{title}</h1>
-        {sub && <p className="text-[12.5px] text-zinc-500 mt-1">{sub}</p>}
+        {breadcrumb && <div className="text-[11.5px] font-medium text-slate-400 mb-1">{breadcrumb}</div>}
+        <h1 className="text-[20px] font-bold tracking-tight text-white">{title}</h1>
+        {sub && <p className="text-[13px] text-slate-400 mt-1">{sub}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
@@ -37,17 +37,17 @@ export function Badge({ status, children }: { status?: string | null; children?:
 
 export function Stat({ label, value, sub, tone = "default", icon }: { label: string; value: ReactNode; sub?: ReactNode; tone?: "default" | "green" | "red" | "amber" | "brand"; icon?: ReactNode }) {
   const tones: Record<string, string> = {
-    default: "text-zinc-900", green: "text-emerald-700", red: "text-rose-700", amber: "text-amber-700", brand: "text-brand-600"
+    default: "text-white", green: "text-emerald-400", red: "text-rose-400", amber: "text-amber-400", brand: "text-indigo-400"
   };
   return (
-    <Card className="relative overflow-hidden">
+    <Card className="relative overflow-hidden bg-[#111827] border-[#1e293b]">
       <div className="flex items-start justify-between">
         <div>
-          <div className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">{label}</div>
-          <div className={`mt-1.5 text-[22px] font-semibold num tracking-tight ${tones[tone]}`}>{value}</div>
-          {sub && <div className="mt-1 text-[11.5px] text-zinc-500">{sub}</div>}
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{label}</div>
+          <div className={`mt-1.5 text-[23px] font-bold num tracking-tight ${tones[tone]}`}>{value}</div>
+          {sub && <div className="mt-1 text-[11.5px] text-slate-400">{sub}</div>}
         </div>
-        {icon && <div className="text-zinc-300">{icon}</div>}
+        {icon && <div className="text-slate-500">{icon}</div>}
       </div>
     </Card>
   );
@@ -55,11 +55,11 @@ export function Stat({ label, value, sub, tone = "default", icon }: { label: str
 
 export function Tabs({ items, active, onChange }: { items: { key: string; label: string; count?: number }[]; active: string; onChange: (k: string) => void }) {
   return (
-    <div className="flex items-center gap-1 border-b border-zinc-200 pb-px mb-4 overflow-x-auto">
+    <div className="flex items-center gap-1 border-b border-[#1e293b] pb-px mb-4 overflow-x-auto">
       {items.map((it) => (
         <button key={it.key} className={`tabs-btn ${active === it.key ? "tabs-btn-active" : ""}`} onClick={() => onChange(it.key)}>
           {it.label}
-          {it.count !== undefined && <span className="ml-1 text-[10.5px] font-semibold text-zinc-400">{it.count}</span>}
+          {it.count !== undefined && <span className="ml-1.5 text-[10.5px] font-bold px-1.5 py-0.5 rounded-full bg-[#1e293b] text-slate-300">{it.count}</span>}
         </button>
       ))}
     </div>
@@ -78,14 +78,14 @@ export function Field({ label, children, className = "", span }: { label: string
 export function Modal({ open, onClose, title, children, wide }: { open: boolean; onClose: () => void; title: string; children: ReactNode; wide?: boolean }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-zinc-950/30 backdrop-blur-[2px]" onClick={onClose} />
-      <div className={`relative card shadow-xl w-full ${wide ? "max-w-3xl" : "max-w-md"} max-h-[85vh] overflow-y-auto`}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 sticky top-0 bg-white rounded-t-lg">
-          <h3 className="text-[13.5px] font-semibold text-zinc-900">{title}</h3>
-          <button className="text-zinc-400 hover:text-zinc-700 cursor-pointer" onClick={onClose}><X size={15} /></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-[3px]" onClick={onClose} />
+      <div className={`relative card shadow-2xl w-full ${wide ? "max-w-3xl" : "max-w-md"} max-h-[85vh] overflow-y-auto bg-[#111827] border-[#1e293b]`}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e293b] sticky top-0 bg-[#111827] rounded-t-xl z-10">
+          <h3 className="text-[14px] font-bold text-white tracking-tight">{title}</h3>
+          <button className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-[#1e293b] cursor-pointer" onClick={onClose}><X size={16} /></button>
         </div>
-        <div className="p-4">{children}</div>
+        <div className="p-5">{children}</div>
       </div>
     </div>
   );
@@ -95,13 +95,13 @@ export function Drawer({ open, onClose, title, children, width = "max-w-xl" }: {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-zinc-950/30 backdrop-blur-[2px]" onClick={onClose} />
-      <div className={`absolute right-0 top-0 h-full ${width} w-full bg-white shadow-2xl flex flex-col`}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
-          <h3 className="text-[13.5px] font-semibold text-zinc-900">{title}</h3>
-          <button className="text-zinc-400 hover:text-zinc-700 cursor-pointer" onClick={onClose}><X size={15} /></button>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-[3px]" onClick={onClose} />
+      <div className={`absolute right-0 top-0 h-full ${width} w-full bg-[#111827] border-l border-[#1e293b] shadow-2xl flex flex-col`}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e293b] bg-[#0c1220]">
+          <h3 className="text-[14.5px] font-bold text-white">{title}</h3>
+          <button className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-[#1e293b] cursor-pointer" onClick={onClose}><X size={16} /></button>
         </div>
-        <div className="flex-1 overflow-y-auto p-4">{children}</div>
+        <div className="flex-1 overflow-y-auto p-5">{children}</div>
       </div>
     </div>
   );
@@ -208,7 +208,7 @@ export function DataTable<T extends { id: number }>({
       <div className="overflow-x-auto -mx-4 px-4">
         <table className="w-full border-collapse min-w-full">
           <thead>
-            <tr className="border-b border-zinc-200">
+            <tr className="border-b border-[#1e293b]">
               {colList.map((c) => (
                 <th
                   key={c.key}
@@ -220,9 +220,9 @@ export function DataTable<T extends { id: number }>({
                     else { setSortKey(c.key); setSortDir(1); }
                   }}
                 >
-                  <span className={`inline-flex items-center gap-1 ${c.sortValue ? "cursor-pointer hover:text-zinc-900" : ""}`}>
+                  <span className={`inline-flex items-center gap-1 ${c.sortValue ? "cursor-pointer hover:text-white" : ""}`}>
                     {c.header}
-                    {c.sortValue && <ArrowUpDown size={11} className="text-zinc-300" />}
+                    {c.sortValue && <ArrowUpDown size={11} className="text-slate-500" />}
                   </span>
                 </th>
               ))}
@@ -232,13 +232,13 @@ export function DataTable<T extends { id: number }>({
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={colList.length} className="py-12 text-center">
-                  <Inbox size={28} className="mx-auto text-zinc-300 mb-2" />
-                  <div className="text-[13px] text-zinc-500">No records match</div>
+                  <Inbox size={28} className="mx-auto text-slate-600 mb-2" />
+                  <div className="text-[13px] text-slate-400">No records match</div>
                 </td>
               </tr>
             )}
             {filtered.map((row) => (
-              <tr key={row.id} className={`tr-hover border-b border-zinc-100 ${onRowClick ? "cursor-pointer" : ""}`} onClick={() => onRowClick?.(row)}>
+              <tr key={row.id} className={`tr-hover border-b border-[#182235] ${onRowClick ? "cursor-pointer" : ""}`} onClick={() => onRowClick?.(row)}>
                 {colList.map((c) => (
                   <td key={c.key} className={`td ${dense ? "py-2" : ""} ${c.align === "right" ? "text-right num" : ""}`}>{c.render(row)}</td>
                 ))}
@@ -248,8 +248,8 @@ export function DataTable<T extends { id: number }>({
         </table>
       </div>
       {total !== undefined && (
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100">
-          <div className="text-[11.5px] text-zinc-500">
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#182235]">
+          <div className="text-[11.5px] text-slate-400">
             {total} records · page {(page ?? 1)} of {pages}
           </div>
           <div className="flex items-center gap-1">
@@ -265,17 +265,17 @@ export function DataTable<T extends { id: number }>({
 export function EmptyState({ title, sub }: { title: string; sub?: string }) {
   return (
     <div className="py-14 text-center">
-      <Inbox size={30} className="mx-auto text-zinc-300 mb-3" />
-      <div className="text-[13.5px] font-medium text-zinc-700">{title}</div>
-      {sub && <div className="text-[12px] text-zinc-500 mt-1">{sub}</div>}
+      <Inbox size={30} className="mx-auto text-slate-600 mb-3" />
+      <div className="text-[13.5px] font-semibold text-slate-200">{title}</div>
+      {sub && <div className="text-[12px] text-slate-400 mt-1">{sub}</div>}
     </div>
   );
 }
 
 export function Progress({ value, tone = "brand" }: { value: number; tone?: "brand" | "green" | "red" | "amber" }) {
-  const tones: Record<string, string> = { brand: "bg-brand-600", green: "bg-emerald-500", red: "bg-rose-500", amber: "bg-amber-500" };
+  const tones: Record<string, string> = { brand: "bg-indigo-500", green: "bg-emerald-500", red: "bg-rose-500", amber: "bg-amber-500" };
   return (
-    <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+    <div className="w-full h-1.5 bg-[#182235] rounded-full overflow-hidden">
       <div className={`h-full ${tones[tone]} rounded-full transition-all`} style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
     </div>
   );
@@ -283,9 +283,9 @@ export function Progress({ value, tone = "brand" }: { value: number; tone?: "bra
 
 export function KV({ k, v, mono }: { k: string; v: ReactNode; mono?: boolean }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 py-1.5 border-b border-zinc-50 last:border-0">
-      <span className="text-[11.5px] text-zinc-500">{k}</span>
-      <span className={`text-[12.5px] font-medium text-zinc-800 text-right ${mono ? "num" : ""}`}>{v}</span>
+    <div className="flex items-baseline justify-between gap-3 py-1.5 border-b border-[#182235] last:border-0">
+      <span className="text-[11.5px] text-slate-400">{k}</span>
+      <span className={`text-[12.5px] font-semibold text-white text-right ${mono ? "num" : ""}`}>{v}</span>
     </div>
   );
 }

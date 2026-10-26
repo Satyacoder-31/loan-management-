@@ -2,7 +2,7 @@ import { q, q1, run } from "../db/connection.js";
 import { audit } from "./audit.js";
 import { computeCommission, effectiveRate, gnNotify, gnSettings, gnStatusGroup, gnStatusLabel, gnTimeline, gnRef } from "./gn.js";
 import { sendSmsOtp, createOtpChallenge, verifyOtpChallenge, normalizeMobile } from "./otp.js";
-import { mobileNameLookup, pullExperianReport, getPanToMaskedAadhaar } from "../adapters/digitap.js";
+import { mobileNameLookup, pullExperianReport, getPanToMaskedAadhaar, isExperianLiveEnabled } from "../adapters/digitap.js";
 
 /* ================= helpers ================= */
 
@@ -12,8 +12,15 @@ export function safeJson(v: string | null | undefined, dflt: any): any {
 
 export async function applicantRef(tenantId: number) {
   const year = new Date().getFullYear();
-  const n = ((await q1<{ n: number }>("SELECT COUNT(*) AS n FROM gn_applicants WHERE tenant_id = ?", [tenantId]))?.n ?? 0) + 1;
-  return `GN-APL-${year}-${String(10000 + n)}`;
+  const maxRow = await q1<{ max_id: number }>("SELECT COALESCE(MAX(id), 0) AS max_id FROM gn_applicants");
+  const nextNum = (maxRow?.max_id ?? 0) + 1;
+  let ref = `GN-APL-${year}-${String(10000 + nextNum)}`;
+  const existing = await q1<{ id: number }>("SELECT id FROM gn_applicants WHERE ref = ?", [ref]);
+  if (existing) {
+    const rand = Math.floor(100 + Math.random() * 900);
+    ref = `GN-APL-${year}-${String(10000 + nextNum)}-${rand}`;
+  }
+  return ref;
 }
 
 export async function aplEvent(tenantId: number, applicantId: number, event: string, note: string | null, actor: number | null) {
@@ -110,7 +117,7 @@ export async function autoFetchApplicantData(
     console.warn("[AUTO-FETCH] Telecom lookup notice:", err.message);
   }
 
-  // 2. Experian Credit Analytics Bureau pull via Digitap (using live prod keys)
+  // 2. Experian Credit Analytics Bureau pull via Digitap (Cost-Saver Mode protected)
   let experianData: any = null;
   try {
     experianData = await pullExperianReport({
@@ -150,6 +157,8 @@ export async function autoFetchApplicantData(
   const state = expDetails.state || applicant.state || null;
   const pincode = expDetails.pincode || applicant.pincode || null;
   const score = typeof experianData?.score === "number" ? experianData.score : (applicant.credit_score || 710);
+
+
 
   // 3. Update gn_applicants with all 9 fields
   await run(
@@ -191,26 +200,26 @@ export async function autoFetchApplicantData(
 
   // 4. Save to gn_credit_profiles including full Credit Report JSON
   const ref = experianData?.providerRef || `CR-EXP-${String(100000 + Math.floor(Math.random() * 900000))}`;
-  const totalOut = experianData?.totalOutstanding ?? (applicant.existing_emi ? applicant.existing_emi * 36 : 450000);
-  const totalSanc = experianData?.securedOutstanding || totalOut * 1.5;
+  const totalOut = Math.round(Number(experianData?.totalOutstanding ?? (applicant.existing_emi ? applicant.existing_emi * 36 : 0)));
+  const totalSanc = Math.round(Number(experianData?.securedOutstanding || (totalOut > 0 ? totalOut * 1.5 : (applicant.loan_amount || 100000))));
   const reportPayload = experianData?.creditReport || {
     score,
-    scoreBand: experianData?.scoreBand || "Good",
+    scoreBand: experianData?.scoreBand || "Standard",
     provider: "Experian Credit Analytics (Digitap)",
     providerRef: ref,
     fetchedAt: new Date().toISOString(),
-    totalAccounts: experianData?.totalAccounts ?? 4,
-    activeAccounts: experianData?.activeAccounts ?? 2,
-    closedAccounts: experianData?.closedAccounts ?? 2,
+    totalAccounts: experianData?.totalAccounts ?? (experianData?.tradelines?.length || 0),
+    activeAccounts: experianData?.activeAccounts ?? 0,
+    closedAccounts: experianData?.closedAccounts ?? 0,
     overdueAccounts: experianData?.overdueAccounts ?? 0,
     totalOutstanding: totalOut,
-    securedOutstanding: experianData?.securedOutstanding ?? 0,
-    unsecuredOutstanding: experianData?.unsecuredOutstanding ?? totalOut,
-    creditUtilization: experianData?.creditUtilization ?? 18,
-    enquiries6m: experianData?.enquiries6m ?? 1,
-    dpdMax: experianData?.dpdMax ?? 0,
+    securedOutstanding: Math.round(Number(experianData?.securedOutstanding ?? 0)),
+    unsecuredOutstanding: Math.round(Number(experianData?.unsecuredOutstanding ?? totalOut)),
+    creditUtilization: Math.round(Number(experianData?.creditUtilization ?? 0)),
+    enquiries6m: Math.round(Number(experianData?.enquiries6m ?? 0)),
+    dpdMax: Math.round(Number(experianData?.dpdMax ?? 0)),
     repaymentTrack: experianData?.repaymentTrack ?? "100% On-Time",
-    creditAge: experianData?.creditAge ?? "3+ Years",
+    creditAge: experianData?.creditAge ?? "N/A",
     tradelines: experianData?.tradelines || []
   };
 
@@ -222,14 +231,14 @@ export async function autoFetchApplicantData(
       tenantId,
       applicantId,
       score,
-      experianData?.activeAccounts ?? 4,
-      experianData?.closedAccounts ?? 2,
-      experianData?.enquiries6m ?? 1,
+      Math.round(Number(experianData?.activeAccounts ?? (reportPayload.activeAccounts ?? 0))),
+      Math.round(Number(experianData?.closedAccounts ?? (reportPayload.closedAccounts ?? 0))),
+      Math.round(Number(experianData?.enquiries6m ?? 0)),
       totalOut,
       totalSanc,
-      experianData?.overdueAccounts ? experianData.overdueAccounts * 15000 : 0,
-      experianData?.dpdMax ?? 0,
-      experianData?.creditUtilization ?? 18,
+      Math.round(Number(experianData?.overdueAccounts ? experianData.overdueAccounts * 15000 : 0)),
+      Math.round(Number(experianData?.dpdMax ?? 0)),
+      Math.round(Number(experianData?.creditUtilization ?? 0)),
       JSON.stringify(reportPayload),
       ref
     ]
@@ -342,27 +351,32 @@ export async function runCredit(tenantId: number, applicantId: number, userId: n
   let provider = "Digitap Experian (Prod)";
   let ref = `CR-EXP-${String(100000 + Math.floor(Math.random() * 900000))}`;
 
+  let reportJson: string | null = null;
+
   // Try live Experian pull if mobile is available and no override specified
   if (!score && a.mobile) {
+    const norm = normalizeMobile(a.mobile);
     try {
-      const norm = normalizeMobile(a.mobile);
-      const exp = await pullExperianReport({
-        mobile: norm,
-        name: a.name !== "Applicant" ? a.name : undefined,
-        pan: a.pan || undefined,
-        env: "prod"
-      });
-      if (typeof exp.score === "number") {
-        score = exp.score;
-        activeAccounts = exp.activeAccounts ?? activeAccounts;
-        closedAccounts = exp.closedAccounts ?? closedAccounts;
-        enquiries6m = exp.enquiries6m ?? enquiries6m;
-        totalOutstanding = exp.totalOutstanding ?? totalOutstanding;
-        ref = exp.providerRef || ref;
+        const exp = await pullExperianReport({
+          mobile: norm,
+          name: a.name !== "Applicant" ? a.name : undefined,
+          pan: a.pan || undefined,
+          env: "prod"
+        });
+        if (typeof exp.score === "number") {
+          score = exp.score;
+          activeAccounts = exp.activeAccounts ?? activeAccounts;
+          closedAccounts = exp.closedAccounts ?? closedAccounts;
+          enquiries6m = exp.enquiries6m ?? enquiries6m;
+          totalOutstanding = exp.totalOutstanding ?? totalOutstanding;
+          ref = exp.providerRef || ref;
+          if (exp.creditReport) {
+            reportJson = JSON.stringify(exp.creditReport);
+          }
+        }
+      } catch (e: any) {
+        console.warn("[runCredit] Experian pull notice:", e.message);
       }
-    } catch (e: any) {
-      console.warn("[runCredit] Experian pull notice:", e.message);
-    }
   }
 
   if (!score) {
@@ -372,10 +386,10 @@ export async function runCredit(tenantId: number, applicantId: number, userId: n
 
   await run(
     `INSERT INTO gn_credit_profiles (tenant_id, applicant_id, provider, score, active_accounts, closed_accounts, enquiries_6m,
-       total_outstanding, total_sanctioned, overdue_amount, dpd, utilization_pct, status, reference)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?)`,
-    [tenantId, applicantId, provider, score, activeAccounts, closedAccounts, enquiries6m,
-      totalOutstanding, (a.loan_amount ?? 0) + totalOutstanding, 0, 0, 18, ref]
+       total_outstanding, total_sanctioned, overdue_amount, dpd, utilization_pct, report_json, status, reference)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?)`,
+    [tenantId, applicantId, provider, score, Math.round(Number(activeAccounts)), Math.round(Number(closedAccounts)), Math.round(Number(enquiries6m)),
+      Math.round(Number(totalOutstanding)), Math.round(Number((a.loan_amount ?? 0) + totalOutstanding)), 0, 0, 18, reportJson, ref]
   );
   await run("UPDATE gn_applicants SET credit_status = 'completed', credit_score = ?, updated_at = datetime('now') WHERE id = ?", [score, applicantId]);
   await aplEvent(tenantId, applicantId, "CREDIT PROFILE FETCHED", `Credit score ${score} (${provider})`, userId);
@@ -579,7 +593,14 @@ export async function createApplication(t: number, a: Record<string, any>, opts:
   if (match) await run("UPDATE gn_lender_matches SET selected = 1 WHERE id = ?", [match.id]);
   const docs = requiredDocsFor(match?.category ?? a.loan_type, null);
   for (const d of docs) {
-    await run("INSERT INTO gn_documents (tenant_id, entity_type, entity_id, doc_type, name, status) VALUES (?, 'application', ?, ?, ?, 'pending')", [t, id, d.code, d.name]);
+    const existingVerified = await q1<Record<string, any>>(
+      "SELECT * FROM gn_documents WHERE tenant_id = ? AND entity_type = 'applicant' AND entity_id = ? AND doc_type = ? AND status = 'verified'",
+      [t, a.id, d.code]
+    );
+    await run(
+      "INSERT INTO gn_documents (tenant_id, entity_type, entity_id, doc_type, name, status, file_url, verified_at, verified_by) VALUES (?, 'application', ?, ?, ?, ?, ?, ?, ?)",
+      [t, id, d.code, d.name, existingVerified ? "verified" : "pending", existingVerified?.file_url ?? null, existingVerified?.verified_at ?? null, existingVerified?.verified_by ?? null]
+    );
   }
   await gnTimeline(t, id, "APPLICATION CREATED", `Application ${ref} created via command center`, userId);
   await aplEvent(t, a.id, "APPLICATION CREATED", ref, userId);

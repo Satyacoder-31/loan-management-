@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Download, Upload } from "lucide-react";
 import { GN_PROCESS_FLOW, GN_WORKFLOW, gnProcessStage } from "../../lib/gn";
 import { api, fmtInr, getToken } from "../../lib/api";
 
@@ -6,18 +7,33 @@ import { api, fmtInr, getToken } from "../../lib/api";
 export function ProcessFlow({ status }: { status: string | null | undefined }) {
   const stage = gnProcessStage(status);
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3">
-      <div className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-2.5">Your loan process flow</div>
-      <div className="flex items-center">
+    <div className="rounded-2xl border border-[#1e293b] bg-gradient-to-r from-[#111827] via-[#131d31] to-[#111827] p-4.5 shadow-xl">
+      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center justify-between">
+        <span>Your loan process flow</span>
+        <span className="text-indigo-400 text-[10.5px] font-mono font-medium">Stage {stage + 1} of 6</span>
+      </div>
+      <div className="flex items-center flex-wrap md:flex-nowrap gap-y-3">
         {GN_PROCESS_FLOW.map((s, i) => (
           <div key={s} className="flex items-center flex-1 last:flex-none">
             <div className="flex items-center gap-2">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${i <= stage ? "bg-brand-600 text-white" : "bg-zinc-100 text-zinc-400"}`}>
-                {i + 1}
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10.5px] font-bold shrink-0 transition-all ${
+                i < stage 
+                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm"
+                  : i === stage 
+                  ? "bg-indigo-600 text-white ring-2 ring-indigo-500/40 shadow-md shadow-indigo-600/30" 
+                  : "bg-[#0c1220] text-slate-500 border border-[#22314d]"
+              }`}>
+                {i < stage ? "✓" : i + 1}
               </div>
-              <span className={`text-[11px] font-semibold whitespace-nowrap ${i <= stage ? "text-zinc-800" : "text-zinc-400"}`}>{s}</span>
+              <span className={`text-[11.5px] font-semibold whitespace-nowrap transition-colors ${
+                i === stage ? "text-white font-bold" : i < stage ? "text-slate-200" : "text-slate-500"
+              }`}>{s}</span>
             </div>
-            {i < GN_PROCESS_FLOW.length - 1 && <div className={`flex-1 h-0.5 mx-2 rounded ${i < stage ? "bg-brand-500" : "bg-zinc-100"}`} />}
+            {i < GN_PROCESS_FLOW.length - 1 && (
+              <div className={`flex-1 h-0.5 mx-2.5 rounded transition-all ${
+                i < stage ? "bg-emerald-500/60" : "bg-[#1e293b]"
+              }`} />
+            )}
           </div>
         ))}
       </div>
@@ -31,7 +47,7 @@ export function WorkflowStepper({ status, amount }: { status: string | null | un
   const reached = (i: number) => idx >= i;
   return (
     <div>
-      <div className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-3">Loan distribution workflow</div>
+      <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Loan distribution workflow</div>
       <div className="space-y-0">
         {GN_WORKFLOW.map((w, i) => {
           const done = reached(i);
@@ -39,17 +55,17 @@ export function WorkflowStepper({ status, amount }: { status: string | null | un
           return (
             <div key={w.step} className="flex gap-3">
               <div className="flex flex-col items-center">
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9.5px] font-bold shrink-0 ${done ? "bg-emerald-500 text-white" : current ? "bg-brand-600 text-white ring-4 ring-brand-100" : "bg-zinc-100 text-zinc-400"}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9.5px] font-bold shrink-0 ${done ? "bg-emerald-500 text-white" : current ? "bg-indigo-600 text-white ring-4 ring-indigo-500/30" : "bg-[#0c1220] text-slate-500 border border-[#22314d]"}`}>
                   {w.step}
                 </div>
-                {i < GN_WORKFLOW.length - 1 && <div className={`w-0.5 flex-1 my-0.5 ${done ? "bg-emerald-400" : "bg-zinc-100"}`} />}
+                {i < GN_WORKFLOW.length - 1 && <div className={`w-0.5 flex-1 my-0.5 ${done ? "bg-emerald-400" : "bg-[#1e293b]"}`} />}
               </div>
               <div className={`pb-4 ${current ? "" : done ? "opacity-80" : "opacity-40"}`}>
-                <div className={`text-[12px] font-semibold ${done ? "text-emerald-700" : current ? "text-brand-700" : "text-zinc-500"}`}>
+                <div className={`text-[12px] font-semibold ${done ? "text-emerald-400" : current ? "text-indigo-400" : "text-slate-400"}`}>
                   {w.label}
-                  {w.step === 10 && amount ? <span className="ml-1.5 text-brand-600">· {fmtInr(amount)} → borrower's account</span> : null}
+                  {w.step === 10 && amount ? <span className="ml-1.5 text-indigo-400">· {fmtInr(amount)} → borrower's account</span> : null}
                 </div>
-                <div className="text-[10.5px] text-zinc-400">{w.hint}</div>
+                <div className="text-[10.5px] text-slate-500">{w.hint}</div>
               </div>
             </div>
           );
@@ -97,28 +113,30 @@ export function ImportExport({ entity, onImported, children }: { entity: string;
   return (
     <div className="flex items-center gap-2">
       {children}
-      <button onClick={doExport} disabled={busy} className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border border-zinc-200 bg-white text-zinc-600 hover:border-brand-300 hover:text-brand-700 disabled:opacity-50">
+      <button onClick={doExport} disabled={busy} className="px-3 py-1.5 rounded-lg text-[11.5px] font-semibold border border-[#22314d] bg-[#111827] text-slate-200 hover:bg-[#152033] hover:text-white hover:border-indigo-500/40 shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50">
+        <Download className="w-3.5 h-3.5 text-slate-400" />
         Export CSV
       </button>
-      <button onClick={() => fileRef.current?.click()} disabled={busy} className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border border-zinc-200 bg-white text-zinc-600 hover:border-brand-300 hover:text-brand-700 disabled:opacity-50">
+      <button onClick={() => fileRef.current?.click()} disabled={busy} className="px-3 py-1.5 rounded-lg text-[11.5px] font-semibold border border-[#22314d] bg-[#111827] text-slate-200 hover:bg-[#152033] hover:text-white hover:border-indigo-500/40 shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50">
+        <Upload className="w-3.5 h-3.5 text-slate-400" />
         Import CSV
       </button>
       <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={onFile} />
-      {msg && <span className={`text-[10.5px] font-semibold ${msg.ok ? "text-emerald-600" : "text-rose-600"}`}>{msg.text}</span>}
+      {msg && <span className={`text-[10.5px] font-semibold ${msg.ok ? "text-emerald-400" : "text-rose-400"}`}>{msg.text}</span>}
     </div>
   );
 }
 
 export function StatPill({ label, value, tone = "zinc" }: { label: string; value: string; tone?: "brand" | "green" | "amber" | "red" | "zinc" }) {
   const t: Record<string, string> = {
-    brand: "border-brand-100 bg-brand-50/50 text-brand-700",
-    green: "border-emerald-100 bg-emerald-50/50 text-emerald-700",
-    amber: "border-amber-100 bg-amber-50/50 text-amber-700",
-    red: "border-rose-100 bg-rose-50/50 text-rose-700",
-    zinc: "border-zinc-100 bg-white text-zinc-800"
+    brand: "border-indigo-500/40 bg-indigo-950/40 text-indigo-300",
+    green: "border-emerald-500/40 bg-emerald-950/40 text-emerald-300",
+    amber: "border-amber-500/40 bg-amber-950/40 text-amber-300",
+    red: "border-rose-500/40 bg-rose-950/40 text-rose-300",
+    zinc: "border-[#1e293b] bg-[#111827] text-white"
   };
   return (
-    <div className={`rounded-xl border px-4 py-3 ${t[tone]}`}>
+    <div className={`rounded-xl border px-4 py-3 shadow-md ${t[tone]}`}>
       <div className="text-[10px] font-semibold uppercase tracking-wider opacity-70">{label}</div>
       <div className="text-[19px] font-bold leading-tight mt-0.5">{value}</div>
     </div>
@@ -163,11 +181,12 @@ export function AnyFileImport({ entity, onImported }: { entity: string; onImport
 
   return (
     <div className="flex items-center gap-2">
-      <button onClick={() => fileRef.current?.click()} disabled={busy} className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border border-zinc-200 bg-white text-zinc-600 hover:border-brand-300 hover:text-brand-700 disabled:opacity-50">
+      <button onClick={() => fileRef.current?.click()} disabled={busy} className="px-3 py-1.5 rounded-lg text-[11.5px] font-semibold border border-[#22314d] bg-[#111827] text-slate-200 hover:bg-[#152033] hover:text-white hover:border-indigo-500/40 shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50">
+        <Upload className="w-3.5 h-3.5 text-slate-400" />
         {busy ? "Importing…" : "Import file (any format)"}
       </button>
       <input ref={fileRef} type="file" accept=".csv,.tsv,.json,.xlsx,.xls,.pdf,.png,.jpg,.jpeg,.doc,.docx,.txt" className="hidden" onChange={onFile} />
-      {msg && <span className={`text-[10.5px] font-semibold ${msg.ok ? "text-emerald-600" : "text-rose-600"}`}>{msg.text}</span>}
+      {msg && <span className={`text-[10.5px] font-semibold ${msg.ok ? "text-emerald-400" : "text-rose-400"}`}>{msg.text}</span>}
     </div>
   );
 }
@@ -217,9 +236,9 @@ export function SchemeForm({ onSaved, compact }: { onSaved?: () => void; compact
   const num = (v: any) => (v === "" || v === null || v === undefined ? undefined : Number(v));
   const list = (v: any) => (typeof v === "string" && v.trim() ? v.split(",").map((x: string) => x.trim()).filter(Boolean) : Array.isArray(v) ? v : []);
   const clean = (o: Record<string, any>) => { const out: Record<string, any> = {}; for (const k of Object.keys(o)) if (o[k] !== null && o[k] !== undefined && o[k] !== "") out[k] = o[k]; return out; };
-  const inp = "w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 text-[12px] outline-none focus:border-brand-400 bg-white";
-  const sec = "rounded-xl border border-zinc-100 bg-white p-4";
-  const secTitle = "text-[10.5px] font-bold uppercase tracking-wider text-zinc-400 mb-3 flex items-center gap-1.5";
+  const inp = "w-full px-2.5 py-1.5 rounded-lg border border-[#1e293b] text-[12px] outline-none focus:border-indigo-500 bg-[#0d1322] text-white placeholder-slate-500";
+  const sec = "rounded-xl border border-[#1e293b] bg-[#111827] p-4 shadow-md";
+  const secTitle = "text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5";
 
   const pickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -296,7 +315,7 @@ export function SchemeForm({ onSaved, compact }: { onSaved?: () => void; compact
 
   const Chip = ({ label, keyName, val }: { label: string; keyName: string; val: string }) => (
     <button type="button" onClick={() => toggleIn(keyName, val)}
-      className={`px-2.5 py-1 rounded-full text-[10.5px] font-semibold border ${(f[keyName] ?? []).includes(val) ? "bg-brand-600 text-white border-brand-600" : "bg-white text-zinc-500 border-zinc-200 hover:border-brand-300"}`}>
+      className={`px-2.5 py-1 rounded-full text-[10.5px] font-semibold border transition-all ${(f[keyName] ?? []).includes(val) ? "bg-indigo-600 text-white border-indigo-500 shadow-sm" : "bg-[#0c1220] text-slate-300 border-[#22314d] hover:border-indigo-500/40 hover:text-white"}`}>
       {label}
     </button>
   );

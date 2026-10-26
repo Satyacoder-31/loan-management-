@@ -3,31 +3,130 @@ import { Card, PageHeader, Badge, EmptyState, Field, Modal } from "../../compone
 import { api, fmtInr, fmtDate } from "../../lib/api";
 import { useSearchParams } from "react-router-dom";
 import { ImportExport, AnyFileImport, SchemeForm } from "./shared";
-import { Plus, Wand2, Scale } from "lucide-react";
+import {
+  Building2, Landmark, Package, GitBranch, KeyRound, Sparkles, Sliders, Calculator,
+  UserCheck, MapPin, Target, ChevronRight, HelpCircle, ArrowLeft, RefreshCw, Plus, Download, Upload, ShieldCheck,
+  Wand2, Scale
+} from "lucide-react";
 
 const TABS = ["Banks", "Products", "Schemes", "DSA Codes", "Parent DSAs", "Payout Structure", "Sales Targets", "Territories", "Customer Profile", "Scheme Feed"];
 
+const MASTER_CARDS = [
+  { id: "Banks", title: "Banks", desc: "Lenders you work with — contacts, DSA code, GST policy.", count: "5", icon: Landmark },
+  { id: "Bank Branch", title: "Bank Branch", desc: "Bank branches — address, IFSC and branch contacts.", count: "0", icon: Building2 },
+  { id: "Products", title: "Products", desc: "Loan products offered per bank.", count: "105", icon: Package },
+  { id: "Parent DSAs", title: "Parent DSA Master", desc: "Bigger DSAs you operate under (sub-DSA relationships).", count: "0", icon: GitBranch },
+  { id: "DSA Codes", title: "DSA Code Master", desc: "Your registered DSA codes per bank / parent DSA.", count: "0", icon: KeyRound },
+  { id: "Scheme Feed", title: "Scheme Feed", desc: "Browse & import master commission schemes.", count: "", icon: Sparkles },
+  { id: "Schemes", title: "Schemes", desc: "Bank-wise commission schemes & payout grids.", count: "1", icon: Sliders },
+  { id: "Payout Structure", title: "Payout Structure", desc: "Per-employee / per-partner payout for every product & sub-product, in a grid.", count: "", icon: Calculator },
+  { id: "Customer Profile", title: "Customer Profile", desc: "Customer profile categories (Bank Salary, Pvt Ltd, NRI...) — used on schemes & leads.", count: "", icon: UserCheck },
+  { id: "Territories", title: "Pin Code Master", desc: "State ▸ District geography for lead routing & serviceability.", count: "888", icon: MapPin },
+  { id: "Sales Targets", title: "Sales Targets", desc: "Monthly targets per salesperson — logins, disbursement & loans.", count: "", icon: Target },
+];
+
 export function GnMasters() {
   const [params, setParams] = useSearchParams();
-  const tab = TABS.includes(params.get("tab") ?? "") ? params.get("tab")! : "Banks";
-  return (
-    <div className="space-y-5">
-      <PageHeader title="Masters" sub="Set up the reference data your CRM runs on — a strong master saves 100 hours in operations" breadcrumb="Growth Nations / Masters" />
-      <div className="flex gap-1.5 flex-wrap">
-        {TABS.map((t) => (
-          <button key={t} onClick={() => setParams({ tab: t })} className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold ${tab === t ? "bg-brand-600 text-white" : "bg-white border border-zinc-200 text-zinc-600 hover:border-brand-300"}`}>{t}</button>
-        ))}
+  const currentTab = params.get("tab");
+
+  if (!currentTab || currentTab === "Hub") {
+    return (
+      <div className="space-y-5 max-w-[1500px] mx-auto text-slate-100">
+        <div>
+          <div className="text-[11.5px] font-medium text-slate-400 mb-1">Home / Masters</div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-[22px] font-bold tracking-tight text-white flex items-center gap-2">
+              Masters
+            </h1>
+            <HelpCircle size={15} className="text-slate-500 cursor-pointer hover:text-slate-300" />
+          </div>
+          <p className="text-[13px] text-slate-400 mt-1">
+            Set up the reference data your CRM runs on. Pick a master to manage it.
+          </p>
+        </div>
+
+        {/* Info Banner */}
+        <div className="rounded-xl bg-[#0f172a] border border-[#1e293b] p-4 flex items-center gap-2.5 text-[12.5px] text-slate-300 shadow-sm">
+          <Sparkles size={16} className="text-cyan-400 shrink-0" />
+          <span>
+            <b>A strong master is the foundation of a great system & automation.</b> An hour spent here saves 100 hours in operations.
+          </span>
+        </div>
+
+        {/* 11 Master Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {MASTER_CARDS.map((c) => (
+            <div
+              key={c.id}
+              onClick={() => setParams({ tab: c.id })}
+              className="p-4 rounded-xl bg-[#111827] border border-[#1e293b] hover:border-indigo-500/60 hover:bg-[#152033] transition-all cursor-pointer group flex items-start justify-between shadow-lg"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[#0d1322] border border-[#1e293b] text-slate-300 flex items-center justify-center shrink-0 group-hover:text-indigo-400 group-hover:border-indigo-500/40 transition-colors">
+                  <c.icon size={17} />
+                </div>
+                <div>
+                  <h3 className="text-[13.5px] font-bold text-white group-hover:text-indigo-300 transition-colors">
+                    {c.title}
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed line-clamp-2">
+                    {c.desc}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-slate-400 shrink-0 ml-2">
+                {c.count && (
+                  <span className="text-[11.5px] font-bold text-slate-300 num">{c.count}</span>
+                )}
+                <ChevronRight size={15} className="group-hover:translate-x-0.5 transition-transform text-slate-500 group-hover:text-white" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-      {tab === "Banks" && <Banks />}
-      {tab === "Products" && <Products />}
-      {tab === "Schemes" && <Schemes />}
-      {tab === "DSA Codes" && <DSACodes />}
-      {tab === "Parent DSAs" && <ParentDSAs />}
-      {tab === "Payout Structure" && <Payouts />}
-      {tab === "Sales Targets" && <SalesTargets />}
-      {tab === "Territories" && <Territories />}
-      {tab === "Customer Profile" && <CustomerProfiles />}
-      {tab === "Scheme Feed" && <SchemeFeed />}
+    );
+  }
+
+  return (
+    <div className="space-y-5 max-w-[1500px] mx-auto text-slate-100">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <button
+          onClick={() => setParams({})}
+          className="flex items-center gap-1.5 text-[12.5px] font-semibold text-indigo-400 hover:text-indigo-300 cursor-pointer"
+        >
+          <ArrowLeft size={15} />
+          <span>Back to Masters Hub</span>
+        </button>
+
+        <div className="flex gap-1.5 flex-wrap">
+          {TABS.map((t) => (
+            <button
+              key={t}
+              onClick={() => setParams({ tab: t })}
+              className={`px-3 py-1.5 rounded-lg text-[11.5px] font-semibold transition-all ${
+                currentTab === t
+                  ? "bg-[#2563eb] text-white shadow-sm"
+                  : "bg-[#111827] border border-[#1e293b] text-slate-400 hover:text-white hover:bg-[#162033]"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {currentTab === "Banks" && <Banks />}
+      {currentTab === "Bank Branch" && <Banks />}
+      {currentTab === "Products" && <Products />}
+      {currentTab === "Schemes" && <Schemes />}
+      {currentTab === "DSA Codes" && <DSACodes />}
+      {currentTab === "Parent DSAs" && <ParentDSAs />}
+      {currentTab === "Payout Structure" && <Payouts />}
+      {currentTab === "Sales Targets" && <SalesTargets />}
+      {currentTab === "Territories" && <Territories />}
+      {currentTab === "Customer Profile" && <CustomerProfiles />}
+      {currentTab === "Scheme Feed" && <SchemeFeed />}
     </div>
   );
 }
@@ -220,11 +319,11 @@ function SalesTargets() {
 function Territories() {
   const states = ["Andhra Pradesh", "Assam", "Bihar", "Chandigarh", "Chhattisgarh", "Delhi", "Gujarat", "Haryana", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Odisha", "Punjab", "Rajasthan", "Tamil Nadu", "Telangana", "Uttar Pradesh", "West Bengal"];
   return (
-    <Card pad={false}>
-      <div className="p-3 border-b border-zinc-100 flex items-center justify-between"><span className="text-[12.5px] font-semibold text-zinc-700">Pin Code Master — {states.length} top-level territories</span><Badge status=""><span className="text-[10.5px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">Active</span></Badge></div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-zinc-100">
+    <Card pad={false} className="bg-[#111827] border-[#1e293b]">
+      <div className="p-3 border-b border-[#1e293b] flex items-center justify-between"><span className="text-[12.5px] font-semibold text-slate-100">Pin Code Master — {states.length} top-level territories</span><Badge status=""><span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">Active</span></Badge></div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#1e293b]">
         {states.map((s) => (
-          <div key={s} className="bg-white px-3 py-2 text-[12px] font-medium text-zinc-700 flex items-center justify-between"><span>{s}</span><span className="text-[10px] text-zinc-400 font-normal">synced</span></div>
+          <div key={s} className="bg-[#0c1220] px-3 py-2 text-[12px] font-medium text-slate-200 flex items-center justify-between"><span>{s}</span><span className="text-[10px] text-slate-500 font-normal">synced</span></div>
         ))}
       </div>
     </Card>
@@ -234,13 +333,13 @@ function Territories() {
 function CustomerProfiles() {
   const profiles = ["Bank Salary", "Cash Salary", "Pvt Limited", "LLP", "Trust", "NRI", "Single Lady", "Salaried Professional"];
   return (
-    <Card pad={false}>
-      <div className="p-3 border-b border-zinc-100"><span className="text-[12.5px] font-semibold text-zinc-700">Customer Profile — categories used on schemes & leads</span></div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-zinc-100">
+    <Card pad={false} className="bg-[#111827] border-[#1e293b]">
+      <div className="p-3 border-b border-[#1e293b]"><span className="text-[12.5px] font-semibold text-slate-100">Customer Profile — categories used on schemes & leads</span></div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#1e293b]">
         {profiles.map((p) => (
-          <div key={p} className="bg-white px-3 py-2.5 flex items-center justify-between">
-            <span className="text-[12px] font-semibold text-zinc-700">{p}</span>
-            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">Active</span>
+          <div key={p} className="bg-[#0c1220] px-3 py-2.5 flex items-center justify-between">
+            <span className="text-[12px] font-semibold text-slate-200">{p}</span>
+            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.5 rounded">Active</span>
           </div>
         ))}
       </div>
@@ -261,7 +360,17 @@ function SchemeFeed() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex gap-1.5 flex-wrap">
           {FEED_TABS.map((t) => (
-            <button key={t} onClick={() => setTab(t)} className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold ${tab === t ? "bg-brand-600 text-white" : "bg-white border border-zinc-200 text-zinc-600 hover:border-brand-300"}`}>{t}</button>
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-3.5 py-1.5 rounded-xl text-[12px] font-semibold transition-all cursor-pointer ${
+                tab === t
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 border border-indigo-500"
+                  : "bg-[#111827] border border-[#1e293b] text-slate-300 hover:bg-[#162033] hover:text-white hover:border-indigo-500/40"
+              }`}
+            >
+              {t}
+            </button>
           ))}
         </div>
         <div className="flex items-center gap-2"><ImportExport entity="schemes" /><AnyFileImport entity="schemes" /></div>

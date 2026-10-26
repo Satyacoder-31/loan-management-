@@ -106,79 +106,111 @@ export function GnRoles() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Roles & Permissions" sub="Configure exactly what each role can do — every change is enforced on the API and applied to the dashboards instantly" breadcrumb="Growth Nations / Settings / Roles & Permissions" />
-      <div className="grid grid-cols-[260px_1fr] gap-4">
+      <PageHeader
+        title="Roles & Permissions"
+        sub="Configure exactly what each role can do — every change is enforced on the API and applied to the dashboards instantly"
+        breadcrumb="Growth Nations / Settings / Roles & Permissions"
+      />
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
         {/* Role list */}
-        <Card pad={false}>
-          <div className="p-3 border-b border-zinc-100">
+        <Card pad={false} className="bg-[#111827] border-[#1e293b]">
+          <div className="p-3 border-b border-[#1e293b]">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search roles…" className="w-full pl-8 pr-2 py-1.5 rounded-lg border border-zinc-200 text-[12px] outline-none focus:border-brand-400" />
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search roles…"
+                className="w-full pl-8 pr-2.5 py-1.5 rounded-lg border border-[#1e293b] bg-[#0c1220] text-white text-[12px] outline-none focus:border-indigo-500"
+              />
             </div>
-            <button onClick={() => setNewOpen(true)} className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600 text-white text-[11.5px] font-semibold hover:bg-brand-700">
+            <button
+              onClick={() => setNewOpen(true)}
+              className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11.5px] font-semibold hover:bg-indigo-500 shadow-sm cursor-pointer"
+            >
               <Plus className="w-3.5 h-3.5" /> New Role
             </button>
           </div>
           <div className="max-h-[calc(100vh-280px)] overflow-y-auto">
-            <div className="px-3 pt-3 pb-1 text-[9.5px] font-bold uppercase tracking-wider text-zinc-400">Staff ({staff.length})</div>
+            <div className="px-3 pt-3 pb-1 text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Staff ({staff.length})</div>
             {staff.map((r) => <RoleRow key={r.id} r={r} active={r.id === selId} onSelect={() => setSelId(r.id)} />)}
-            <div className="px-3 pt-3 pb-1 text-[9.5px] font-bold uppercase tracking-wider text-zinc-400">Partners ({partners.length})</div>
+            <div className="px-3 pt-3 pb-1 text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Partners ({partners.length})</div>
             {partners.map((r) => <RoleRow key={r.id} r={r} active={r.id === selId} onSelect={() => setSelId(r.id)} />)}
             {!staff.length && !partners.length && <EmptyState title="No roles" sub="Create a role to get started" />}
           </div>
         </Card>
 
         {/* Permission grid */}
-        <Card pad={false}>
+        <Card pad={false} className="bg-[#111827] border-[#1e293b]">
           {!sel ? (
             <div className="p-8"><EmptyState title="Select a role" sub="Pick a role from the list to configure its permissions" /></div>
           ) : (
             <div>
-              <div className="p-3.5 border-b border-zinc-100 flex items-center justify-between flex-wrap gap-2">
+              <div className="p-3.5 border-b border-[#1e293b] flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center"><Users className="w-4 h-4 text-brand-600" /></div>
+                    <div className="w-8 h-8 rounded-lg bg-indigo-950/60 border border-indigo-500/30 flex items-center justify-center">
+                      <Users className="w-4 h-4 text-indigo-400" />
+                    </div>
                     <div>
-                      <div className="text-[14px] font-bold text-zinc-800">{sel.name}</div>
-                      <div className="text-[11px] text-zinc-400">
+                      <div className="text-[14px] font-bold text-white">{sel.name}</div>
+                      <div className="text-[11px] text-slate-400">
                         {sel.code} · {sel.kind === "partner" ? (sel.partner_type ?? "Partner") : (sel.designation ?? "Staff")} · {grantedCount()}/{GN_MODULES.length * GN_ACTIONS.length} permissions
-                        {sel.is_system ? <span className="ml-1.5 text-[9.5px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">SYSTEM ROLE</span> : null}
+                        {sel.is_system ? <span className="ml-1.5 text-[9.5px] font-bold text-amber-400 bg-amber-950/40 border border-amber-500/30 px-1.5 py-0.5 rounded">SYSTEM ROLE</span> : null}
                       </div>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={applyToSimilar} disabled={saving} className="px-3 py-1.5 rounded-lg text-[11.5px] font-semibold border border-zinc-200 text-zinc-600 hover:border-brand-300 hover:text-brand-700 disabled:opacity-50 flex items-center gap-1.5">
+                  <button
+                    onClick={applyToSimilar}
+                    disabled={saving}
+                    className="px-3 py-1.5 rounded-lg text-[11.5px] font-semibold border border-[#1e293b] bg-[#0c1220] text-slate-300 hover:bg-[#162033] hover:text-white disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                  >
                     <Copy className="w-3.5 h-3.5" /> Apply to {sel.kind === "partner" ? "Partner Type" : "Designation"}
                   </button>
-                  <button onClick={() => save()} disabled={saving} className="px-3 py-1.5 rounded-lg text-[11.5px] font-semibold bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50 flex items-center gap-1.5">
+                  <button
+                    onClick={() => save()}
+                    disabled={saving}
+                    className="px-3.5 py-1.5 rounded-lg text-[11.5px] font-semibold bg-indigo-600 text-white hover:bg-indigo-500 shadow-sm shadow-indigo-600/30 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                  >
                     <Save className="w-3.5 h-3.5" /> {saving ? "Saving…" : "Save Permissions"}
                   </button>
                 </div>
               </div>
-              {msg && <div className={`px-3.5 py-2 text-[11.5px] font-semibold border-b ${msg.startsWith("Saved") || msg.startsWith("Applied") ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100"}`}>{msg}</div>}
+              {msg && (
+                <div className={`px-3.5 py-2 text-[11.5px] font-semibold border-b ${
+                  msg.startsWith("Saved") || msg.startsWith("Applied")
+                    ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/30"
+                    : "bg-rose-950/40 text-rose-400 border-rose-500/30"
+                }`}>
+                  {msg}
+                </div>
+              )}
               <div className="overflow-x-auto">
                 <table className="w-full text-[12px] min-w-[760px]">
                   <thead>
-                    <tr className="text-left border-b border-zinc-100 bg-zinc-50/60">
-                      <th className="px-3.5 py-2.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400">Module</th>
+                    <tr className="text-left border-b border-[#1e293b] bg-[#0c1220]">
+                      <th className="px-3.5 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">Module</th>
                       {GN_ACTIONS.map((a) => (
-                        <th key={a} className="px-2 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-zinc-400">{ACTION_LABELS[a]}</th>
+                        <th key={a} className="px-2 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-slate-400">{ACTION_LABELS[a]}</th>
                       ))}
-                      <th className="px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-zinc-400">Scope</th>
+                      <th className="px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-slate-400">Scope</th>
                     </tr>
                   </thead>
                   <tbody>
                     {GN_MODULES.map((m) => {
                       const onCount = GN_ACTIONS.filter((a) => grid[m]?.[a]?.allowed).length;
                       return (
-                        <tr key={m} className="border-b border-zinc-50 hover:bg-zinc-50/40">
+                        <tr key={m} className="border-b border-[#182235] hover:bg-[#152033]/50 transition-colors">
                           <td className="px-3.5 py-2">
                             <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-md bg-zinc-50 border border-zinc-100 flex items-center justify-center"><ShieldCheck className="w-3 h-3 text-zinc-500" /></div>
+                              <div className="w-6 h-6 rounded-md bg-[#0c1220] border border-[#1e293b] flex items-center justify-center">
+                                <ShieldCheck className="w-3 h-3 text-indigo-400" />
+                              </div>
                               <div>
-                                <div className="text-[12.5px] font-semibold text-zinc-800">{m}</div>
-                                <button onClick={() => toggleModule(m, onCount < GN_ACTIONS.length)} className="text-[10px] text-brand-600 hover:underline font-semibold">
+                                <div className="text-[12.5px] font-semibold text-slate-100">{m}</div>
+                                <button onClick={() => toggleModule(m, onCount < GN_ACTIONS.length)} className="text-[10px] text-indigo-400 hover:underline font-semibold cursor-pointer">
                                   {onCount === GN_ACTIONS.length ? "Revoke all" : "Allow all"}
                                 </button>
                               </div>
@@ -188,7 +220,15 @@ export function GnRoles() {
                             const cell = grid[m]?.[a] ?? { allowed: false, scope: "all" as const };
                             return (
                               <td key={a} className="px-2 py-2 text-center">
-                                <button onClick={() => toggle(m, a)} title={gnPerm(m, a)} className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${cell.allowed ? "bg-brand-600 border-brand-600 text-white" : "bg-white border-zinc-200 hover:border-brand-300"}`}>
+                                <button
+                                  onClick={() => toggle(m, a)}
+                                  title={gnPerm(m, a)}
+                                  className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors mx-auto cursor-pointer ${
+                                    cell.allowed
+                                      ? "bg-indigo-600 border-indigo-500 text-white shadow-sm"
+                                      : "bg-[#0c1220] border-[#1e293b] text-slate-500 hover:border-indigo-500/50"
+                                  }`}
+                                >
                                   {cell.allowed && <Check className="w-3 h-3" />}
                                 </button>
                               </td>
@@ -198,7 +238,7 @@ export function GnRoles() {
                             <select
                               value={grid[m]?.[GN_ACTIONS[0]]?.scope ?? "all"}
                               onChange={(e) => { const s = e.target.value as "all" | "own"; for (const a of GN_ACTIONS) setScope(m, a, s); }}
-                              className="text-[10.5px] border border-zinc-200 rounded-md px-1.5 py-1 text-zinc-600 outline-none focus:border-brand-400"
+                              className="text-[10.5px] border border-[#1e293b] bg-[#0c1220] rounded-md px-1.5 py-1 text-slate-300 outline-none focus:border-indigo-500"
                             >
                               <option value="all">All Records</option>
                               <option value="own">Own Only</option>
@@ -210,9 +250,17 @@ export function GnRoles() {
                   </tbody>
                 </table>
               </div>
-              <div className="p-3 border-t border-zinc-100 flex items-center justify-between">
-                <span className="text-[10.5px] text-zinc-400 flex items-center gap-1.5"><CheckCheck className="w-3.5 h-3.5" /> Changes are enforced on every API request within seconds — no restart needed.</span>
-                <button onClick={() => save()} disabled={saving} className="px-3 py-1.5 rounded-lg text-[11.5px] font-semibold bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50">{saving ? "Saving…" : "Save Permissions"}</button>
+              <div className="p-3 border-t border-[#1e293b] flex items-center justify-between">
+                <span className="text-[10.5px] text-slate-400 flex items-center gap-1.5">
+                  <CheckCheck className="w-3.5 h-3.5 text-indigo-400" /> Changes are enforced on every API request within seconds — no restart needed.
+                </span>
+                <button
+                  onClick={() => save()}
+                  disabled={saving}
+                  className="px-3.5 py-1.5 rounded-lg text-[11.5px] font-semibold bg-indigo-600 text-white hover:bg-indigo-500 shadow-sm shadow-indigo-600/30 disabled:opacity-50 cursor-pointer"
+                >
+                  {saving ? "Saving…" : "Save Permissions"}
+                </button>
               </div>
             </div>
           )}
@@ -230,15 +278,22 @@ export function GnRoles() {
 
 function RoleRow({ r, active, onSelect }: { r: any; active: boolean; onSelect: () => void }) {
   return (
-    <button onClick={onSelect} className={`w-full text-left px-3 py-2.5 border-b border-zinc-50 flex items-center gap-2.5 ${active ? "bg-brand-50/70" : "hover:bg-zinc-50"}`}>
-      <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold ${r.kind === "partner" ? "bg-violet-50 text-violet-600" : "bg-sky-50 text-sky-600"}`}>
+    <button
+      onClick={onSelect}
+      className={`w-full text-left px-3 py-2.5 border-b border-[#182235] flex items-center gap-2.5 transition-colors cursor-pointer ${
+        active ? "bg-indigo-950/40 border-l-2 border-l-indigo-500" : "hover:bg-[#152033]/60"
+      }`}
+    >
+      <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold ${
+        r.kind === "partner" ? "bg-violet-950/60 border border-violet-500/30 text-violet-400" : "bg-sky-950/60 border border-sky-500/30 text-sky-400"
+      }`}>
         {r.name.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase()}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[12.5px] font-semibold text-zinc-800 truncate">{r.name}</div>
-        <div className="text-[10.5px] text-zinc-400 truncate">{r.kind === "partner" ? (r.partner_type ?? "Partner") : (r.designation ?? "Staff")}</div>
+        <div className="text-[12.5px] font-semibold text-slate-100 truncate">{r.name}</div>
+        <div className="text-[10.5px] text-slate-400 truncate">{r.kind === "partner" ? (r.partner_type ?? "Partner") : (r.designation ?? "Staff")}</div>
       </div>
-      <Badge status=""><span className="text-[9.5px] font-bold text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded-full">{r.allowed_perms ?? 0}</span></Badge>
+      <Badge status=""><span className="text-[9.5px] font-bold text-slate-300 bg-[#0c1220] border border-[#1e293b] px-1.5 py-0.5 rounded-full font-mono">{r.allowed_perms ?? 0}</span></Badge>
     </button>
   );
 }
@@ -250,22 +305,58 @@ function NewRoleForm({ onCancel, onCreate }: { onCancel: () => void; onCreate: (
   const [partnerType, setPartnerType] = useState("");
   return (
     <div className="space-y-3">
-      <Field label="Role name"><input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Lead Generator" className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-[13px] outline-none focus:border-brand-400" /></Field>
+      <Field label="Role name">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. Lead Generator"
+          className="w-full px-3 py-2 rounded-lg border border-[#1e293b] bg-[#0c1220] text-white text-[13px] outline-none focus:border-indigo-500"
+        />
+      </Field>
       <Field label="Type">
         <div className="flex gap-2">
           {(["staff", "partner"] as const).map((k) => (
-            <button key={k} onClick={() => setKind(k)} className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold capitalize ${kind === k ? "bg-brand-600 text-white" : "bg-zinc-100 text-zinc-600"}`}>{k}</button>
+            <button
+              key={k}
+              onClick={() => setKind(k)}
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold capitalize cursor-pointer transition-colors ${
+                kind === k ? "bg-indigo-600 text-white shadow-sm" : "bg-[#0c1220] border border-[#1e293b] text-slate-400 hover:text-white"
+              }`}
+            >
+              {k}
+            </button>
           ))}
         </div>
       </Field>
       {kind === "staff" ? (
-        <Field label="Designation"><input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Sales, Credit, Operations" className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-[13px] outline-none focus:border-brand-400" /></Field>
+        <Field label="Designation">
+          <input
+            value={designation}
+            onChange={(e) => setDesignation(e.target.value)}
+            placeholder="e.g. Sales, Credit, Operations"
+            className="w-full px-3 py-2 rounded-lg border border-[#1e293b] bg-[#0c1220] text-white text-[13px] outline-none focus:border-indigo-500"
+          />
+        </Field>
       ) : (
-        <Field label="Partner type"><input value={partnerType} onChange={(e) => setPartnerType(e.target.value)} placeholder="e.g. DSA, Master DSA, Connector" className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-[13px] outline-none focus:border-brand-400" /></Field>
+        <Field label="Partner type">
+          <input
+            value={partnerType}
+            onChange={(e) => setPartnerType(e.target.value)}
+            placeholder="e.g. DSA, Master DSA, Connector"
+            className="w-full px-3 py-2 rounded-lg border border-[#1e293b] bg-[#0c1220] text-white text-[13px] outline-none focus:border-indigo-500"
+          />
+        </Field>
       )}
-      <div className="flex justify-end gap-2 pt-1">
-        <button onClick={onCancel} className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-zinc-200 text-zinc-600">Cancel</button>
-        <button onClick={() => name.trim() && onCreate(name.trim(), kind, designation, partnerType)} className="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-brand-600 text-white">Create Role</button>
+      <div className="flex justify-end gap-2 pt-2">
+        <button onClick={onCancel} className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-[#1e293b] bg-[#0c1220] text-slate-300 hover:bg-[#152033] hover:text-white cursor-pointer">
+          Cancel
+        </button>
+        <button
+          onClick={() => name.trim() && onCreate(name.trim(), kind, designation, partnerType)}
+          className="px-4 py-1.5 rounded-lg text-[12px] font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-600/30 cursor-pointer"
+        >
+          Create Role
+        </button>
       </div>
     </div>
   );

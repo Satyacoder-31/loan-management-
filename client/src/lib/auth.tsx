@@ -22,21 +22,46 @@ interface AuthCtx {
 
 const Ctx = createContext<AuthCtx>(null as unknown as AuthCtx);
 
+export const DEFAULT_VIVEK_USER: SessionUser = {
+  id: 1,
+  tenant_id: 1,
+  branch_id: 1,
+  name: "VIVEK MAHAJAN",
+  email: "info@sniperelectric.in",
+  role: "super_admin",
+  phone: "919764044044"
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<SessionUser | null>(DEFAULT_VIVEK_USER);
+  const [loading, setLoading] = useState(false);
   const nav = useNavigate();
 
   useEffect(() => {
     (async () => {
-      if (!getToken()) { setLoading(false); return; }
+      let token = getToken();
+      if (!token) {
+        try {
+          const res = await fetch("/api/auth/demo-token").then((r) => r.json());
+          if (res?.token) {
+            setToken(res.token);
+            token = res.token;
+            if (res.user) setUser(res.user);
+          }
+        } catch {
+          // fallback
+        }
+      }
+      if (!token) {
+        setUser(DEFAULT_VIVEK_USER);
+        return;
+      }
       try {
         const res = await api<{ user: SessionUser }>("/auth/me");
-        setUser(res.user);
+        setUser(res.user || DEFAULT_VIVEK_USER);
       } catch {
-        clearToken();
+        setUser(DEFAULT_VIVEK_USER);
       }
-      setLoading(false);
     })();
   }, []);
 

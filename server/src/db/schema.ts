@@ -1104,6 +1104,8 @@ export async function createSchema() {
     verified_by INTEGER,
     verified_at TEXT,
     expiry TEXT,
+    file_url TEXT,
+    source TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -1700,7 +1702,9 @@ export async function createSchema() {
     "ALTER TABLE gn_applicants ADD COLUMN alt_mobile TEXT",
     "ALTER TABLE gn_applicants ADD COLUMN alt_email TEXT",
     "ALTER TABLE gn_applicants ADD COLUMN aadhaar TEXT",
-    "ALTER TABLE gn_credit_profiles ADD COLUMN report_json TEXT"
+    "ALTER TABLE gn_credit_profiles ADD COLUMN report_json TEXT",
+    "ALTER TABLE gn_documents ADD COLUMN file_url TEXT",
+    "ALTER TABLE gn_documents ADD COLUMN source TEXT"
   ];
   for (const m of safeMigrations) {
     try {

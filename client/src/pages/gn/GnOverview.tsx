@@ -103,23 +103,34 @@ export function GnOverview() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-9 gap-3">
         {kpis.map(([label, value, tone]) => (
-          <div key={label as string} className={`rounded-xl border px-3.5 py-3 ${tone === "green" ? "border-emerald-100 bg-emerald-50/40" : tone === "amber" ? "border-amber-100 bg-amber-50/40" : tone === "brand" ? "border-brand-100 bg-brand-50/40" : "border-zinc-200 bg-white"}`}>
-            <div className="text-[9.5px] font-semibold uppercase tracking-wider text-zinc-400">{label}</div>
-            <div className="text-[17px] font-bold text-zinc-800 mt-0.5 leading-tight">{value}</div>
+          <div
+            key={label as string}
+            className={`rounded-xl border px-3.5 py-3 shadow-sm ${
+              tone === "green"
+                ? "border-emerald-500/30 bg-emerald-950/30 text-emerald-300"
+                : tone === "amber"
+                ? "border-amber-500/30 bg-amber-950/30 text-amber-300"
+                : tone === "brand"
+                ? "border-indigo-500/30 bg-indigo-950/30 text-indigo-300"
+                : "border-[#1e293b] bg-[#111827] text-slate-200"
+            }`}
+          >
+            <div className="text-[9.5px] font-semibold uppercase tracking-wider text-slate-400">{label}</div>
+            <div className="text-[17px] font-bold text-white mt-0.5 leading-tight font-mono">{value}</div>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <Card className="lg:col-span-2" pad={false}>
-          <div className="px-4 py-3 border-b border-zinc-100 flex items-center justify-between">
+        <Card className="lg:col-span-2 bg-[#111827] border-[#1e293b]" pad={false}>
+          <div className="px-4 py-3 border-b border-[#1e293b] flex items-center justify-between">
             <div>
-              <div className="text-[13px] font-bold text-zinc-800">Loan Funnel</div>
-              <div className="text-[10.5px] text-zinc-400">Every stage database-driven — click a stage to open its queue</div>
+              <div className="text-[13px] font-bold text-white">Loan Funnel</div>
+              <div className="text-[10.5px] text-slate-400">Every stage database-driven — click a stage to open its queue</div>
             </div>
-            <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">LIVE</span>
+            <span className="text-[10px] font-bold text-amber-400 bg-amber-950/40 border border-amber-500/30 rounded-full px-2 py-0.5">LIVE</span>
           </div>
-          <div className="p-4 space-y-1.5">
+          <div className="p-4 space-y-2">
             {FUNNEL_STEPS.map((s, i) => {
               const n = funnel[s.key] ?? 0;
               const max = funnel.applicants || 1;
@@ -127,12 +138,12 @@ export function GnOverview() {
               return (
                 <Link key={s.key} to={`/gn/co/applicants?tab=${s.key === "kyc_started" ? "kyc" : s.key === "kyc_completed" ? "kyc" : s.key === "eligible" ? "match" : s.key === "applications_created" ? "docs" : s.key === "applications_submitted" ? "docs" : s.key === "underwriting" ? "uw" : s.key === "approved" ? "sanction" : s.key === "disb_initiated" ? "disbursement" : s.key === "disbursed" ? "payout" : s.key === "payout_received" ? "payout" : "all"}`} className="block group">
                   <div className="flex items-center gap-3">
-                    <div className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 bg-zinc-100 text-zinc-500 group-hover:bg-brand-600 group-hover:text-white">{i + 1}</div>
-                    <div className="w-36 shrink-0 text-[11.5px] font-semibold text-zinc-700 group-hover:text-brand-700">{s.label}</div>
-                    <div className="flex-1 h-2 rounded-full bg-zinc-100 overflow-hidden">
-                      <div className={`h-full rounded-full ${i === FUNNEL_STEPS.length - 1 ? "bg-emerald-500" : "bg-brand-500"}`} style={{ width: `${Math.max(3, pct)}%` }} />
+                    <div className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 bg-[#0c1220] border border-[#1e293b] text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors">{i + 1}</div>
+                    <div className="w-36 shrink-0 text-[11.5px] font-semibold text-slate-300 group-hover:text-indigo-400 transition-colors">{s.label}</div>
+                    <div className="flex-1 h-2 rounded-full bg-[#0c1220] border border-[#1e293b] overflow-hidden">
+                      <div className={`h-full rounded-full ${i === FUNNEL_STEPS.length - 1 ? "bg-emerald-500" : "bg-indigo-600"}`} style={{ width: `${Math.max(3, pct)}%` }} />
                     </div>
-                    <div className="w-14 text-right text-[12px] font-bold text-zinc-800">{n}</div>
+                    <div className="w-14 text-right text-[12px] font-bold text-white font-mono">{n}</div>
                   </div>
                 </Link>
               );
@@ -141,31 +152,31 @@ export function GnOverview() {
         </Card>
 
         <div className="space-y-5">
-          <Card>
+          <Card className="bg-[#111827] border-[#1e293b]">
             <CardTitleCustom title="Disbursement by Lender" />
             {!data?.byLender?.length ? <EmptyState title="No disbursements yet" sub="Disbursed applicants will appear here" /> : (
               <div className="space-y-2 mt-2">
                 {data.byLender.map((l: any) => (
-                  <div key={l.lender_id} className="flex items-center justify-between text-[12px]">
-                    <span className="font-semibold text-zinc-700">{l.lender_name}</span>
-                    <span className="flex items-center gap-2"><span className="text-zinc-400">{l.n} loans</span><span className="font-bold text-zinc-800">{fmtInr(l.amount)}</span></span>
+                  <div key={l.lender_id} className="flex items-center justify-between text-[12px] p-2 rounded-lg bg-[#0c1220] border border-[#1e293b]">
+                    <span className="font-semibold text-slate-200">{l.lender_name}</span>
+                    <span className="flex items-center gap-2"><span className="text-slate-400 font-mono">{l.n} loans</span><span className="font-bold text-white font-mono">{fmtInr(l.amount)}</span></span>
                   </div>
                 ))}
               </div>
             )}
           </Card>
-          <Card>
+          <Card className="bg-[#111827] border-[#1e293b]">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-[12.5px] font-bold text-zinc-800">Live Applicant Tracker</div>
-              <Link to="/gn/co/applicants" className="text-[10.5px] font-semibold text-brand-600 hover:underline">View all →</Link>
+              <div className="text-[12.5px] font-bold text-white">Live Applicant Tracker</div>
+              <Link to="/gn/co/applicants" className="text-[10.5px] font-semibold text-indigo-400 hover:underline">View all →</Link>
             </div>
             {!data?.recent?.length ? <EmptyState title="No applicants yet" sub="Create your first applicant to get started" /> : (
               <div className="space-y-1.5">
                 {data.recent.map((a: any) => (
-                  <Link key={a.id} to={`/gn/co/applicants?id=${a.id}`} className="flex items-center justify-between rounded-lg border border-zinc-100 px-2.5 py-2 hover:border-brand-200">
+                  <Link key={a.id} to={`/gn/co/applicants?id=${a.id}`} className="flex items-center justify-between rounded-lg border border-[#1e293b] bg-[#0c1220] px-3 py-2 hover:border-indigo-500/50 transition-colors">
                     <div>
-                      <div className="text-[12px] font-semibold text-zinc-800">{a.name}</div>
-                      <div className="text-[10px] text-zinc-400">{a.loan_type ?? "—"} · {fmtInr(a.loan_amount)} · {fmtDate(a.created_at)}</div>
+                      <div className="text-[12px] font-semibold text-white">{a.name}</div>
+                      <div className="text-[10px] text-slate-400 font-mono">{a.loan_type ?? "—"} · {fmtInr(a.loan_amount)} · {fmtDate(a.created_at)}</div>
                     </div>
                     <span className={`text-[9.5px] font-bold rounded-full px-2 py-0.5 border ${appStatusBadge(a.app_status)}`}>{a.app_status}</span>
                   </Link>
@@ -180,15 +191,19 @@ export function GnOverview() {
 }
 
 function CardTitleCustom({ title }: { title: string }) {
-  return <div className="text-[12.5px] font-bold text-zinc-800">{title}</div>;
+  return <div className="text-[12.5px] font-bold text-white">{title}</div>;
 }
 
 function appStatusBadge(s: string | null | undefined): string {
   const map: Record<string, string> = {
-    payout: "border-emerald-200 bg-emerald-50 text-emerald-700", disbursed: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    disb_initiated: "border-amber-200 bg-amber-50 text-amber-700", approved: "border-indigo-200 bg-indigo-50 text-indigo-700",
-    uw: "border-sky-200 bg-sky-50 text-sky-700", submitted: "border-sky-200 bg-sky-50 text-sky-700",
-    created: "border-zinc-200 bg-zinc-50 text-zinc-600", rejected: "border-rose-200 bg-rose-50 text-rose-700"
+    payout: "border-emerald-500/30 bg-emerald-500/20 text-emerald-400",
+    disbursed: "border-emerald-500/30 bg-emerald-500/20 text-emerald-400",
+    disb_initiated: "border-amber-500/30 bg-amber-500/20 text-amber-400",
+    approved: "border-indigo-500/30 bg-indigo-500/20 text-indigo-400",
+    uw: "border-sky-500/30 bg-sky-500/20 text-sky-400",
+    submitted: "border-sky-500/30 bg-sky-500/20 text-sky-400",
+    created: "border-[#1e293b] bg-[#0c1220] text-slate-400",
+    rejected: "border-rose-500/30 bg-rose-500/20 text-rose-400"
   };
-  return map[s ?? ""] ?? "border-zinc-200 bg-zinc-50 text-zinc-600";
+  return map[s ?? ""] ?? "border-[#1e293b] bg-[#0c1220] text-slate-400";
 }

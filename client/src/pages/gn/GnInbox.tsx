@@ -65,22 +65,22 @@ export function GnInbox() {
         </div>
         <div className="space-y-2">
           {data.rows.map((m: any) => (
-            <div key={m.id} className={`rounded-lg border px-3 py-2.5 ${m.status === "unread" && m.direction === "in" ? "border-violet-200 bg-violet-50/40" : "border-zinc-100 bg-white"}`}>
-              <div className="flex items-center gap-2">
-                <span className={`w-7 h-7 rounded-lg flex items-center justify-center ${m.channel === "whatsapp" ? "bg-emerald-50 text-emerald-600" : m.channel === "email" ? "bg-amber-50 text-amber-600" : m.channel === "call" ? "bg-sky-50 text-sky-600" : "bg-zinc-100 text-zinc-500"}`}>
-                  {m.channel === "whatsapp" ? <MessageSquare className="w-3.5 h-3.5" /> : m.channel === "email" ? <Mail className="w-3.5 h-3.5" /> : m.channel === "call" ? <Phone className="w-3.5 h-3.5" /> : <Smartphone className="w-3.5 h-3.5" />}
+            <div key={m.id} className={`rounded-xl border px-3.5 py-3 transition-colors ${m.status === "unread" && m.direction === "in" ? "border-violet-500/40 bg-violet-950/30 text-white" : "border-[#1e293b] bg-[#111827] hover:bg-[#152033]/60 text-slate-200"}`}>
+              <div className="flex items-center gap-3">
+                <span className={`w-8 h-8 rounded-xl flex items-center justify-center ${m.channel === "whatsapp" ? "bg-emerald-950/60 border border-emerald-500/30 text-emerald-400" : m.channel === "email" ? "bg-amber-950/60 border border-amber-500/30 text-amber-400" : m.channel === "call" ? "bg-sky-950/60 border border-sky-500/30 text-sky-400" : "bg-[#0c1220] border border-[#1e293b] text-slate-400"}`}>
+                  {m.channel === "whatsapp" ? <MessageSquare className="w-4 h-4" /> : m.channel === "email" ? <Mail className="w-4 h-4" /> : m.channel === "call" ? <Phone className="w-4 h-4" /> : <Smartphone className="w-4 h-4" />}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 text-[12.5px]">
-                    <span className={`font-semibold ${m.direction === "out" ? "text-zinc-400" : "text-zinc-800"}`}>{m.direction === "out" ? `→ ${m.to_contact ?? "—"}` : `← ${m.from_contact ?? "—"}`}</span>
-                    {m.subject && <span className="text-zinc-500 truncate">· {m.subject}</span>}
+                  <div className="flex items-center gap-2 text-[12.5px] flex-wrap">
+                    <span className={`font-semibold ${m.direction === "out" ? "text-slate-400 font-mono" : "text-white font-mono"}`}>{m.direction === "out" ? `→ ${m.to_contact ?? "—"}` : `← ${m.from_contact ?? "—"}`}</span>
+                    {m.subject && <span className="text-slate-400 truncate">· {m.subject}</span>}
                     <span className="ml-auto flex items-center gap-2">
-                      <Badge status=""><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border border-zinc-200 bg-zinc-50 text-zinc-500 uppercase">{m.channel}</span></Badge>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${m.status === "unread" ? "border-violet-200 bg-violet-50 text-violet-700" : m.status === "failed" ? "border-red-200 bg-red-50 text-red-600" : m.status === "sent" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-zinc-200 bg-zinc-50 text-zinc-500"}`}>{m.status}</span>
-                      <span className="text-[10.5px] text-zinc-400">{String(m.created_at).slice(0, 16)}</span>
+                      <Badge status=""><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#1e293b] bg-[#0c1220] text-slate-300 uppercase">{m.channel}</span></Badge>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${m.status === "unread" ? "border-violet-500/30 bg-violet-500/20 text-violet-300" : m.status === "failed" ? "border-rose-500/30 bg-rose-500/20 text-rose-400" : m.status === "sent" ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-400" : "border-[#1e293b] bg-[#0c1220] text-slate-400"}`}>{m.status}</span>
+                      <span className="text-[10.5px] text-slate-400 font-mono">{String(m.created_at).slice(0, 16)}</span>
                     </span>
                   </div>
-                  <div className="text-[12px] text-zinc-600 mt-0.5 line-clamp-2">{m.body}</div>
+                  <div className="text-[12px] text-slate-300 mt-1 line-clamp-2">{m.body}</div>
                 </div>
                 <div className="flex items-center gap-1 ml-2">
                   {m.direction === "in" && m.status !== "replied" && (

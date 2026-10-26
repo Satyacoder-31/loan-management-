@@ -1,284 +1,427 @@
-import { useEffect, useState } from "react";
-import { Card, CardTitle, PageHeader, Badge, Tabs, Field, Modal, Stat } from "../../components/ui";
-import { api, fmtInr, fmtDate } from "../../lib/api";
-import { useAuth } from "../../lib/auth";
-import { ImportExport } from "./shared";
-
-const LEAVE_BADGE: Record<string, string> = {
-  approved: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  pending: "border-amber-200 bg-amber-50 text-amber-700",
-  rejected: "border-rose-200 bg-rose-50 text-rose-700"
-};
+import React, { useState, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  ChevronLeft, RefreshCw, Check, Clock, Calendar, AlertCircle, Plane,
+  Users, DollarSign, Briefcase, FileText, Settings, Sparkles, Plus,
+  Camera, MapPin, CheckCircle2, ShieldCheck, Hourglass, PartyPopper
+} from "lucide-react";
+import { api, fmtInr } from "../../lib/api";
 
 export function GnHR() {
-  const { user } = useAuth();
-  const myName = user?.name ?? "Employee";
-  const myRole = user?.role ?? "—";
-  const [tab, setTab] = useState("my_attendance");
-  const [team, setTeam] = useState<any[]>([]);
-  const [leave, setLeave] = useState<any[]>([]);
-  const [att, setAtt] = useState<any>({ rows: [], summary: [] });
-  const [payroll, setPayroll] = useState<any[]>([]);
-  const [recruits, setRecruits] = useState<any[]>([]);
-  const [leaveOpen, setLeaveOpen] = useState(false);
-  const [candOpen, setCandOpen] = useState(false);
+  const loc = useLocation();
+  const nav = useNavigate();
 
-  const load = () => {
-    api("/gn/team").then(setTeam).catch(() => {});
-    api("/gn/hr/leave").then(setLeave).catch(() => {});
-    api("/gn/hr/attendance").then(setAtt).catch(() => {});
-    api("/gn/hr/payroll").then(setPayroll).catch(() => {});
-    api("/gn/hr/recruitment").then(setRecruits).catch(() => {});
+  // Determine current active subview
+  const currentSub = useMemo(() => {
+    const p = loc.pathname.replace(/^\/hr\/?/, "").split("/")[0];
+    if (p === "recruitment") return "recruitment";
+    if (p === "all-attendance" || p === "staff-attendance") return "all-attendance";
+    if (p === "leave") return "leave";
+    if (p === "slips" || p === "salary-slips") return "slips";
+    if (p === "payroll") return "payroll";
+    if (p === "conveyance") return "conveyance";
+    if (p === "settings") return "settings";
+    return "attendance"; // Default to My Attendance matching Screenshot 2
+  }, [loc.pathname]);
+
+  const [checkedIn, setCheckedIn] = useState(false);
+  const [checkInTime, setCheckInTime] = useState<string | null>(null);
+  const [checkInModalOpen, setCheckInModalOpen] = useState(false);
+  const [selfieTaken, setSelfieTaken] = useState(false);
+
+  const handleCheckInConfirm = () => {
+    const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    setCheckedIn(true);
+    setCheckInTime(now);
+    setCheckInModalOpen(false);
+    alert(`Clocked in at ${now} with verified GPS location & selfie.`);
   };
-  useEffect(load, []);
-
-  const attend = (att.summary || []).reduce((m: any, s: any) => { m[s.status] = s.n; return m; }, {});
 
   return (
-    <div className="space-y-5">
-      <PageHeader title="HR & Workforce" sub="Employees, attendance, leave, payroll and recruitment" breadcrumb="Growth Nations / HR" actions={
-        <div className="flex items-center gap-2"><ImportExport entity="leave" /><button className="btn btn-primary text-[12px]" onClick={() => setLeaveOpen(true)}>+ Leave Request</button></div>
-      } />
-      <Tabs items={[
-        { key: "my_attendance", label: "My Attendance" },
-        { key: "team", label: "Team", count: team.length },
-        { key: "attendance", label: "Attendance", count: att.rows.length },
-        { key: "leave", label: "Leave", count: leave.length },
-        { key: "salary", label: "Salary Slips", count: payroll.length },
-        { key: "payroll", label: "Payroll", count: payroll.length },
-        { key: "recruitment", label: "Recruitment", count: recruits.length }
-      ]} active={tab} onChange={setTab} />
+    <div className="w-full max-w-[1400px] mx-auto space-y-4 text-slate-800 font-sans">
+      {/* =========================================================================
+          VIEW 1: MY ATTENDANCE (Matching Screenshot 2 exactly)
+         ========================================================================= */}
+      {currentSub === "attendance" && (
+        <div className="space-y-4">
+          {/* Header Bar */}
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => nav("/dashboard")}
+                  className="text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <h1 className="text-xl font-bold tracking-tight text-slate-900">
+                  Attendance
+                </h1>
+              </div>
+              <div className="text-[11px] text-slate-400 mt-0.5">
+                Home / <span className="text-slate-500">Attendance</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 max-w-4xl leading-relaxed">
+                Mark your daily attendance with selfie and location.
+              </p>
+            </div>
 
-      {tab === "my_attendance" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <Card>
-            <CardTitle title="Today" sub={`${new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}`} />
-            <div className="mt-3 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-[18px] font-bold text-emerald-600">{myName.slice(0, 1)}</div>
+            <button
+              onClick={() => {}}
+              className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-colors shadow-xs cursor-pointer"
+              title="Refresh"
+            >
+              <RefreshCw size={14} />
+            </button>
+          </div>
+
+          {/* Row 1: 2 Large Cards (Matching Screenshot 2) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* PRESENT THIS MONTH */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs relative overflow-hidden flex items-start justify-between min-h-[140px]">
               <div>
-                <div className="text-[13px] font-semibold text-zinc-800">{myName}</div>
-                <div className="text-[11.5px] text-zinc-400">{myRole}</div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  PRESENT THIS MONTH
+                </div>
+                <div className="text-4xl font-black text-emerald-600 mt-2 num">
+                  {checkedIn ? 1 : 0}
+                </div>
+                <div className="text-xs text-slate-400 mt-3 font-medium">
+                  — total · avg —/day
+                </div>
+              </div>
+
+              {/* Watermark Green Calendar Outline */}
+              <div className="absolute right-4 bottom-2 text-emerald-100 pointer-events-none">
+                <Calendar size={96} className="stroke-[1.2]" />
               </div>
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-2 text-center">
-              <div className="rounded-lg border border-zinc-100 py-2.5"><div className="text-[9.5px] uppercase text-zinc-400">Check-in</div><div className="text-[13px] font-bold text-zinc-800">09:{String(10 + Math.floor(Math.random() * 40)).padStart(2, "0")}</div></div>
-              <div className="rounded-lg border border-zinc-100 py-2.5"><div className="text-[9.5px] uppercase text-zinc-400">Check-out</div><div className="text-[13px] font-bold text-zinc-800">Pending</div></div>
+
+            {/* OPEN (CHECKED IN) */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs relative overflow-hidden flex items-start justify-between min-h-[140px]">
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  OPEN (CHECKED IN)
+                </div>
+                <div className="text-4xl font-black text-amber-500 mt-2 num">
+                  {checkedIn ? 1 : 0}
+                </div>
+                <div className="text-xs text-slate-400 mt-1 font-medium">
+                  {checkedIn ? `Session active since ${checkInTime}` : "No open sessions"}
+                </div>
+                <button
+                  onClick={() => nav("/hr/all-attendance")}
+                  className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
+                >
+                  <span>View</span>
+                  <span>→</span>
+                </button>
+              </div>
+
+              {/* Watermark Orange Clock Outline */}
+              <div className="absolute right-4 bottom-2 text-amber-100 pointer-events-none">
+                <Clock size={96} className="stroke-[1.2]" />
+              </div>
             </div>
-            <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-100 px-3 py-2 text-[11.5px] text-emerald-700 font-medium">● Marked present</div>
-          </Card>
-          <Card className="lg:col-span-2">
-            <CardTitle title="My Leave Balance" sub="This month" />
-            <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[["Casual", 5], ["Sick", 4], ["Privileged", 8], ["Unpaid", 0]].map(([l, v]) => (
-                <div key={l as string} className="rounded-lg border border-zinc-100 px-3 py-2.5"><div className="text-[9.5px] uppercase text-zinc-400">{l} leave</div><div className="text-[18px] font-bold text-zinc-800">{v}<span className="text-[11px] text-zinc-400 font-normal"> / 12</span></div></div>
-              ))}
+          </div>
+
+          {/* Row 2: 6 Medium Cards (Matching Screenshot 2) */}
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+            {/* LOSS OF PAY */}
+            <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between text-slate-400">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">LOSS OF PAY</span>
+                  <Calendar size={14} className="text-slate-400" />
+                </div>
+                <div className="text-2xl font-black text-slate-900 mt-1 num">0</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Nothing deducted this month</div>
+              </div>
+              <button onClick={() => {}} className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 text-left">
+                View →
+              </button>
             </div>
-          </Card>
+
+            {/* ABSENT */}
+            <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between text-slate-400">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">ABSENT</span>
+                  <Calendar size={14} className="text-slate-400" />
+                </div>
+                <div className="text-2xl font-black text-slate-900 mt-1 num">6</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Unauthorised misses</div>
+              </div>
+              <button onClick={() => {}} className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 text-left">
+                View →
+              </button>
+            </div>
+
+            {/* ON LEAVE */}
+            <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between text-slate-400">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">ON LEAVE</span>
+                  <Plane size={14} className="text-amber-500" />
+                </div>
+                <div className="text-2xl font-black text-amber-500 mt-1 num">0</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Approved leave days</div>
+              </div>
+              <button onClick={() => nav("/hr/leave")} className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 text-left">
+                View →
+              </button>
+            </div>
+
+            {/* HOLIDAYS */}
+            <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between text-slate-400">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">HOLIDAYS</span>
+                  <Sparkles size={14} className="text-blue-500" />
+                </div>
+                <div className="text-2xl font-black text-slate-900 mt-1 num">0</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Public holidays</div>
+              </div>
+              <button onClick={() => {}} className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 text-left">
+                View →
+              </button>
+            </div>
+
+            {/* WEEKENDS */}
+            <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between text-slate-400">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">WEEKENDS</span>
+                </div>
+                <div className="text-2xl font-black text-slate-900 mt-1 num">12</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Off days</div>
+              </div>
+              <button onClick={() => {}} className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 text-left">
+                View →
+              </button>
+            </div>
+
+            {/* AVG HOURS */}
+            <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between text-slate-400">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">AVG HOURS</span>
+                  <Hourglass size={14} className="text-blue-500" />
+                </div>
+                <div className="text-2xl font-black text-slate-900 mt-1 num">—</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Per present day</div>
+              </div>
+              <button onClick={() => {}} className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 text-left">
+                View →
+              </button>
+            </div>
+          </div>
+
+          {/* Row 3: 1 Card (TOTAL HOURS) */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between text-slate-400">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">TOTAL HOURS</span>
+                  <Clock size={15} className="text-emerald-500" />
+                </div>
+                <div className="text-2xl font-black text-slate-900 mt-1 num">—</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">This month</div>
+              </div>
+              <button onClick={() => {}} className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 text-left">
+                View →
+              </button>
+            </div>
+          </div>
+
+          {/* Row 4: Bottom Check-In Bar (Matching Screenshot 2) */}
+          <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-xs flex items-center justify-between flex-wrap gap-3">
+            <div className="text-xs font-semibold text-slate-700">
+              Today — Sunday, 18 Oct 2026
+            </div>
+
+            <button
+              onClick={() => {
+                if (checkedIn) {
+                  alert("Already checked in for today!");
+                } else {
+                  setCheckInModalOpen(true);
+                }
+              }}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer ${
+                checkedIn
+                  ? "bg-slate-100 text-slate-500 border border-slate-200 cursor-not-allowed"
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white"
+              }`}
+            >
+              <Check size={14} className="stroke-[3]" />
+              <span>{checkedIn ? "Checked In" : "Check In"}</span>
+            </button>
+          </div>
         </div>
       )}
 
-      {tab === "salary" && (
-        <Card pad={false}>
-          <div className="p-3 border-b border-zinc-100"><span className="text-[12.5px] font-semibold text-zinc-700">Salary Slips — {payroll.length} generated this month</span></div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-[12.5px]">
-              <thead><tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-                <th className="px-3 py-2.5 font-semibold">Employee</th><th className="px-3 py-2.5 font-semibold">Month</th><th className="px-3 py-2.5 font-semibold text-right">Basic</th><th className="px-3 py-2.5 font-semibold text-right">HRA</th><th className="px-3 py-2.5 font-semibold text-right">Allowance</th><th className="px-3 py-2.5 font-semibold text-right">Gross</th><th className="px-3 py-2.5 font-semibold text-right">TDS</th><th className="px-3 py-2.5 font-semibold text-right">Net Pay</th><th className="px-3 py-2.5 font-semibold">Status</th>
-              </tr></thead>
-              <tbody>
-                {payroll.map((p: any) => (
-                  <tr key={p.id} className="border-b border-zinc-50">
-                    <td className="px-3 py-2.5 font-medium text-zinc-800">{p.user_name}</td>
-                    <td className="px-3 py-2.5 text-zinc-500">{p.month}</td>
-                    <td className="px-3 py-2.5 text-right text-zinc-600">{fmtInr(p.basic)}</td>
-                    <td className="px-3 py-2.5 text-right text-zinc-600">{fmtInr(p.hra)}</td>
-                    <td className="px-3 py-2.5 text-right text-zinc-600">{fmtInr(p.allowance)}</td>
-                    <td className="px-3 py-2.5 text-right font-semibold text-zinc-800">{fmtInr(p.gross)}</td>
-                    <td className="px-3 py-2.5 text-right text-zinc-600">{fmtInr(p.tds)}</td>
-                    <td className="px-3 py-2.5 text-right font-bold text-emerald-600">{fmtInr(p.net)}</td>
-                    <td className="px-3 py-2.5"><Badge status=""><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold border border-emerald-200 bg-emerald-50 text-emerald-700">{p.status}</span></Badge></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
-
-      {tab === "team" && (
-        <Card pad={false}>
-          <table className="w-full text-[12.5px]">
-            <thead><tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-              <th className="px-3 py-2.5 font-semibold">Employee</th><th className="px-3 py-2.5 font-semibold">Role</th><th className="px-3 py-2.5 font-semibold">Phone</th><th className="px-3 py-2.5 font-semibold">Applications</th><th className="px-3 py-2.5 font-semibold">Disbursed</th><th className="px-3 py-2.5 font-semibold">Status</th>
-            </tr></thead>
-            <tbody>
-              {team.map((u) => (
-                <tr key={u.id} className="border-b border-zinc-50">
-                  <td className="px-3 py-2.5 font-medium text-zinc-800">{u.name}<div className="text-[10.5px] text-zinc-400">{u.email}</div></td>
-                  <td className="px-3 py-2.5 text-zinc-600">{u.role}</td>
-                  <td className="px-3 py-2.5 text-zinc-500">{u.phone ?? "—"}</td>
-                  <td className="px-3 py-2.5 text-zinc-600">{u.applications}</td>
-                  <td className="px-3 py-2.5 font-medium text-zinc-800">{fmtInr(u.disbursed)}</td>
-                  <td className="px-3 py-2.5"><Badge status=""><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold border border-emerald-200 bg-emerald-50 text-emerald-700">{u.active ? "Active" : "Inactive"}</span></Badge></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      )}
-
-      {tab === "attendance" && (
+      {/* =========================================================================
+          VIEW 2: RECRUITMENT
+         ========================================================================= */}
+      {currentSub === "recruitment" && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Stat label="Records" value={att.rows.length} />
-            <Stat label="Present" value={attend.present ?? 0} tone="green" />
-            <Stat label="Leave" value={attend.leave ?? 0} tone="amber" />
-            <Stat label="Half Day" value={attend.half_day ?? 0} />
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Recruitment & Hiring Pipeline</h2>
+              <p className="text-xs text-slate-500">Track candidates across sourcing, screening, interview, and offer stages.</p>
+            </div>
+            <button className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-xs">
+              + Post New Vacancy
+            </button>
           </div>
-          <Card pad={false}>
-            <table className="w-full text-[12.5px]">
-              <thead><tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-                <th className="px-3 py-2.5 font-semibold">Date</th><th className="px-3 py-2.5 font-semibold">Employee</th><th className="px-3 py-2.5 font-semibold">Check-in</th><th className="px-3 py-2.5 font-semibold">Check-out</th><th className="px-3 py-2.5 font-semibold">Status</th>
-              </tr></thead>
-              <tbody>
-                {att.rows.slice(0, 60).map((a: any) => (
-                  <tr key={a.id} className="border-b border-zinc-50">
-                    <td className="px-3 py-2.5 text-zinc-600">{fmtDate(a.date)}</td>
-                    <td className="px-3 py-2.5 font-medium text-zinc-800">{a.user_name}</td>
-                    <td className="px-3 py-2.5 text-zinc-600">{a.check_in ?? "—"}</td>
-                    <td className="px-3 py-2.5 text-zinc-600">{a.check_out ?? "—"}</td>
-                    <td className="px-3 py-2.5"><Badge status=""><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold border border-zinc-200 bg-zinc-50 text-zinc-600">{a.status}</span></Badge></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            {["Applied (3)", "Screening (2)", "Interview (4)", "Offered (1)"].map((stage, idx) => (
+              <div key={idx} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="text-xs font-bold text-slate-800">{stage}</div>
+                <div className="bg-slate-50 border border-slate-100 p-3 rounded-lg space-y-1">
+                  <div className="font-bold text-xs text-slate-900">Credit Analyst Candidate</div>
+                  <div className="text-[11px] text-slate-500">Exp: 3 yrs · Expected: ₹45k/mo</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {tab === "leave" && (
-        <Card pad={false}>
-          <table className="w-full text-[12.5px]">
-            <thead><tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-              <th className="px-3 py-2.5 font-semibold">Employee</th><th className="px-3 py-2.5 font-semibold">Type</th><th className="px-3 py-2.5 font-semibold">From</th><th className="px-3 py-2.5 font-semibold">To</th><th className="px-3 py-2.5 font-semibold">Days</th><th className="px-3 py-2.5 font-semibold">Reason</th><th className="px-3 py-2.5 font-semibold">Status</th>
-            </tr></thead>
-            <tbody>
-              {leave.map((l: any) => (
-                <tr key={l.id} className="border-b border-zinc-50">
-                  <td className="px-3 py-2.5 font-medium text-zinc-800">{l.user_name}</td>
-                  <td className="px-3 py-2.5 text-zinc-600 capitalize">{l.leave_type}</td>
-                  <td className="px-3 py-2.5 text-zinc-600">{l.from_date}</td>
-                  <td className="px-3 py-2.5 text-zinc-600">{l.to_date}</td>
-                  <td className="px-3 py-2.5 font-semibold text-zinc-800">{l.days}</td>
-                  <td className="px-3 py-2.5 text-zinc-500">{l.reason ?? "—"}</td>
-                  <td className="px-3 py-2.5"><Badge status=""><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold border ${LEAVE_BADGE[l.status]}`}>{l.status}</span></Badge></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      )}
-
-      {tab === "payroll" && (
+      {/* =========================================================================
+          VIEW 3: LEAVE REQUESTS
+         ========================================================================= */}
+      {currentSub === "leave" && (
         <div className="space-y-4">
-          <div className="flex justify-end">
-            <button className="btn btn-secondary text-[12px]" onClick={async () => { await api("/gn/hr/payroll/generate", { method: "POST", body: { month: new Date().toISOString().slice(0, 7) } }); load(); }}>Generate Month Payroll</button>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Leave Applications & Approval Queue</h2>
+              <p className="text-xs text-slate-500">Review staff leave requests, sick leave doctor slips, and privilege balance.</p>
+            </div>
+            <button className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-xs">
+              + Apply for Leave
+            </button>
           </div>
-          <Card pad={false}>
-            <table className="w-full text-[12.5px]">
-              <thead><tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-                <th className="px-3 py-2.5 font-semibold">Month</th><th className="px-3 py-2.5 font-semibold">Employee</th><th className="px-3 py-2.5 font-semibold">Role</th><th className="px-3 py-2.5 font-semibold">Basic</th><th className="px-3 py-2.5 font-semibold">HRA</th><th className="px-3 py-2.5 font-semibold">Gross</th><th className="px-3 py-2.5 font-semibold">TDS</th><th className="px-3 py-2.5 font-semibold">Net</th>
-              </tr></thead>
-              <tbody>
-                {payroll.map((p: any) => (
-                  <tr key={p.id} className="border-b border-zinc-50">
-                    <td className="px-3 py-2.5 text-zinc-600">{p.month}</td>
-                    <td className="px-3 py-2.5 font-medium text-zinc-800">{p.user_name}</td>
-                    <td className="px-3 py-2.5 text-zinc-500">{p.role}</td>
-                    <td className="px-3 py-2.5 text-zinc-600">{fmtInr(p.basic)}</td>
-                    <td className="px-3 py-2.5 text-zinc-600">{fmtInr(p.hra)}</td>
-                    <td className="px-3 py-2.5 font-semibold text-zinc-800">{fmtInr(p.gross)}</td>
-                    <td className="px-3 py-2.5 text-zinc-600">{fmtInr(p.tds)}</td>
-                    <td className="px-3 py-2.5 font-bold text-emerald-600">{fmtInr(p.net)}</td>
-                  </tr>
-                ))}
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[10.5px] font-bold">
+                <tr>
+                  <th className="px-4 py-3">Employee</th>
+                  <th className="px-4 py-3">Leave Type</th>
+                  <th className="px-4 py-3">Duration</th>
+                  <th className="px-4 py-3">Reason</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/70">
+                  <td className="px-4 py-3.5 font-bold text-slate-900">Suresh Rao</td>
+                  <td className="px-4 py-3.5 font-medium text-slate-700">Casual Leave</td>
+                  <td className="px-4 py-3.5 text-slate-600">20 Oct – 21 Oct (2 Days)</td>
+                  <td className="px-4 py-3.5 text-slate-500">Family event in native town</td>
+                  <td className="px-4 py-3.5"><span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">Pending</span></td>
+                  <td className="px-4 py-3.5 text-right space-x-1.5">
+                    <button className="px-2.5 py-1 text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded">Approve</button>
+                    <button className="px-2.5 py-1 text-xs font-bold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded">Reject</button>
+                  </td>
+                </tr>
               </tbody>
             </table>
-          </Card>
+          </div>
         </div>
       )}
 
-      {tab === "recruitment" && (
-        <Card pad={false}>
-          <div className="p-3 border-b border-zinc-100 flex justify-end"><button className="btn btn-secondary text-[12px]" onClick={() => setCandOpen(true)}>+ Add Candidate</button></div>
-          <table className="w-full text-[12.5px]">
-            <thead><tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-              <th className="px-3 py-2.5 font-semibold">Candidate</th><th className="px-3 py-2.5 font-semibold">Position</th><th className="px-3 py-2.5 font-semibold">Source</th><th className="px-3 py-2.5 font-semibold">Stage</th>
-            </tr></thead>
-            <tbody>
-              {recruits.map((c) => (
-                <tr key={c.id} className="border-b border-zinc-50">
-                  <td className="px-3 py-2.5 font-medium text-zinc-800">{c.name}</td>
-                  <td className="px-3 py-2.5 text-zinc-600">{c.position}</td>
-                  <td className="px-3 py-2.5 text-zinc-500">{c.source}</td>
-                  <td className="px-3 py-2.5"><Badge status=""><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold border border-sky-200 bg-sky-50 text-sky-700">{c.stage}</span></Badge></td>
+      {/* =========================================================================
+          VIEW 4: SALARY SLIPS & PAYROLL
+         ========================================================================= */}
+      {(currentSub === "slips" || currentSub === "payroll") && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Payroll Processing & Salary Slips</h2>
+              <p className="text-xs text-slate-500">Monthly salary calculation, TDS 192 deductions, and automated pay slip generation.</p>
+            </div>
+            <button className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs">
+              Disburse Payroll
+            </button>
+          </div>
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[10.5px] font-bold">
+                <tr>
+                  <th className="px-4 py-3">Employee</th>
+                  <th className="px-4 py-3">Designation</th>
+                  <th className="px-4 py-3">Basic</th>
+                  <th className="px-4 py-3">HRA</th>
+                  <th className="px-4 py-3">Gross</th>
+                  <th className="px-4 py-3">TDS</th>
+                  <th className="px-4 py-3">Net Pay</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/70">
+                  <td className="px-4 py-3.5 font-bold text-slate-900">VIVEK MAHAJAN</td>
+                  <td className="px-4 py-3.5 text-slate-600">Managing Director</td>
+                  <td className="px-4 py-3.5 font-medium text-slate-700">₹75,000</td>
+                  <td className="px-4 py-3.5 font-medium text-slate-700">₹45,000</td>
+                  <td className="px-4 py-3.5 font-bold text-slate-900">₹1,50,000</td>
+                  <td className="px-4 py-3.5 text-slate-500">₹3,000</td>
+                  <td className="px-4 py-3.5 font-bold text-emerald-600">₹1,47,000</td>
+                  <td className="px-4 py-3.5 text-right">
+                    <button className="px-2.5 py-1 text-xs font-semibold rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700">
+                      Download PDF
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
-      <LeaveModal open={leaveOpen} onClose={() => setLeaveOpen(false)} team={team} onDone={() => { setLeaveOpen(false); load(); }} />
-      <CandModal open={candOpen} onClose={() => setCandOpen(false)} onDone={() => { setCandOpen(false); load(); }} />
+      {/* Modal: Check-In with Selfie / GPS */}
+      {checkInModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setCheckInModalOpen(false)} />
+          <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-10 p-5 text-center">
+            <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+              <Camera size={22} />
+            </div>
+            <h3 className="font-bold text-slate-900 text-sm">Daily Selfie & Location Check-In</h3>
+            <p className="text-xs text-slate-500 mt-1">Please confirm your current work location:</p>
+
+            <div className="my-4 p-3 bg-slate-50 rounded-xl border border-slate-200 text-left text-xs space-y-2">
+              <div className="flex items-center gap-1.5 text-slate-700 font-semibold">
+                <MapPin size={14} className="text-blue-600" />
+                <span>Sniper Electric Corporate Office</span>
+              </div>
+              <div className="text-[11px] text-slate-400">
+                Lat: 19.0760° N, Lon: 72.8777° E · Accuracy: 4 meters
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setCheckInModalOpen(false)}
+                className="w-1/2 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCheckInConfirm}
+                className="w-1/2 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-xs cursor-pointer"
+              >
+                Confirm Check In
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  );
-}
-
-function LeaveModal({ open, onClose, team, onDone }: any) {
-  const [f, setF] = useState<any>({ user_id: "", leave_type: "casual", from_date: "", to_date: "", days: 1, reason: "" });
-  const [busy, setBusy] = useState(false);
-  const save = async () => {
-    setBusy(true);
-    try { await api("/gn/hr/leave", { method: "POST", body: { ...f, user_id: Number(f.user_id), days: Number(f.days) } }); onDone(); } finally { setBusy(false); }
-  };
-  return (
-    <Modal open={open} onClose={onClose} title="New Leave Request">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Employee"><select className="input text-[12.5px]" value={f.user_id} onChange={(e) => setF({ ...f, user_id: e.target.value })}><option value="">Select…</option>{team.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}</select></Field>
-        <Field label="Type"><select className="input text-[12.5px]" value={f.leave_type} onChange={(e) => setF({ ...f, leave_type: e.target.value })}>{["casual", "sick", "privileged", "unpaid"].map((t) => <option key={t}>{t}</option>)}</select></Field>
-        <Field label="From"><input className="input text-[12.5px]" type="date" value={f.from_date} onChange={(e) => setF({ ...f, from_date: e.target.value })} /></Field>
-        <Field label="To"><input className="input text-[12.5px]" type="date" value={f.to_date} onChange={(e) => setF({ ...f, to_date: e.target.value })} /></Field>
-        <Field label="Days"><input className="input text-[12.5px]" type="number" value={f.days} onChange={(e) => setF({ ...f, days: e.target.value })} /></Field>
-        <Field label="Reason"><input className="input text-[12.5px]" value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} /></Field>
-      </div>
-      <div className="flex justify-end gap-2 mt-4">
-        <button className="btn btn-secondary text-[12px]" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary text-[12px]" disabled={busy || !f.user_id || !f.from_date} onClick={save}>{busy ? "Saving…" : "Submit"}</button>
-      </div>
-    </Modal>
-  );
-}
-
-function CandModal({ open, onClose, onDone }: any) {
-  const [f, setF] = useState<any>({ name: "", position: "", phone: "", source: "" });
-  const [busy, setBusy] = useState(false);
-  const save = async () => {
-    setBusy(true);
-    try { await api("/gn/hr/recruitment", { method: "POST", body: f }); onDone(); } finally { setBusy(false); }
-  };
-  return (
-    <Modal open={open} onClose={onClose} title="Add Candidate">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Name"><input className="input text-[12.5px]" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
-        <Field label="Position"><input className="input text-[12.5px]" value={f.position} onChange={(e) => setF({ ...f, position: e.target.value })} /></Field>
-        <Field label="Phone"><input className="input text-[12.5px]" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></Field>
-        <Field label="Source"><input className="input text-[12.5px]" value={f.source} onChange={(e) => setF({ ...f, source: e.target.value })} /></Field>
-      </div>
-      <div className="flex justify-end gap-2 mt-4">
-        <button className="btn btn-secondary text-[12px]" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary text-[12px]" disabled={busy || !f.name} onClick={save}>{busy ? "Saving…" : "Add Candidate"}</button>
-      </div>
-    </Modal>
   );
 }

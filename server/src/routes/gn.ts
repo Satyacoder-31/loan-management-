@@ -295,6 +295,33 @@ gnRouter.get("/gn/hr/attendance", requirePerm("gn.hr.view"), asyncH(async (req: 
   res.json({ rows, summary });
 }));
 
+gnRouter.post("/gn/hr/attendance/punch", requirePerm("gn.hr.view"), asyncH(async (req: AuthedRequest, res) => {
+  const t = T(req);
+  const userId = req.user!.id;
+  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date().toTimeString().slice(0, 5); // HH:MM
+
+  const existing = await q1<Record<string, any>>(
+    "SELECT * FROM gn_attendance WHERE tenant_id = ? AND user_id = ? AND date = ?",
+    [t, userId, today]
+  );
+
+  if (!existing) {
+    const id = (await run(
+      "INSERT INTO gn_attendance (tenant_id, user_id, date, check_in, status) VALUES (?, ?, ?, ?, 'present')",
+      [t, userId, today, now]
+    )).lastId;
+    const row = await q1("SELECT a.*, u.name AS user_name FROM gn_attendance a JOIN users u ON u.id = a.user_id WHERE a.id = ?", [id]);
+    res.json({ action: "punch_in", check_in: now, row });
+  } else if (!existing.check_out) {
+    await run("UPDATE gn_attendance SET check_out = ? WHERE id = ?", [now, existing.id]);
+    const row = await q1("SELECT a.*, u.name AS user_name FROM gn_attendance a JOIN users u ON u.id = a.user_id WHERE a.id = ?", [existing.id]);
+    res.json({ action: "punch_out", check_out: now, row });
+  } else {
+    res.json({ action: "already_completed", check_in: existing.check_in, check_out: existing.check_out, row: existing });
+  }
+}));
+
 gnRouter.get("/gn/hr/payroll", requirePerm("gn.hr.view"), asyncH(async (req: AuthedRequest, res) => {
   const rows = await q<Record<string, any>>(
     `SELECT p.*, u.name AS user_name, u.role FROM gn_payroll p JOIN users u ON u.id = p.user_id

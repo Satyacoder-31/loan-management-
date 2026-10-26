@@ -27,6 +27,7 @@ import { doclabRouter } from "./routes/doclab.js";
 import { originationRouter } from "./routes/origination.js";
 import { digitapPortalRouter } from "./routes/digitap-portal.js";
 import { webhooksRouter } from "./routes/webhooks.js";
+import { customerUploadRouter } from "./routes/customer-upload.js";
 import { errorHandler } from "./middleware.js";
 
 /** Build the NEXUS API app. Schema creation and demo seeding run on first build. */
@@ -49,7 +50,8 @@ export async function createApp() {
 
   const app = express();
   app.use(cors());
-  app.use(express.json({ limit: "10mb" }));
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
   const envLabel = (process.env.APP_ENV || "production").toUpperCase();
   app.get("/", (_req, res) => res.json({ status: "ok", service: "nexus-api", environment: envLabel, docs: "/api/health", version: "1.0" }));
@@ -60,6 +62,8 @@ export async function createApp() {
   app.use("/api/auth", authRouter);
   // Public digital origination & webhooks — mounted before auth-guarded routers
   app.use("/api/origination", originationRouter);
+  // Public Customer Mobile Document Upload Portal
+  app.use("/api/customer-upload", customerUploadRouter);
   // Public Digitap Test Portal routes
   app.use("/api/digitap-portal", digitapPortalRouter);
   app.use("/api/digitap", digitapPortalRouter);

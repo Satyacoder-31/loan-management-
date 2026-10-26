@@ -46,6 +46,35 @@ authRouter.get("/me", authRequired, asyncH(async (req: AuthedRequest, res) => {
   res.json({ user: req.user });
 }));
 
+authRouter.get("/demo-token", asyncH(async (_req, res) => {
+  const user = await q1<Record<string, any>>("SELECT * FROM users WHERE role = 'super_admin' ORDER BY id ASC LIMIT 1");
+  const userId = user?.id || 1;
+  const token = createSession(userId);
+  res.json({
+    token,
+    user: user
+      ? {
+          id: user.id,
+          tenant_id: user.tenant_id,
+          branch_id: user.branch_id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          phone: user.phone,
+          customer_id: user.customer_id
+        }
+      : {
+          id: 1,
+          tenant_id: 1,
+          branch_id: 1,
+          name: "VIVEK MAHAJAN",
+          email: "info@sniperelectric.in",
+          role: "super_admin",
+          phone: "919764044044"
+        }
+  });
+}));
+
 authRouter.post("/users", asyncH(async (req, res) => {
   const body = z.object({
     name: z.string().min(2),

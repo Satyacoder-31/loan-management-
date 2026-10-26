@@ -101,12 +101,16 @@ export const TEST_SCHEMA: string | undefined = (() => {
 const pool = isSqliteMode ? null : new pg.Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: resolveSsl(),
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+  keepAlive: true,
   ...(TEST_SCHEMA ? { options: `-c search_path=${TEST_SCHEMA}` } : {})
 });
 
 if (pool) {
   pool.on("error", (err) => {
-    console.error("[db] pooled connection error:", err.message);
+    console.error("[db] pooled connection error (auto-handled):", err.message);
   });
 }
 
@@ -146,15 +150,15 @@ function sqliteToPgSql(sql: string): string {
 export function translateSql(sql: string): string {
   let s = sql.trim();
   
-  s = s.replace(/\bdate\('now'\s*\)/gi, "CURRENT_DATE");
-  s = s.replace(/\bdate\('now',\s*'([^']+)'\)/gi, (_m, interval) => `(CURRENT_DATE + INTERVAL '${interval}')`);
-  s = s.replace(/\bdate\(([A-Za-z_][A-Za-z0-9_.]*)\)/gi, "CAST($1 AS DATE)");
+  s = s.replace(/\bdate\('now'\s*\)/gi, "TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD')");
+  s = s.replace(/\bdate\('now',\s*'([^']+)'\)/gi, (_m, interval) => `TO_CHAR(CURRENT_DATE + INTERVAL '${interval}', 'YYYY-MM-DD')`);
+  s = s.replace(/\bdate\(([A-Za-z_][A-Za-z0-9_.]*)\)/gi, "SUBSTRING(CAST($1 AS TEXT) FROM 1 FOR 10)");
   s = s.replace(/\bdate\('now',\s*([^)]+)\)/gi, (_m, val) => {
-    if (val.trim() === "?") return `(CURRENT_DATE + CAST(? AS INTERVAL))`;
+    if (val.trim() === "?") return `TO_CHAR(CURRENT_DATE + CAST(? AS INTERVAL), 'YYYY-MM-DD')`;
     return _m;
   });
-  s = s.replace(/\bdatetime\('now'\s*\)/gi, "CURRENT_TIMESTAMP");
-  s = s.replace(/\bdatetime\('now',\s*'([^']+)'\)/gi, (_m, interval) => `(CURRENT_TIMESTAMP + INTERVAL '${interval}')`);
+  s = s.replace(/\bdatetime\('now'\s*\)/gi, "TO_CHAR(CURRENT_TIMESTAMP, 'YYYY-MM-DD HH24:MI:SS')");
+  s = s.replace(/\bdatetime\('now',\s*'([^']+)'\)/gi, (_m, interval) => `TO_CHAR(CURRENT_TIMESTAMP + INTERVAL '${interval}', 'YYYY-MM-DD HH24:MI:SS')`);
 
   s = s.replace(/THEN CURRENT_TIMESTAMP(?=\s+ELSE\s+[A-Za-z_][A-Za-z0-9_.]*\s+END)/gi,
     "THEN TO_CHAR(CURRENT_TIMESTAMP, 'YYYY-MM-DD HH24:MI:SS')");

@@ -26,38 +26,75 @@ export function GnDisbursement() {
       <ProcessFlow status="disb_fully" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[["Total Disbursed", fmtInr(total)], ["Confirmed", confirmed], ["Triggered / Pending", rows.length - confirmed - failed], ["Failed", failed]].map(([l, v]) => (
-          <div key={l as string} className="rounded-xl border border-zinc-200 px-4 py-3"><div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">{l}</div><div className="text-[17px] font-bold text-zinc-800 mt-0.5">{v}</div></div>
+          <div key={l as string} className="rounded-xl border border-[#1e293b] bg-[#111827] px-4 py-3 shadow-sm">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{l}</div>
+            <div className="text-[18px] font-bold text-white mt-0.5 font-mono">{v}</div>
+          </div>
         ))}
       </div>
 
       {/* Funds flow visual */}
-      <div className="rounded-xl border border-zinc-200 bg-white px-5 py-4 flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-2"><Landmark className="w-5 h-5 text-indigo-500" /><div><div className="text-[11px] font-bold text-zinc-700">Lender</div><div className="text-[10px] text-zinc-400">Disbursement triggered</div></div></div>
-        <ArrowDown className="w-4 h-4 text-zinc-300" />
-        <div className="flex items-center gap-2"><ArrowDown className="w-4 h-4 text-emerald-500" /><div><div className="text-[13px] font-bold text-emerald-700">{fmtInr(total)}</div><div className="text-[10px] text-zinc-400">Transferred by lender</div></div></div>
-        <ArrowDown className="w-4 h-4 text-zinc-300" />
-        <div className="flex items-center gap-2"><Wallet className="w-5 h-5 text-emerald-600" /><div><div className="text-[11px] font-bold text-zinc-700">Borrower's Bank Account</div><div className="text-[10px] text-zinc-400">Growth Nations never holds loan funds</div></div></div>
+      <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-[#111827] via-[#131d31] to-[#111827] p-5 shadow-xl flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-950/60 border border-indigo-500/30 flex items-center justify-center">
+            <Landmark className="w-5 h-5 text-indigo-400" />
+          </div>
+          <div>
+            <div className="text-[12.5px] font-bold text-white">Lender Processing</div>
+            <div className="text-[11px] text-slate-400">Sanction & disbursement triggered</div>
+          </div>
+        </div>
+
+        <ArrowDown className="w-4 h-4 text-slate-500 rotate-[-90deg] hidden sm:block" />
+
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-950/60 border border-emerald-500/30 flex items-center justify-center">
+            <ArrowDown className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div>
+            <div className="text-[14px] font-bold text-emerald-400 font-mono">{fmtInr(total)}</div>
+            <div className="text-[11px] text-slate-400">Directly transferred by lender</div>
+          </div>
+        </div>
+
+        <ArrowDown className="w-4 h-4 text-slate-500 rotate-[-90deg] hidden sm:block" />
+
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-teal-950/60 border border-teal-500/30 flex items-center justify-center">
+            <Wallet className="w-5 h-5 text-teal-400" />
+          </div>
+          <div>
+            <div className="text-[12.5px] font-bold text-white">Borrower's Bank Account</div>
+            <div className="text-[11px] text-slate-400">Growth Nations never holds loan funds</div>
+          </div>
+        </div>
       </div>
 
-      <Card pad={false}>
+      <Card pad={false} className="bg-[#111827] border-[#1e293b]">
         <div className="overflow-x-auto">
           <table className="w-full text-[12.5px]">
             <thead>
-              <tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-                <th className="px-3 py-2.5 font-semibold">Ref</th><th className="px-3 py-2.5 font-semibold">Borrower</th><th className="px-3 py-2.5 font-semibold">Bank</th><th className="px-3 py-2.5 font-semibold">Product</th>
-                <th className="px-3 py-2.5 font-semibold text-right">Disbursed</th><th className="px-3 py-2.5 font-semibold text-right">Commission</th><th className="px-3 py-2.5 font-semibold">Status</th><th className="px-3 py-2.5 font-semibold">Disbursed On</th>
+              <tr className="text-left text-[10.5px] uppercase tracking-wide text-slate-400 border-b border-[#1e293b] bg-[#0c1220]">
+                <th className="px-3.5 py-2.5 font-semibold">Ref</th>
+                <th className="px-3.5 py-2.5 font-semibold">Borrower</th>
+                <th className="px-3.5 py-2.5 font-semibold">Bank</th>
+                <th className="px-3.5 py-2.5 font-semibold">Product</th>
+                <th className="px-3.5 py-2.5 font-semibold text-right">Disbursed</th>
+                <th className="px-3.5 py-2.5 font-semibold text-right">Commission</th>
+                <th className="px-3.5 py-2.5 font-semibold">Status</th>
+                <th className="px-3.5 py-2.5 font-semibold">Disbursed On</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-b border-zinc-50 hover:bg-zinc-50/60">
-                  <td className="px-3 py-2.5 font-semibold text-brand-700">{r.ref}</td>
-                  <td className="px-3 py-2.5 font-semibold text-zinc-800">{r.name}</td>
-                  <td className="px-3 py-2.5 text-zinc-600">{r.lender_name ?? "—"}</td>
-                  <td className="px-3 py-2.5 text-zinc-500">{r.product_name ?? "—"}</td>
-                  <td className="px-3 py-2.5 font-medium text-zinc-800 text-right">{fmtInr(r.disbursed_amount || 0)}</td>
-                  <td className="px-3 py-2.5 text-right">{r.commission_gross > 0 ? <span className="font-semibold text-emerald-600">{fmtInr(r.commission_gross)}</span> : <span className="text-zinc-300">—</span>}</td>
-                  <td className="px-3 py-2.5"><Badge status=""><span className={gnBadge(r.status)}>{gnStatusLabel(r.status)}</span></Badge></td>
+                <tr key={r.id} className="border-b border-[#182235] hover:bg-[#152033]/60 transition-colors">
+                  <td className="px-3.5 py-2.5 font-semibold text-indigo-400 font-mono">{r.ref}</td>
+                  <td className="px-3.5 py-2.5 font-semibold text-white">{r.name}</td>
+                  <td className="px-3.5 py-2.5 text-slate-300">{r.lender_name ?? "—"}</td>
+                  <td className="px-3.5 py-2.5 text-slate-400">{r.product_name ?? "—"}</td>
+                  <td className="px-3.5 py-2.5 font-semibold text-white text-right font-mono">{fmtInr(r.disbursed_amount || 0)}</td>
+                  <td className="px-3.5 py-2.5 text-right font-mono">{r.commission_gross > 0 ? <span className="font-semibold text-emerald-400">{fmtInr(r.commission_gross)}</span> : <span className="text-slate-500">—</span>}</td>
+                  <td className="px-3.5 py-2.5"><Badge status=""><span className={gnBadge(r.status)}>{gnStatusLabel(r.status)}</span></Badge></td>
                   <td className="px-3 py-2.5 text-zinc-400">{fmtDate(r.disbursed_at ?? r.created_at)}</td>
                 </tr>
               ))}

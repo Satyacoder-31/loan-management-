@@ -95,6 +95,7 @@ export const Footer: React.FC = () => {
             <li><a href="#risk" className="hover:text-blue-400 transition-colors">Early Warning EWS</a></li>
             <li><a href="#ecosystem" className="hover:text-blue-400 transition-colors">50+ API Integrations</a></li>
             <li><a href="#sniper-ai" className="hover:text-blue-400 transition-colors">SNIPER AI Copilot</a></li>
+            <li><a href="#/docs" className="hover:text-blue-400 transition-colors font-semibold text-blue-300">Product Documentation (PDF)</a></li>
           </ul>
         </div>
 

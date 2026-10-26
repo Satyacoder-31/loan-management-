@@ -8,14 +8,30 @@ type Settings = Record<string, any>;
 
 const TABS = ["Roles & Permissions", "Company / Invoice", "API Access", "Reseller", "Banks & Wallet", "Leave Types", "Holidays", "Office Timings", "Start Fresh"];
 
+const inp = "w-full px-3 py-2 rounded-lg border border-[#1e293b] bg-[#0c1220] text-slate-100 placeholder-slate-500 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all";
+
 export function GnSettings() {
   const [tab, setTab] = useState("Roles & Permissions");
   return (
     <div className="space-y-5">
-      <PageHeader title="Settings" sub="Manage roles & permissions, company/invoice details, API access, HR policies and white-label controls — everything saves and takes effect immediately" breadcrumb="Growth Nations / Settings" />
-      <div className="flex gap-1.5 flex-wrap">
+      <PageHeader
+        title="Settings"
+        sub="Manage roles & permissions, company/invoice details, API access, HR policies and white-label controls — everything saves and takes effect immediately"
+        breadcrumb="Growth Nations / Settings"
+      />
+      <div className="flex gap-2 flex-wrap">
         {TABS.map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold ${tab === t ? "bg-brand-600 text-white" : "bg-white border border-zinc-200 text-zinc-600 hover:border-brand-300"}`}>{t}</button>
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-3.5 py-1.5 rounded-xl text-[12px] font-semibold transition-all cursor-pointer ${
+              tab === t
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 border border-indigo-500"
+                : "bg-[#111827] border border-[#1e293b] text-slate-300 hover:bg-[#162033] hover:text-white hover:border-indigo-500/40"
+            }`}
+          >
+            {t}
+          </button>
         ))}
       </div>
       {tab === "Roles & Permissions" && <RolesTab />}
@@ -47,21 +63,21 @@ function useSettings() {
 
 function SaveBar({ saved, onSave, dirty }: { saved: string | null; onSave: () => void; dirty: boolean }) {
   return (
-    <div className="flex items-center justify-between pt-3 border-t border-zinc-100">
-      <span className="text-[11px] text-zinc-400">{saved ? `✓ ${saved}` : dirty ? "Unsaved changes" : "All changes are saved automatically to this tenant only"}</span>
-      <button onClick={onSave} className="px-4 py-1.5 rounded-lg text-[12px] font-semibold bg-brand-600 text-white hover:bg-brand-700">Save Changes</button>
+    <div className="flex items-center justify-between pt-3 border-t border-[#1e293b]">
+      <span className="text-[11px] text-slate-400">{saved ? `✓ ${saved}` : dirty ? "Unsaved changes" : "All changes are saved automatically to this tenant only"}</span>
+      <button onClick={onSave} className="px-4 py-1.5 rounded-lg text-[12px] font-semibold bg-indigo-600 text-white hover:bg-indigo-500 shadow-sm shadow-indigo-600/30 transition-all cursor-pointer">Save Changes</button>
     </div>
   );
 }
 
 function EditableCard({ title, sub, icon: Icon, children, footer }: { title: string; sub: string; icon: any; children: React.ReactNode; footer?: React.ReactNode }) {
   return (
-    <Card>
+    <Card className="bg-[#111827] border-[#1e293b]">
       <div className="flex items-center gap-2.5 mb-3">
-        <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center"><Icon className="w-4 h-4 text-brand-600" /></div>
+        <div className="w-8 h-8 rounded-lg bg-indigo-950/60 border border-indigo-500/30 flex items-center justify-center"><Icon className="w-4 h-4 text-indigo-400" /></div>
         <div>
-          <div className="text-[13.5px] font-bold text-zinc-800">{title}</div>
-          <div className="text-[11px] text-zinc-400">{sub}</div>
+          <div className="text-[13.5px] font-bold text-slate-100">{title}</div>
+          <div className="text-[11px] text-slate-400">{sub}</div>
         </div>
       </div>
       {children}
@@ -77,16 +93,16 @@ function RolesTab() {
   const { s } = useSettings();
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <Card className="md:col-span-2">
+      <Card className="md:col-span-2 bg-[#111827] border-[#1e293b]">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center"><Users className="w-5 h-5 text-brand-600" /></div>
+            <div className="w-10 h-10 rounded-xl bg-indigo-950/60 border border-indigo-500/30 flex items-center justify-center"><Users className="w-5 h-5 text-indigo-400" /></div>
             <div>
-              <div className="text-[14px] font-bold text-zinc-800">Roles & Permissions</div>
-              <div className="text-[11.5px] text-zinc-400">Admin can switch any function on or off for any role — staff & partner. Enforced on the API and dashboards instantly.</div>
+              <div className="text-[14px] font-bold text-slate-100">Roles & Permissions</div>
+              <div className="text-[11.5px] text-slate-400">Admin can switch any function on or off for any role — staff & partner. Enforced on the API and dashboards instantly.</div>
             </div>
           </div>
-          <button onClick={() => nav("/gn/roles")} className="px-4 py-2 rounded-lg text-[12px] font-semibold bg-brand-600 text-white hover:bg-brand-700 flex items-center gap-1.5">Open Roles & Permissions <ArrowRight className="w-3.5 h-3.5" /></button>
+          <button onClick={() => nav("/gn/roles")} className="px-4 py-2 rounded-lg text-[12px] font-semibold bg-indigo-600 text-white hover:bg-indigo-500 shadow-sm shadow-indigo-600/30 flex items-center gap-1.5 cursor-pointer">Open Roles & Permissions <ArrowRight className="w-3.5 h-3.5" /></button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mt-4">
           <Stat label="Configured roles" value={(s.gn_roles_count ?? 0) + ""} />
@@ -95,23 +111,23 @@ function RolesTab() {
           <Stat label="Enforcement" value="Live" tone="green" />
         </div>
       </Card>
-      <Card>
+      <Card className="bg-[#111827] border-[#1e293b]">
         <div className="flex items-center gap-2.5 mb-2">
-          <div className="w-8 h-8 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-center"><ShieldCheck className="w-4 h-4 text-zinc-600" /></div>
-          <div className="text-[13px] font-bold text-zinc-800">How it works</div>
+          <div className="w-8 h-8 rounded-lg bg-[#0c1220] border border-[#1e293b] flex items-center justify-center"><ShieldCheck className="w-4 h-4 text-indigo-400" /></div>
+          <div className="text-[13px] font-bold text-slate-100">How it works</div>
         </div>
-        <ul className="text-[11.5px] text-zinc-500 space-y-2 leading-relaxed">
+        <ul className="text-[11.5px] text-slate-400 space-y-2 leading-relaxed">
           <li>• Every module (Leads → Settings) has <b>View / Create / Update / Delete / Manage / Use</b> toggles.</li>
           <li>• Scope can be <b>All Records</b> or <b>Own Only</b> per module.</li>
-          <li>• Save applies to the API immediately — a revoked permission returns <code className="text-[10.5px] bg-zinc-100 px-1 rounded">403 Permission denied</code>.</li>
+          <li>• Save applies to the API immediately — a revoked permission returns <code className="text-[10.5px] bg-[#0c1220] text-amber-300 border border-[#1e293b] px-1.5 py-0.5 rounded">403 Permission denied</code>.</li>
         </ul>
       </Card>
-      <Card>
+      <Card className="bg-[#111827] border-[#1e293b]">
         <div className="flex items-center gap-2.5 mb-2">
-          <div className="w-8 h-8 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-center"><Users className="w-4 h-4 text-zinc-600" /></div>
-          <div className="text-[13px] font-bold text-zinc-800">Staff & Partner roles</div>
+          <div className="w-8 h-8 rounded-lg bg-[#0c1220] border border-[#1e293b] flex items-center justify-center"><Users className="w-4 h-4 text-indigo-400" /></div>
+          <div className="text-[13px] font-bold text-slate-100">Staff & Partner roles</div>
         </div>
-        <ul className="text-[11.5px] text-zinc-500 space-y-2 leading-relaxed">
+        <ul className="text-[11.5px] text-slate-400 space-y-2 leading-relaxed">
           <li>• <b>Staff roles</b> (admin, credit, collections, sales…) group by designation.</li>
           <li>• <b>Partner roles</b> (DSA, Master DSA, Connector…) group by partner type.</li>
           <li>• Use <b>Apply to Designation / Partner Type</b> to copy a permission set to every role in the same group.</li>
@@ -123,9 +139,9 @@ function RolesTab() {
 
 function Stat({ label, value, tone = "brand" }: { label: string; value: string; tone?: "brand" | "green" }) {
   return (
-    <div className={`rounded-xl border px-3.5 py-2.5 ${tone === "green" ? "border-emerald-100 bg-emerald-50/40" : "border-brand-100 bg-brand-50/40"}`}>
-      <div className="text-[9.5px] font-bold uppercase tracking-wider text-zinc-400">{label}</div>
-      <div className="text-[17px] font-bold text-zinc-800">{value}</div>
+    <div className={`rounded-xl border px-3.5 py-2.5 ${tone === "green" ? "border-emerald-500/30 bg-emerald-950/30" : "border-indigo-500/30 bg-indigo-950/30"}`}>
+      <div className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">{label}</div>
+      <div className="text-[17px] font-bold text-slate-100">{value}</div>
     </div>
   );
 }
@@ -165,8 +181,6 @@ function CompanyTab() {
   );
 }
 
-const inp = "w-full px-3 py-2 rounded-lg border border-zinc-200 text-[13px] outline-none focus:border-brand-400";
-
 /* ---------------- API Access ---------------- */
 
 function ApiTab() {
@@ -189,42 +203,44 @@ function ApiTab() {
   return (
     <div className="space-y-4">
       <EditableCard title="API Access" sub="Keys used by lenders & verification providers to push webhooks and pull data" icon={KeyRound}>
-        <div className="flex items-end gap-3">
-          <Field label="Key label"><input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Production — Lender A" className={inp} /></Field>
-          <button onClick={gen} className="px-4 py-2 rounded-lg text-[12px] font-semibold bg-brand-600 text-white hover:bg-brand-700 flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Generate Key</button>
+        <div className="flex items-end gap-3 flex-wrap">
+          <div className="flex-1 min-w-[220px]">
+            <Field label="Key label"><input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Production — Lender A" className={inp} /></Field>
+          </div>
+          <button onClick={gen} className="px-4 py-2 rounded-lg text-[12px] font-semibold bg-indigo-600 text-white hover:bg-indigo-500 shadow-sm shadow-indigo-600/30 flex items-center gap-1.5 cursor-pointer"><Plus className="w-3.5 h-3.5" /> Generate Key</button>
         </div>
-        {msg && <div className="mt-2 text-[11.5px] font-semibold text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">{msg}</div>}
+        {msg && <div className="mt-2 text-[11.5px] font-semibold text-amber-300 bg-amber-950/40 border border-amber-500/30 rounded-lg px-3 py-2">{msg}</div>}
         {fresh && (
-          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
-            <div className="text-[10.5px] font-bold text-amber-700 uppercase tracking-wider">New key — copy now (shown once)</div>
-            <div className="text-[13px] font-mono text-zinc-800 mt-1 break-all">{fresh}</div>
+          <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-950/40 px-3 py-2.5">
+            <div className="text-[10.5px] font-bold text-amber-400 uppercase tracking-wider">New key — copy now (shown once)</div>
+            <div className="text-[13px] font-mono text-amber-200 mt-1 break-all select-all">{fresh}</div>
           </div>
         )}
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-[12px]">
-            <thead><tr className="text-left text-[10px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100"><th className="py-2 font-semibold">Label</th><th className="py-2 font-semibold">Key</th><th className="py-2 font-semibold">Created</th><th className="py-2 font-semibold">Last used</th><th className="py-2 font-semibold">Status</th><th className="py-2 text-right font-semibold">Actions</th></tr></thead>
+            <thead><tr className="text-left text-[10px] uppercase tracking-wide text-slate-400 border-b border-[#1e293b] bg-[#0c1220]"><th className="px-3 py-2.5 font-semibold">Label</th><th className="px-3 py-2.5 font-semibold">Key</th><th className="px-3 py-2.5 font-semibold">Created</th><th className="px-3 py-2.5 font-semibold">Last used</th><th className="px-3 py-2.5 font-semibold">Status</th><th className="px-3 py-2.5 text-right font-semibold">Actions</th></tr></thead>
             <tbody>
               {keys.map((k) => (
-                <tr key={k.id} className="border-b border-zinc-50">
-                  <td className="py-2.5 font-semibold text-zinc-800">{k.label}</td>
-                  <td className="py-2.5">
+                <tr key={k.id} className="border-b border-[#182235] hover:bg-[#152033]/50">
+                  <td className="px-3 py-2.5 font-semibold text-slate-100">{k.label}</td>
+                  <td className="px-3 py-2.5">
                     <span className="flex items-center gap-1.5">
-                      <code className="text-[11px] text-zinc-500 bg-zinc-50 px-1.5 py-0.5 rounded">{show[k.id] ? k.key : "••••••••••••••••"}</code>
-                      <button onClick={() => setShow((x) => ({ ...x, [k.id]: !x[k.id] }))}>{show[k.id] ? <EyeOff className="w-3 h-3 text-zinc-400" /> : <Eye className="w-3 h-3 text-zinc-400" />}</button>
-                      <button onClick={() => { navigator.clipboard?.writeText(k.key ?? ""); }}><Copy className="w-3 h-3 text-zinc-400 hover:text-brand-600" /></button>
+                      <code className="text-[11px] text-indigo-300 bg-[#0c1220] border border-[#1e293b] px-1.5 py-0.5 rounded">{show[k.id] ? k.key : "••••••••••••••••"}</code>
+                      <button onClick={() => setShow((x) => ({ ...x, [k.id]: !x[k.id] }))} className="text-slate-400 hover:text-white p-1">{show[k.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}</button>
+                      <button onClick={() => { navigator.clipboard?.writeText(k.key ?? ""); }} className="text-slate-400 hover:text-indigo-400 p-1"><Copy className="w-3.5 h-3.5" /></button>
                     </span>
                   </td>
-                  <td className="py-2.5 text-zinc-500">{fmtDate(k.created_at)}</td>
-                  <td className="py-2.5 text-zinc-500">{k.last_used ? fmtDate(k.last_used) : "—"}</td>
-                  <td className="py-2.5"><Badge status=""><span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 capitalize">{k.status}</span></Badge></td>
-                  <td className="py-2.5 text-right"><button onClick={() => revoke(k.id)} className="text-[11px] font-semibold text-rose-600 hover:underline">Revoke</button></td>
+                  <td className="px-3 py-2.5 text-slate-400">{fmtDate(k.created_at)}</td>
+                  <td className="px-3 py-2.5 text-slate-400">{k.last_used ? fmtDate(k.last_used) : "—"}</td>
+                  <td className="px-3 py-2.5"><Badge status=""><span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 capitalize">{k.status}</span></Badge></td>
+                  <td className="px-3 py-2.5 text-right"><button onClick={() => revoke(k.id)} className="text-[11px] font-semibold text-rose-400 hover:text-rose-300 hover:underline">Revoke</button></td>
                 </tr>
               ))}
-              {!keys.length && <tr><td colSpan={6} className="py-6 text-center text-zinc-400 text-[12px]">No API keys yet</td></tr>}
+              {!keys.length && <tr><td colSpan={6} className="py-6 text-center text-slate-500 text-[12px]">No API keys yet</td></tr>}
             </tbody>
           </table>
         </div>
-        <div className="mt-3 text-[10.5px] text-zinc-400">Webhook receiver: <code className="bg-zinc-100 px-1.5 py-0.5 rounded">POST /api/gn/webhooks/lender/:id</code> — public, idempotent, audit-logged. Pass the key as <code className="bg-zinc-100 px-1.5 py-0.5 rounded">x-api-key</code> for private endpoints.</div>
+        <div className="mt-3 text-[10.5px] text-slate-400">Webhook receiver: <code className="bg-[#0c1220] border border-[#1e293b] text-indigo-300 px-1.5 py-0.5 rounded">POST /api/gn/webhooks/lender/:id</code> — public, idempotent, audit-logged. Pass the key as <code className="bg-[#0c1220] border border-[#1e293b] text-indigo-300 px-1.5 py-0.5 rounded">x-api-key</code> for private endpoints.</div>
       </EditableCard>
     </div>
   );
@@ -242,7 +258,7 @@ function ResellerTab() {
     <EditableCard title="Reseller / White-Label" sub="Brand the portal for a reseller or white-label partner" icon={Palette}>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Field label="White-label enabled">
-          <button onClick={() => set("enabled", !f.enabled)} className={`w-12 h-6.5 rounded-full transition-colors relative ${f.enabled ? "bg-emerald-500" : "bg-zinc-200"}`} style={{ height: 26 }}>
+          <button onClick={() => set("enabled", !f.enabled)} className={`w-12 h-6.5 rounded-full transition-colors relative cursor-pointer ${f.enabled ? "bg-emerald-500" : "bg-[#1e293b]"}`} style={{ height: 26 }}>
             <span className={`absolute top-0.5 w-5.5 h-5.5 rounded-full bg-white shadow transition-all ${f.enabled ? "left-6" : "left-0.5"}`} style={{ width: 22, height: 22 }} />
           </button>
         </Field>
@@ -250,9 +266,9 @@ function ResellerTab() {
         <Field label="Portal name"><input value={f.portal_name ?? ""} onChange={(e) => set("portal_name", e.target.value)} className={inp} /></Field>
         <Field label="Support email"><input value={f.support_email ?? ""} onChange={(e) => set("support_email", e.target.value)} className={inp} /></Field>
         <Field label="Custom domain"><input value={f.domain ?? ""} onChange={(e) => set("domain", e.target.value)} placeholder="partner.yourbrand.in" className={inp} /></Field>
-        <Field label="Primary color"><input type="color" value={f.primary_color ?? "#2563eb"} onChange={(e) => set("primary_color", e.target.value)} className="w-full h-9 rounded-lg border border-zinc-200" /></Field>
+        <Field label="Primary color"><input type="color" value={f.primary_color ?? "#2563eb"} onChange={(e) => set("primary_color", e.target.value)} className="w-full h-9 rounded-lg border border-[#1e293b] bg-[#0c1220] cursor-pointer" /></Field>
       </div>
-      <div className="mt-3 text-[10.5px] text-zinc-400">White-label applies to the partner/customer portal chrome, email templates, KFS and agreement letterheads. Data remains tenant-isolated.</div>
+      <div className="mt-3 text-[10.5px] text-slate-400">White-label applies to the partner/customer portal chrome, email templates, KFS and agreement letterheads. Data remains tenant-isolated.</div>
       <div className="mt-3"><SaveBar saved={saved} dirty={false} onSave={() => save("gn_reseller", f)} /></div>
     </EditableCard>
   );
@@ -297,19 +313,20 @@ function LeaveTypesTab() {
     <EditableCard title="Leave Types" sub="Define paid/unpaid leave categories & balances shown in HR" icon={CalendarDays}>
       <div className="overflow-x-auto">
         <table className="w-full text-[12px]">
-          <thead><tr className="text-left text-[10px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100"><th className="py-2 font-semibold">Name</th><th className="py-2 font-semibold">Code</th><th className="py-2 font-semibold">Paid</th><th className="py-2 font-semibold text-right">Days</th><th className="py-2 font-semibold text-right">Carry fwd</th><th className="py-2 font-semibold">Applicable to</th><th className="py-2 text-right font-semibold">Action</th></tr></thead>
+          <thead><tr className="text-left text-[10px] uppercase tracking-wide text-slate-400 border-b border-[#1e293b] bg-[#0c1220]"><th className="px-3 py-2 font-semibold">Name</th><th className="px-3 py-2 font-semibold">Code</th><th className="px-3 py-2 font-semibold">Paid</th><th className="px-3 py-2 font-semibold text-right">Days</th><th className="px-3 py-2 font-semibold text-right">Carry fwd</th><th className="px-3 py-2 font-semibold">Applicable to</th><th className="px-3 py-2 text-right font-semibold">Action</th></tr></thead>
           <tbody>
             {rows.map((r, i) => (
-              <tr key={i} className="border-b border-zinc-50">
-                <td className="py-2.5 font-semibold text-zinc-800">{r.name}</td>
-                <td className="py-2.5"><Badge status=""><span className="text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-100 text-zinc-600">{r.code}</span></Badge></td>
-                <td className="py-2.5"><span className={`text-[10.5px] font-bold ${r.paid ? "text-emerald-600" : "text-zinc-400"}`}>{r.paid ? "Paid" : "Unpaid"}</span></td>
-                <td className="py-2.5 text-right font-semibold">{r.days}</td>
-                <td className="py-2.5 text-right text-zinc-500">{r.carry_forward}</td>
-                <td className="py-2.5 text-zinc-500 capitalize">{r.applicable_to}</td>
-                <td className="py-2.5 text-right"><button onClick={() => remove(i)} className="text-[11px] font-semibold text-rose-600 hover:underline">Remove</button></td>
+              <tr key={i} className="border-b border-[#182235] hover:bg-[#152033]/50">
+                <td className="px-3 py-2.5 font-semibold text-slate-100">{r.name}</td>
+                <td className="px-3 py-2.5"><Badge status=""><span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#0c1220] border border-[#1e293b] text-indigo-300">{r.code}</span></Badge></td>
+                <td className="px-3 py-2.5"><span className={`text-[10.5px] font-bold ${r.paid ? "text-emerald-400" : "text-slate-400"}`}>{r.paid ? "Paid" : "Unpaid"}</span></td>
+                <td className="px-3 py-2.5 text-right font-semibold text-slate-200">{r.days}</td>
+                <td className="px-3 py-2.5 text-right text-slate-400">{r.carry_forward}</td>
+                <td className="px-3 py-2.5 text-slate-300 capitalize">{r.applicable_to}</td>
+                <td className="px-3 py-2.5 text-right"><button onClick={() => remove(i)} className="text-[11px] font-semibold text-rose-400 hover:text-rose-300 hover:underline">Remove</button></td>
               </tr>
             ))}
+            {!rows.length && <tr><td colSpan={7} className="py-6 text-center text-slate-500 text-[12px]">No custom leave types defined</td></tr>}
           </tbody>
         </table>
       </div>
@@ -321,9 +338,9 @@ function LeaveTypesTab() {
         <select value={draft.applicable_to ?? "staff"} onChange={(e) => setDraft((x) => ({ ...x, applicable_to: e.target.value }))} className={inp}>
           <option value="staff">Staff</option><option value="field">Field</option><option value="manager">Manager</option><option value="all">All</option>
         </select>
-        <button onClick={add} className="px-3 py-2 rounded-lg text-[12px] font-semibold bg-brand-600 text-white hover:bg-brand-700 flex items-center justify-center gap-1"><Plus className="w-3.5 h-3.5" /> Add</button>
+        <button onClick={add} className="px-3 py-2 rounded-lg text-[12px] font-semibold bg-indigo-600 text-white hover:bg-indigo-500 shadow-sm shadow-indigo-600/30 flex items-center justify-center gap-1 cursor-pointer"><Plus className="w-3.5 h-3.5" /> Add</button>
       </div>
-      <div className="mt-3 text-[10.5px] text-zinc-400">{saved ? `✓ ${saved}` : "Leave types apply to leave requests raised in HR"}</div>
+      <div className="mt-3 text-[10.5px] text-slate-400">{saved ? `✓ ${saved}` : "Leave types apply to leave requests raised in HR"}</div>
     </EditableCard>
   );
 }
@@ -344,19 +361,19 @@ function HolidaysTab() {
     <EditableCard title="Holidays" sub="Public holidays & off days — used for SLA countdowns and attendance" icon={CalendarDays}>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
         {rows.map((r, i) => (
-          <div key={i} className="rounded-lg border border-zinc-100 bg-zinc-50/50 px-3 py-2 flex items-center justify-between">
-            <div><div className="text-[12px] font-semibold text-zinc-700">{r.name}</div><div className="text-[10.5px] text-zinc-400">{fmtDate(r.date)}</div></div>
-            <button onClick={() => remove(i)} className="text-rose-500 hover:text-rose-700 text-[12px]">×</button>
+          <div key={i} className="rounded-xl border border-[#1e293b] bg-[#0c1220] px-3.5 py-2.5 flex items-center justify-between">
+            <div><div className="text-[12px] font-semibold text-slate-200">{r.name}</div><div className="text-[10.5px] text-slate-400">{fmtDate(r.date)}</div></div>
+            <button onClick={() => remove(i)} className="text-slate-400 hover:text-rose-400 text-[14px] p-1 cursor-pointer">×</button>
           </div>
         ))}
-        {!rows.length && <div className="text-[12px] text-zinc-400 col-span-4 py-4 text-center">No holidays configured</div>}
+        {!rows.length && <div className="text-[12px] text-slate-400 col-span-4 py-4 text-center">No holidays configured</div>}
       </div>
       <div className="flex gap-2 flex-wrap">
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Holiday name" className={inp + " flex-1 min-w-[180px]"} />
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inp} />
-        <button onClick={add} className="px-3 py-2 rounded-lg text-[12px] font-semibold bg-brand-600 text-white hover:bg-brand-700 flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Add Holiday</button>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inp + " w-auto"} />
+        <button onClick={add} className="px-4 py-2 rounded-lg text-[12px] font-semibold bg-indigo-600 text-white hover:bg-indigo-500 shadow-sm shadow-indigo-600/30 flex items-center gap-1.5 cursor-pointer"><Plus className="w-3.5 h-3.5" /> Add Holiday</button>
       </div>
-      <div className="mt-3 text-[10.5px] text-zinc-400">{saved ? `✓ ${saved}` : "Holidays pause SLA clocks for in-flight applications"}</div>
+      <div className="mt-3 text-[10.5px] text-slate-400">{saved ? `✓ ${saved}` : "Holidays pause SLA clocks for in-flight applications"}</div>
     </EditableCard>
   );
 }
@@ -384,10 +401,20 @@ function TimingsTab() {
         <Field label="Grace (min)"><input type="number" value={f.grace_minutes ?? 15} onChange={(e) => set("grace_minutes", Number(e.target.value))} className={inp} /></Field>
       </div>
       <div className="mt-3">
-        <div className="text-[11px] font-semibold text-zinc-600 mb-1.5">Working days</div>
+        <div className="text-[11px] font-semibold text-slate-300 mb-1.5">Working days</div>
         <div className="flex gap-2">
           {DAYS.map(([d, l]) => (
-            <button key={d} onClick={() => toggleDay(d)} className={`px-3 py-1.5 rounded-lg text-[11.5px] font-semibold ${(f.workdays ?? []).includes(Number(d)) ? "bg-brand-600 text-white" : "bg-zinc-100 text-zinc-500"}`}>{l}</button>
+            <button
+              key={d}
+              onClick={() => toggleDay(d)}
+              className={`px-3 py-1.5 rounded-lg text-[11.5px] font-semibold transition-all cursor-pointer ${
+                (f.workdays ?? [1, 2, 3, 4, 5, 6]).includes(Number(d))
+                  ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
+                  : "bg-[#0c1220] border border-[#1e293b] text-slate-400 hover:text-white"
+              }`}
+            >
+              {l}
+            </button>
           ))}
         </div>
       </div>
@@ -413,28 +440,28 @@ function StartFreshTab() {
     <EditableCard title="Start Fresh" sub="Reset your data — careful, cannot be undone" icon={Trash2}>
       {!result ? (
         <>
-          <div className="text-[12px] text-zinc-500 leading-relaxed">This clears all <b>Growth Nations transactional data</b> — applications, leads, commissions, payouts, fees, expenses, tasks, HR records, campaigns and documents. Masters (banks, products, schemes, partners, roles & settings) are <b>kept</b> so you can start collecting data immediately.</div>
+          <div className="text-[12px] text-slate-400 leading-relaxed">This clears all <b>Growth Nations transactional data</b> — applications, leads, commissions, payouts, fees, expenses, tasks, HR records, campaigns and documents. Masters (banks, products, schemes, partners, roles & settings) are <b>kept</b> so you can start collecting data immediately.</div>
           {!confirm ? (
-            <button onClick={() => setConfirm(true)} className="mt-3 px-4 py-2 rounded-lg text-[12px] font-semibold bg-rose-600 text-white hover:bg-rose-700">Reset demo data…</button>
+            <button onClick={() => setConfirm(true)} className="mt-3 px-4 py-2 rounded-lg text-[12px] font-semibold bg-rose-600 text-white hover:bg-rose-500 shadow-sm shadow-rose-600/30 cursor-pointer">Reset demo data…</button>
           ) : (
-            <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3">
-              <div className="text-[12px] font-semibold text-rose-700">Are you sure? This permanently deletes transactional records.</div>
+            <div className="mt-3 rounded-lg border border-rose-500/30 bg-rose-950/40 p-3">
+              <div className="text-[12px] font-semibold text-rose-300">Are you sure? This permanently deletes transactional records.</div>
               <div className="flex gap-2 mt-2">
-                <button onClick={reset} disabled={busy} className="px-3 py-1.5 rounded-lg text-[11.5px] font-semibold bg-rose-600 text-white">{busy ? "Resetting…" : "Yes, reset everything"}</button>
-                <button onClick={() => setConfirm(false)} className="px-3 py-1.5 rounded-lg text-[11.5px] font-semibold border border-zinc-200 text-zinc-600">Cancel</button>
+                <button onClick={reset} disabled={busy} className="px-3 py-1.5 rounded-lg text-[11.5px] font-semibold bg-rose-600 text-white hover:bg-rose-500 cursor-pointer">{busy ? "Resetting…" : "Yes, reset everything"}</button>
+                <button onClick={() => setConfirm(false)} className="px-3 py-1.5 rounded-lg text-[11.5px] font-semibold border border-[#1e293b] bg-[#0c1220] text-slate-300 hover:bg-[#152033] hover:text-white cursor-pointer">Cancel</button>
               </div>
             </div>
           )}
         </>
       ) : (
         <div>
-          <div className="text-[13px] font-bold text-emerald-700 mb-2">✓ Reset complete — {Object.values(result).reduce((a, b) => a + b, 0)} records cleared</div>
+          <div className="text-[13px] font-bold text-emerald-400 mb-2">✓ Reset complete — {Object.values(result).reduce((a, b) => a + b, 0)} records cleared</div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {Object.entries(result).filter(([, n]) => n > 0).map(([k, n]) => (
-              <div key={k} className="rounded-lg border border-zinc-100 px-3 py-2"><div className="text-[10px] uppercase tracking-wide text-zinc-400">{k.replace("gn_", "")}</div><div className="text-[15px] font-bold text-zinc-800">{n}</div></div>
+              <div key={k} className="rounded-lg border border-[#1e293b] bg-[#0c1220] px-3 py-2"><div className="text-[10px] uppercase tracking-wide text-slate-400">{k.replace("gn_", "")}</div><div className="text-[15px] font-bold text-slate-100">{n}</div></div>
             ))}
           </div>
-          <button onClick={() => setResult(null)} className="mt-3 text-[12px] font-semibold text-brand-600 hover:underline">Back to Start Fresh</button>
+          <button onClick={() => setResult(null)} className="mt-3 text-[12px] font-semibold text-indigo-400 hover:text-indigo-300 hover:underline">Back to Start Fresh</button>
         </div>
       )}
     </EditableCard>

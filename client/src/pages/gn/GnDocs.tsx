@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Card, PageHeader, Badge, Field, Modal, Stat, EmptyState } from "../../components/ui";
 import { api } from "../../lib/api";
-import { Plus, Trash2, FileText, Search, Pencil } from "lucide-react";
+import { Plus, Trash2, FileText, Search, Pencil, BookOpen } from "lucide-react";
 import { ImportExport } from "./shared";
 
 export function GnDocs() {
@@ -25,6 +26,9 @@ export function GnDocs() {
     <div className="space-y-5">
       <PageHeader title="Documentation" sub="Product guides, runbooks and reference articles for the entire Growth Nations platform" breadcrumb="Growth Nations / Documentation" actions={
         <div className="flex items-center gap-2">
+          <Link to="/docs" target="_blank" className="btn btn-secondary text-[12px]">
+            <BookOpen className="w-3.5 h-3.5 mr-1 text-indigo-600" />Product Manual (PDF)
+          </Link>
           <ImportExport entity="docs" onImported={load} />
           <button className="btn btn-primary text-[12px]" onClick={() => setOpen(true)}><Plus className="w-3.5 h-3.5 mr-1" />New Article</button>
         </div>

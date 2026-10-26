@@ -59,8 +59,12 @@ export function GnApplications() {
         actions={
           <div className="flex items-center gap-2">
             <ImportExport entity="applications" />
-            <button className="btn btn-secondary text-[12px]" onClick={load}><RefreshCw className="w-3.5 h-3.5 mr-1" />Refresh</button>
-            <button className="btn btn-primary text-[12px]" onClick={() => setCreateOpen(true)}><Plus className="w-3.5 h-3.5 mr-1" />New Application</button>
+            <button className="btn btn-secondary text-[12px] flex items-center gap-1.5 cursor-pointer" onClick={load}>
+              <RefreshCw className="w-3.5 h-3.5" /> Refresh
+            </button>
+            <button className="btn btn-primary text-[12px] flex items-center gap-1.5 cursor-pointer shadow-sm shadow-indigo-600/30" onClick={() => setCreateOpen(true)}>
+              <Plus className="w-3.5 h-3.5" /> New Application
+            </button>
           </div>
         }
       />
@@ -69,20 +73,26 @@ export function GnApplications() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[["Apps", counts.total ?? 0], ["At Lender", counts.at_lender ?? 0], ["Disbursed", counts.disbursed ?? 0], ["Rejected", counts.rejected ?? 0]].map(([l, v]) => (
-          <div key={l as string} className="rounded-xl border border-zinc-200 px-4 py-3">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">{l}</div>
-            <div className="text-[19px] font-bold text-zinc-800 mt-0.5">{v}</div>
+          <div key={l as string} className="rounded-xl border border-[#1e293b] bg-[#111827] px-4 py-3 shadow-sm">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{l}</div>
+            <div className="text-[20px] font-bold text-white mt-0.5">{v}</div>
           </div>
         ))}
       </div>
 
-      <Card pad={false}>
-        <div className="p-3 border-b border-zinc-100 flex flex-wrap items-center gap-2">
-          <div className="flex items-center flex-1 min-w-[220px] border border-zinc-200 rounded-lg px-2.5 bg-white">
-            <Search className="w-3.5 h-3.5 text-zinc-400" />
-            <input className="input border-0 shadow-none flex-1 text-[12.5px]" placeholder="Search by ref, borrower or mobile…" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && load()} />
+      <Card pad={false} className="bg-[#111827] border-[#1e293b]">
+        <div className="p-3 border-b border-[#1e293b] flex flex-wrap items-center gap-2">
+          <div className="flex items-center flex-1 min-w-[220px] border border-[#1e293b] rounded-lg px-2.5 bg-[#0c1220] focus-within:border-indigo-500 transition-colors">
+            <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <input
+              className="input border-0 bg-transparent shadow-none flex-1 text-[12.5px] text-white placeholder-slate-500 focus:ring-0"
+              placeholder="Search by ref, borrower or mobile…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && load()}
+            />
           </div>
-          <select className="input text-[12.5px] w-auto" value={status} onChange={(e) => setStatus(e.target.value)}>
+          <select className="input text-[12.5px] w-auto border-[#1e293b] bg-[#0c1220] text-slate-200" value={status} onChange={(e) => setStatus(e.target.value)}>
             <option value="">All statuses</option>
             {["lead", "application", "lender", "agreement", "disbursement", "completed"].map((g) => (
               <optgroup key={g} label={GN_STAGE_LABELS[g]}>
@@ -90,24 +100,36 @@ export function GnApplications() {
               </optgroup>
             ))}
           </select>
-          <select className="input text-[12.5px] w-auto" value={lenderId} onChange={(e) => setLenderId(e.target.value)}>
+          <select className="input text-[12.5px] w-auto border-[#1e293b] bg-[#0c1220] text-slate-200" value={lenderId} onChange={(e) => setLenderId(e.target.value)}>
             <option value="">All banks</option>
             {lenders.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
           </select>
-          <select className="input text-[12.5px] w-auto" defaultValue="">
+          <select className="input text-[12.5px] w-auto border-[#1e293b] bg-[#0c1220] text-slate-200" defaultValue="">
             <option value="">All products</option>
             {products.slice(0, 40).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <select className="input text-[12.5px] w-auto" defaultValue="">
+          <select className="input text-[12.5px] w-auto border-[#1e293b] bg-[#0c1220] text-slate-200" defaultValue="">
             <option value="">All agents</option>
           </select>
-          <select className="input text-[12.5px] w-auto" defaultValue="">
+          <select className="input text-[12.5px] w-auto border-[#1e293b] bg-[#0c1220] text-slate-200" defaultValue="">
             <option value="">All partners</option>
             {partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <div className="flex rounded-lg border border-zinc-200 overflow-hidden">
-            <button className={`px-2.5 py-1.5 ${view === "list" ? "bg-brand-600 text-white" : "bg-white text-zinc-500"}`} onClick={() => setView("list")}><LayoutList className="w-3.5 h-3.5" /></button>
-            <button className={`px-2.5 py-1.5 ${view === "kanban" ? "bg-brand-600 text-white" : "bg-white text-zinc-500"}`} onClick={() => setView("kanban")}><KanbanSquare className="w-3.5 h-3.5" /></button>
+          <div className="flex rounded-lg border border-[#1e293b] overflow-hidden bg-[#0c1220]">
+            <button
+              className={`px-2.5 py-1.5 transition-colors cursor-pointer ${view === "list" ? "bg-indigo-600 text-white" : "bg-[#0c1220] text-slate-400 hover:text-white"}`}
+              onClick={() => setView("list")}
+              title="List view"
+            >
+              <LayoutList className="w-3.5 h-3.5" />
+            </button>
+            <button
+              className={`px-2.5 py-1.5 transition-colors cursor-pointer ${view === "kanban" ? "bg-indigo-600 text-white" : "bg-[#0c1220] text-slate-400 hover:text-white"}`}
+              onClick={() => setView("kanban")}
+              title="Kanban view"
+            >
+              <KanbanSquare className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
 
@@ -115,38 +137,38 @@ export function GnApplications() {
           <div className="overflow-x-auto">
             <table className="w-full text-[12.5px]">
               <thead>
-                <tr className="text-left text-[10.5px] uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
-                  <th className="px-3 py-2.5 font-semibold">Ref</th>
-                  <th className="px-3 py-2.5 font-semibold">Borrower</th>
-                  <th className="px-3 py-2.5 font-semibold">Mobile</th>
-                  <th className="px-3 py-2.5 font-semibold">Bank</th>
-                  <th className="px-3 py-2.5 font-semibold">Product</th>
-                  <th className="px-3 py-2.5 font-semibold text-right">Applied Amt</th>
-                  <th className="px-3 py-2.5 font-semibold text-right">Commission</th>
-                  <th className="px-3 py-2.5 font-semibold">Status</th>
-                  <th className="px-3 py-2.5 font-semibold">TAT</th>
-                  <th className="px-3 py-2.5 font-semibold">Assigned To</th>
-                  <th className="px-3 py-2.5 font-semibold">Created</th>
+                <tr className="text-left text-[10.5px] uppercase tracking-wide text-slate-400 border-b border-[#1e293b] bg-[#0c1220]">
+                  <th className="px-3.5 py-2.5 font-semibold">Ref</th>
+                  <th className="px-3.5 py-2.5 font-semibold">Borrower</th>
+                  <th className="px-3.5 py-2.5 font-semibold">Mobile</th>
+                  <th className="px-3.5 py-2.5 font-semibold">Bank</th>
+                  <th className="px-3.5 py-2.5 font-semibold">Product</th>
+                  <th className="px-3.5 py-2.5 font-semibold text-right">Applied Amt</th>
+                  <th className="px-3.5 py-2.5 font-semibold text-right">Commission</th>
+                  <th className="px-3.5 py-2.5 font-semibold">Status</th>
+                  <th className="px-3.5 py-2.5 font-semibold">TAT</th>
+                  <th className="px-3.5 py-2.5 font-semibold">Assigned To</th>
+                  <th className="px-3.5 py-2.5 font-semibold">Created</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.id} className="border-b border-zinc-50 hover:bg-zinc-50/60 cursor-pointer" onClick={() => openDetail(r.id)}>
-                    <td className="px-3 py-2.5 font-semibold text-brand-700">{r.ref}</td>
-                    <td className="px-3 py-2.5">
-                      <div className="font-semibold text-zinc-800">{r.name}</div>
-                      {r.is_direct_booking ? <span className="text-[9.5px] text-violet-600 font-bold uppercase">Direct Booking</span> : null}
-                      {r.is_cross_sell ? <span className="text-[9.5px] text-pink-600 font-bold uppercase">Cross Sell</span> : null}
+                  <tr key={r.id} className="border-b border-[#182235] hover:bg-[#152033]/60 cursor-pointer transition-colors" onClick={() => openDetail(r.id)}>
+                    <td className="px-3.5 py-2.5 font-semibold text-indigo-400 font-mono">{r.ref}</td>
+                    <td className="px-3.5 py-2.5">
+                      <div className="font-semibold text-slate-100">{r.name}</div>
+                      {r.is_direct_booking ? <span className="text-[9.5px] text-violet-400 font-bold uppercase tracking-wider">Direct Booking</span> : null}
+                      {r.is_cross_sell ? <span className="text-[9.5px] text-pink-400 font-bold uppercase tracking-wider">Cross Sell</span> : null}
                     </td>
-                    <td className="px-3 py-2.5 text-zinc-600">{r.mobile}</td>
-                    <td className="px-3 py-2.5 text-zinc-700">{r.lender_name ?? "—"}</td>
-                    <td className="px-3 py-2.5 text-zinc-500">{r.product_name ?? r.product_category ?? "—"}</td>
-                    <td className="px-3 py-2.5 font-medium text-zinc-800 text-right">{fmtInr(r.amount)}</td>
-                    <td className="px-3 py-2.5 text-right">{r.commission_gross > 0 ? <span className="font-semibold text-emerald-600">{fmtInr(r.commission_gross)}</span> : <span className="text-zinc-300">—</span>}</td>
-                    <td className="px-3 py-2.5"><Badge status=""><span className={gnBadge(r.status)}>{gnStatusLabel(r.status)}</span></Badge></td>
-                    <td className="px-3 py-2.5 text-zinc-500">{tatDays(r.created_at)}</td>
-                    <td className="px-3 py-2.5 text-zinc-600">{r.assigned_name ?? "—"}</td>
-                    <td className="px-3 py-2.5 text-zinc-400">{fmtDate(r.created_at)}</td>
+                    <td className="px-3.5 py-2.5 text-slate-400 font-mono text-[12px]">{r.mobile}</td>
+                    <td className="px-3.5 py-2.5 text-slate-200">{r.lender_name ?? "—"}</td>
+                    <td className="px-3.5 py-2.5 text-slate-300">{r.product_name ?? r.product_category ?? "—"}</td>
+                    <td className="px-3.5 py-2.5 font-semibold text-white text-right font-mono">{fmtInr(r.amount)}</td>
+                    <td className="px-3.5 py-2.5 text-right">{r.commission_gross > 0 ? <span className="font-semibold text-emerald-400 font-mono">{fmtInr(r.commission_gross)}</span> : <span className="text-slate-500">—</span>}</td>
+                    <td className="px-3.5 py-2.5"><Badge status=""><span className={gnBadge(r.status)}>{gnStatusLabel(r.status)}</span></Badge></td>
+                    <td className="px-3.5 py-2.5 text-slate-400">{tatDays(r.created_at)}</td>
+                    <td className="px-3.5 py-2.5 text-slate-300">{r.assigned_name ?? "—"}</td>
+                    <td className="px-3.5 py-2.5 text-slate-400">{fmtDate(r.created_at)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -158,23 +180,24 @@ export function GnApplications() {
             {STAGE_GROUPS.map((g) => {
               const items = rows.filter((r) => r.stage === g);
               return (
-                <div key={g} className="rounded-lg bg-zinc-50/70 p-2 min-h-[180px]">
-                  <div className="text-[10.5px] font-bold uppercase tracking-wide text-zinc-500 mb-2 px-1 flex items-center justify-between">
-                    <span>{GN_STAGE_LABELS[g]}</span><span className="bg-white border border-zinc-200 rounded-full px-1.5 text-[9.5px]">{items.length}</span>
+                <div key={g} className="rounded-xl bg-[#0c1220]/70 border border-[#1e293b] p-2.5 min-h-[180px]">
+                  <div className="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 mb-2 px-1 flex items-center justify-between">
+                    <span>{GN_STAGE_LABELS[g]}</span>
+                    <span className="bg-[#111827] border border-[#1e293b] text-slate-300 rounded-full px-1.5 text-[9.5px] font-mono">{items.length}</span>
                   </div>
                   <div className="space-y-2">
                     {items.map((r) => (
-                      <div key={r.id} className="rounded-lg bg-white border border-zinc-200 px-3 py-2 cursor-pointer hover:border-brand-300" onClick={() => openDetail(r.id)}>
-                        <div className="text-[10px] font-bold text-brand-700">{r.ref}</div>
-                        <div className="text-[12px] font-semibold text-zinc-800 truncate">{r.name}</div>
-                        <div className="text-[10.5px] text-zinc-400 truncate">{r.lender_name ?? "—"} · {r.product_category ?? ""}</div>
+                      <div key={r.id} className="rounded-lg bg-[#111827] border border-[#1e293b] px-3 py-2 cursor-pointer hover:border-indigo-500/50 shadow-sm transition-all" onClick={() => openDetail(r.id)}>
+                        <div className="text-[10px] font-bold text-indigo-400 font-mono">{r.ref}</div>
+                        <div className="text-[12px] font-semibold text-white truncate">{r.name}</div>
+                        <div className="text-[10.5px] text-slate-400 truncate">{r.lender_name ?? "—"} · {r.product_category ?? ""}</div>
                         <div className="flex items-center justify-between mt-1.5">
-                          <span className="text-[11.5px] font-bold text-zinc-800">{fmtInr(r.amount)}</span>
-                          {r.commission_gross > 0 && <span className="text-[10px] font-semibold text-emerald-600">{fmtInr(r.commission_gross)}</span>}
+                          <span className="text-[11.5px] font-bold text-white font-mono">{fmtInr(r.amount)}</span>
+                          {r.commission_gross > 0 && <span className="text-[10px] font-semibold text-emerald-400 font-mono">{fmtInr(r.commission_gross)}</span>}
                         </div>
                       </div>
                     ))}
-                    {items.length === 0 && <div className="text-[10.5px] text-zinc-300 text-center py-3">Empty</div>}
+                    {items.length === 0 && <div className="text-[10.5px] text-slate-500 text-center py-4">Empty</div>}
                   </div>
                 </div>
               );
@@ -190,18 +213,21 @@ export function GnApplications() {
           <div className="space-y-5">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[["Lender", app.lender_name ?? "—"], ["Product", app.product_name ?? app.product_category ?? "—"], ["Applied", fmtInr(app.amount)], ["Tenure", `${app.tenure} months`], ["Partner", app.partner_name ?? "—"], ["DSA Code", app.dsa_code ?? "—"], ["Assigned", app.assigned_name ?? "—"], ["Source", app.source ?? "—"]].map(([l, v]) => (
-                <div key={l} className="rounded-lg border border-zinc-100 px-3 py-2"><div className="text-[9.5px] uppercase tracking-wide text-zinc-400 font-semibold">{l}</div><div className="text-[12.5px] font-medium text-zinc-800 mt-0.5 truncate">{v}</div></div>
+                <div key={l} className="rounded-xl border border-[#1e293b] bg-[#0c1220] px-3.5 py-2.5">
+                  <div className="text-[9.5px] uppercase tracking-wide text-slate-400 font-semibold">{l}</div>
+                  <div className="text-[12.5px] font-semibold text-white mt-0.5 truncate">{v}</div>
+                </div>
               ))}
             </div>
 
             {detail.commission && (
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 px-4 py-3 grid grid-cols-2 md:grid-cols-6 gap-2 text-[12px]">
-                <div><div className="text-[9.5px] text-emerald-700/60 uppercase">Disbursed</div><b>{fmtInr(detail.commission.disbursed_amount)}</b></div>
-                <div><div className="text-[9.5px] text-emerald-700/60 uppercase">Rate</div><b>{detail.commission.rate}%</b></div>
-                <div><div className="text-[9.5px] text-emerald-700/60 uppercase">Gross</div><b>{fmtInr(detail.commission.gross)}</b></div>
-                <div><div className="text-[9.5px] text-emerald-700/60 uppercase">GST</div><b>{fmtInr(detail.commission.gst)}</b></div>
-                <div><div className="text-[9.5px] text-emerald-700/60 uppercase">TDS</div><b>{fmtInr(detail.commission.tds)}</b></div>
-                <div><div className="text-[9.5px] text-emerald-700/60 uppercase">Net</div><b>{fmtInr(detail.commission.net)}</b></div>
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/40 px-4 py-3 grid grid-cols-2 md:grid-cols-6 gap-2 text-[12px] text-emerald-200">
+                <div><div className="text-[9.5px] text-emerald-400/80 uppercase font-semibold">Disbursed</div><b className="text-white font-mono">{fmtInr(detail.commission.disbursed_amount)}</b></div>
+                <div><div className="text-[9.5px] text-emerald-400/80 uppercase font-semibold">Rate</div><b className="text-white">{detail.commission.rate}%</b></div>
+                <div><div className="text-[9.5px] text-emerald-400/80 uppercase font-semibold">Gross</div><b className="text-white font-mono">{fmtInr(detail.commission.gross)}</b></div>
+                <div><div className="text-[9.5px] text-emerald-400/80 uppercase font-semibold">GST</div><b className="text-white font-mono">{fmtInr(detail.commission.gst)}</b></div>
+                <div><div className="text-[9.5px] text-emerald-400/80 uppercase font-semibold">TDS</div><b className="text-white font-mono">{fmtInr(detail.commission.tds)}</b></div>
+                <div><div className="text-[9.5px] text-emerald-400/80 uppercase font-semibold">Net</div><b className="text-emerald-400 font-mono">{fmtInr(detail.commission.net)}</b></div>
               </div>
             )}
 
@@ -244,24 +270,24 @@ export function GnApplications() {
               {detail.commission && detail.commission.status === "earned" && (
                 <button className="btn btn-primary text-[12px]" disabled={busy} onClick={() => act(() => api(`/gn/finance/income/${detail.commission.id}/receive`, { method: "POST", body: { utr: "UTR" + Math.floor(100000000 + Math.random() * 899999999) } }))}>Mark Payout Received</button>
               )}
-              <span className="text-[10.5px] text-zinc-400 self-center ml-1">Mock lender mode — final credit decision rests with the lender.</span>
+              <span className="text-[10.5px] text-slate-400 self-center ml-1">Mock lender mode — final credit decision rests with the lender.</span>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <WorkflowStepper status={app.status} amount={app.disbursed_amount || app.amount} />
               <div>
-                <div className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-3">Timeline</div>
+                <div className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider mb-3">Timeline</div>
                 <div className="space-y-0 max-h-[520px] overflow-y-auto pr-1">
                   {detail.timeline.map((t: any, i: number) => (
                     <div key={t.id} className="flex gap-3">
                       <div className="flex flex-col items-center">
-                        <div className={`w-2.5 h-2.5 rounded-full mt-1 ${i === detail.timeline.length - 1 ? "bg-brand-500" : "bg-zinc-200"}`} />
-                        {i < detail.timeline.length - 1 && <div className="w-px flex-1 bg-zinc-100" />}
+                        <div className={`w-2.5 h-2.5 rounded-full mt-1 ${i === detail.timeline.length - 1 ? "bg-indigo-500 shadow-sm shadow-indigo-500/50" : "bg-[#22314d]"}`} />
+                        {i < detail.timeline.length - 1 && <div className="w-px flex-1 bg-[#1e293b]" />}
                       </div>
                       <div className="pb-3.5">
-                        <div className="text-[12px] font-semibold text-zinc-800">{t.event}</div>
-                        {t.note && <div className="text-[11px] text-zinc-500">{t.note}</div>}
-                        <div className="text-[10px] text-zinc-400 mt-0.5">{fmtDate(t.created_at)} · {t.actor_name ?? "system"}</div>
+                        <div className="text-[12px] font-semibold text-slate-100">{t.event}</div>
+                        {t.note && <div className="text-[11px] text-slate-400">{t.note}</div>}
+                        <div className="text-[10px] text-slate-500 mt-0.5">{fmtDate(t.created_at)} · {t.actor_name ?? "system"}</div>
                       </div>
                     </div>
                   ))}
@@ -311,7 +337,7 @@ function CreateModal({ open, onClose, lenders, products, partners, onCreated }: 
       </div>
       <div className="flex justify-end gap-2 mt-4">
         <button className="btn btn-secondary text-[12px]" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary text-[12px]" disabled={busy || !f.name} onClick={save}>{busy ? "Creating…" : "Create Application"}</button>
+        <button className="btn btn-primary text-[12px] shadow-sm shadow-indigo-600/30" disabled={busy || !f.name} onClick={save}>{busy ? "Creating…" : "Create Application"}</button>
       </div>
     </Modal>
   );

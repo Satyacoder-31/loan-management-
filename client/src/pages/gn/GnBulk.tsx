@@ -377,9 +377,19 @@ export function GnBulk() {
               <div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${detail.batch.progress ?? 0}%` }} />
             </div>
 
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {[["overview", "Overview"], ["applicants", "Applicants"], ["errors", "Errors"], ["jobs", "Jobs"]].map(([k, l]) => (
-                <button key={k} onClick={() => setDetailTab(k)} className={`px-3 py-1.5 rounded-lg text-[11.5px] font-semibold border ${detailTab === k ? "bg-brand-600 text-white border-brand-600" : "bg-white text-zinc-600 border-zinc-200"}`}>{l}</button>
+                <button
+                  key={k}
+                  onClick={() => setDetailTab(k)}
+                  className={`px-3.5 py-1.5 rounded-xl text-[12px] font-semibold transition-all cursor-pointer ${
+                    detailTab === k
+                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 border border-indigo-500"
+                      : "bg-[#111827] border border-[#1e293b] text-slate-300 hover:bg-[#162033] hover:text-white hover:border-indigo-500/40"
+                  }`}
+                >
+                  {l}
+                </button>
               ))}
             </div>
 
@@ -388,7 +398,7 @@ export function GnBulk() {
                 {[["Applicants Created", detail.batch.applicants_created], ["Applications Created", detail.batch.applications_created], ["Submitted", detail.batch.submitted],
                   ["Approved", detail.batch.approved], ["Disbursed", detail.batch.disbursed], ["Total Disbursement", fmtInr(detail.batch.disbursed_amount)],
                   ["Expected Payout (1% demo)", fmtInr(detail.batch.expected_payout)], ["Open Errors", detail.batch.open_errors ?? 0]].map(([l, v]) => (
-                  <div key={l} className="rounded-xl border border-zinc-200 p-3"><div className="text-[9.5px] uppercase text-zinc-400 font-semibold">{l}</div><div className="text-[15px] font-bold text-zinc-800 mt-0.5">{v}</div></div>
+                  <div key={l} className="rounded-xl border border-[#1e293b] bg-[#0c1220] p-3"><div className="text-[9.5px] uppercase text-slate-400 font-semibold">{l}</div><div className="text-[15px] font-bold text-white mt-0.5">{v}</div></div>
                 ))}
               </div>
             )}

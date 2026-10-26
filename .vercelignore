@@ -1,0 +1,16 @@
+*.mp4
+*.wav
+video_frames
+portal_screenshots
+scratch
+/*.html
+!client/index.html
+/*.mjs
+*.jsonl
+node_modules
+.git
+server/data/*.db*
+docs
+scripts
+scorecard*.mp4
+Reports*.mp4

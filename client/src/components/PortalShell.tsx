@@ -32,10 +32,10 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex items-center gap-2.5 px-2 py-[7px] rounded-md text-[12.5px] font-medium mb-0.5 transition-colors ${isActive ? "bg-brand-50 text-brand-700" : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"}`
+                `flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13.5px] font-semibold mb-0.5 transition-colors ${isActive ? "bg-brand-50 text-brand-700" : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"}`
               }
             >
-              <item.icon size={15} strokeWidth={1.8} />
+              <item.icon size={16} strokeWidth={2} />
               {item.label}
             </NavLink>
           ))}
