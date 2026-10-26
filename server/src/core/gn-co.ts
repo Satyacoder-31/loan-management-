@@ -2,7 +2,7 @@ import { q, q1, run } from "../db/connection.js";
 import { audit } from "./audit.js";
 import { computeCommission, effectiveRate, gnNotify, gnSettings, gnStatusGroup, gnStatusLabel, gnTimeline, gnRef } from "./gn.js";
 import { sendSmsOtp, createOtpChallenge, verifyOtpChallenge, normalizeMobile } from "./otp.js";
-import { mobileNameLookup, pullExperianReport, getPanToMaskedAadhaar, isExperianLiveEnabled } from "../adapters/digitap.js";
+import { mobileNameLookup, pullExperianReport, getPanToMaskedAadhaar, panDetails, isExperianLiveEnabled } from "../adapters/digitap.js";
 
 /* ================= helpers ================= */
 
@@ -107,12 +107,21 @@ export async function autoFetchApplicantData(
 
   // 1. Telecom Reverse Name Lookup via Digitap
   let telecomName: string | null = null;
+  let telecomAddress: string | null = null;
+  let telecomCity: string | null = null;
+  let telecomState: string | null = null;
+  let telecomPincode: string | null = null;
   try {
     const tel = await mobileNameLookup(norm);
     if (tel?.name && tel.name.trim()) {
       telecomName = tel.name.trim();
       if (!resolvedName) resolvedName = telecomName;
     }
+    const rawTel = (tel?.raw?.result as any) || {};
+    if (rawTel.address) telecomAddress = rawTel.address;
+    if (rawTel.city) telecomCity = rawTel.city;
+    if (rawTel.state) telecomState = rawTel.state;
+    if (rawTel.pincode) telecomPincode = rawTel.pincode;
   } catch (err: any) {
     console.warn("[AUTO-FETCH] Telecom lookup notice:", err.message);
   }
@@ -137,14 +146,33 @@ export async function autoFetchApplicantData(
     resolvedName = expDetails.fullName.trim();
   }
 
-  const pan = expDetails.pan || applicant.pan || null;
-  const dob = expDetails.dob || applicant.dob || null;
-  const gender = expDetails.gender || applicant.gender || "Male";
-  const email = expDetails.email || applicant.email || null;
-  const fullAddress = expDetails.address || applicant.address || null;
-  const altMobile = expDetails.altMobile || applicant.alt_mobile || null;
-  const altEmail = expDetails.altEmail || applicant.alt_email || null;
-  let maskedAadhaar = expDetails.aadhaar || applicant.aadhaar || null;
+  let pan = applicant.pan || expDetails.pan || null;
+  let dob = applicant.dob || expDetails.dob || null;
+  let gender = applicant.gender || expDetails.gender || "Male";
+  let email = applicant.email || expDetails.email || null;
+  let fullAddress = applicant.address || expDetails.address || telecomAddress || null;
+  let altMobile = applicant.alt_mobile || expDetails.altMobile || null;
+  let altEmail = applicant.alt_email || expDetails.altEmail || null;
+  let maskedAadhaar = applicant.aadhaar || expDetails.aadhaar || null;
+  let city = applicant.city || expDetails.city || telecomCity || null;
+  let state = applicant.state || expDetails.state || telecomState || null;
+  let pincode = applicant.pincode || expDetails.pincode || telecomPincode || null;
+
+  // Enrich with PAN Details if PAN is available and Aadhaar/DOB is missing
+  if (pan && (!maskedAadhaar || !dob)) {
+    try {
+      const pDet = await panDetails(pan);
+      if (pDet?.result?.valid) {
+        if (!maskedAadhaar && pDet.result.aadhaar_number) maskedAadhaar = pDet.result.aadhaar_number;
+        if (!dob && pDet.result.dob) dob = pDet.result.dob;
+        if (!gender && pDet.result.gender) gender = pDet.result.gender === "female" ? "Female" : "Male";
+        if (pDet.result.fullname && (!resolvedName || resolvedName === "Applicant")) resolvedName = pDet.result.fullname;
+      }
+    } catch (e: any) {
+      console.warn("[AUTO-FETCH] PAN enrichment notice:", e.message);
+    }
+  }
+
   if (!maskedAadhaar && pan) {
     try {
       const adh = await getPanToMaskedAadhaar(pan);
@@ -153,10 +181,8 @@ export async function autoFetchApplicantData(
       console.warn("[AUTO-FETCH] Aadhaar lookup notice:", e.message);
     }
   }
-  const city = expDetails.city || applicant.city || null;
-  const state = expDetails.state || applicant.state || null;
-  const pincode = expDetails.pincode || applicant.pincode || null;
-  const score = typeof experianData?.score === "number" ? experianData.score : (applicant.credit_score || 710);
+
+  const score = typeof experianData?.score === "number" ? experianData.score : (applicant.credit_score || 750);
 
 
 
@@ -202,7 +228,7 @@ export async function autoFetchApplicantData(
   const ref = experianData?.providerRef || `CR-EXP-${String(100000 + Math.floor(Math.random() * 900000))}`;
   const totalOut = Math.round(Number(experianData?.totalOutstanding ?? (applicant.existing_emi ? applicant.existing_emi * 36 : 0)));
   const totalSanc = Math.round(Number(experianData?.securedOutstanding || (totalOut > 0 ? totalOut * 1.5 : (applicant.loan_amount || 100000))));
-  const reportPayload = experianData?.creditReport || {
+  const reportPayload: any = experianData?.creditReport ? { ...experianData.creditReport } : {
     score,
     scoreBand: experianData?.scoreBand || "Standard",
     provider: "Experian Credit Analytics (Digitap)",
@@ -222,6 +248,29 @@ export async function autoFetchApplicantData(
     creditAge: experianData?.creditAge ?? "N/A",
     tradelines: experianData?.tradelines || []
   };
+
+  if (!reportPayload.applicantDetails) {
+    reportPayload.applicantDetails = experianData?.applicantDetails || {
+      fullName: resolvedName,
+      firstName: (resolvedName || "").split(/\s+/)[0] || "Applicant",
+      lastName: (resolvedName || "").split(/\s+/).slice(1).join(" ") || "",
+      mobile: norm,
+      pan: pan || "",
+      dob: dob || "",
+      gender: gender || "Male",
+      address: fullAddress,
+      city: city || "",
+      state: state || "",
+      pincode: pincode || "",
+      email: email || "",
+      altMobile: altMobile || "",
+      altEmail: altEmail || "",
+      aadhaar: maskedAadhaar || ""
+    };
+  }
+  if (!reportPayload.tradelines || reportPayload.tradelines.length === 0) {
+    reportPayload.tradelines = experianData?.tradelines || [];
+  }
 
   await run(
     `INSERT INTO gn_credit_profiles (tenant_id, applicant_id, provider, score, active_accounts, closed_accounts, enquiries_6m,
@@ -299,7 +348,8 @@ export async function autoFetchApplicantData(
     scoreBand: experianData?.scoreBand || (score >= 750 ? "Excellent / Prime" : score >= 700 ? "Good" : "Standard"),
     // 9. Credit Report
     creditReport: reportPayload,
-    tradelines: experianData?.tradelines || [],
+    tradelines: reportPayload.tradelines || experianData?.tradelines || [],
+    applicantDetails: reportPayload.applicantDetails,
     dob,
     gender,
     city,
