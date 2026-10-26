@@ -867,8 +867,8 @@ export function generateDeterministicExperianReport(
       firstName: "Jayshree",
       lastName: "Shashikant Kere",
       mobile: mob,
-      pan: jayshreePan,
-      dob: "1978-05-12",
+      pan: (pan && pan.length === 10 ? pan : "IIGPK2608A").toUpperCase(),
+      dob: "1982-07-28",
       gender: "Female",
       address: "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD AURANGABAD MAHARASHTRA 431103",
       city: "Aurangabad",
@@ -877,7 +877,7 @@ export function generateDeterministicExperianReport(
       email: "jayshreekere@gmail.com",
       altMobile: "8838864869",
       altEmail: "kere.enterprises@gmail.com",
-      aadhaar: "XXXX-XXXX-1002"
+      aadhaar: "XXXX-XXXX-9771"
     };
 
     const jayshreeReport = {
@@ -1805,8 +1805,8 @@ export const JAYSHREE_EXPERIAN_RESULT: ExperianBureauResult = {
     fullName: "Jayshree Shashikant Kere",
     mobile: "8508101002",
     altMobile: "8838864869",
-    pan: "ABCPK1002J",
-    dob: "1978-05-12",
+    pan: "IIGPK2608A",
+    dob: "1982-07-28",
     gender: "Female",
     email: "jayshreekere@gmail.com",
     altEmail: "kere.enterprises@gmail.com",
@@ -1814,7 +1814,7 @@ export const JAYSHREE_EXPERIAN_RESULT: ExperianBureauResult = {
     city: "Aurangabad",
     state: "Maharashtra",
     pincode: "431103",
-    aadhaar: "XXXX-XXXX-1002"
+    aadhaar: "XXXX-XXXX-9771"
   },
   creditReport: {
     score: 765,
