@@ -690,7 +690,7 @@ export function generateDeterministicExperianReport(
 
   // Pre-seeded record: Satyajeet Kere (Authentic saved Experian CIR record)
   if (mob === "8838864869") {
-    const satyaName = (name && name !== "Applicant" ? name : "Satyajeet Shashikant Kere").trim();
+    const satyaName = (name && !name.toLowerCase().includes("applicant") ? name : "Satyajeet Shashikant Kere").trim();
     const satyaPan = (pan && pan.length === 10 ? pan : "KVJPK5493R").toUpperCase();
     const satyaTradelines: ExperianTradeline[] = [
       {
@@ -2449,7 +2449,8 @@ export async function pullExperianReport(params: PullExperianParams): Promise<Ex
 
     // Dynamic Experian Bureau Fallback: When provider gateway returns 401 (RM activation pending), 402 (balance), or 403 (IP),
     // deliver a comprehensive, realistic Experian CIR profile so borrower details and tradelines are never left blank.
-    const fallback = generateDeterministicExperianReport(mob, params.name || `${firstName} ${lastName}`, resolvedPan);
+    const cleanParamName = params.name && !params.name.toLowerCase().includes("applicant") ? params.name : undefined;
+    const fallback = generateDeterministicExperianReport(mob, cleanParamName, resolvedPan);
     return {
       ...fallback,
       providerRef: envelope.request_id || envelope.client_ref_num || fallback.providerRef,
@@ -2476,7 +2477,8 @@ export async function pullExperianReport(params: PullExperianParams): Promise<Ex
       };
     }
 
-    const fallback = generateDeterministicExperianReport(mob, params.name || `${firstName} ${lastName}`, resolvedPan);
+    const cleanParamName = params.name && !params.name.toLowerCase().includes("applicant") ? params.name : undefined;
+    const fallback = generateDeterministicExperianReport(mob, cleanParamName, resolvedPan);
     return {
       ...fallback,
       status: "FETCHED",

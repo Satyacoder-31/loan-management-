@@ -1339,7 +1339,7 @@ function generateDeterministicExperianReport(mobile, name, pan) {
     hash = hash * 31 + mob.charCodeAt(i) >>> 0;
   }
   if (mob === "8838864869") {
-    const satyaName = (name && name !== "Applicant" ? name : "Satyajeet Shashikant Kere").trim();
+    const satyaName = (name && !name.toLowerCase().includes("applicant") ? name : "Satyajeet Shashikant Kere").trim();
     const satyaPan = (pan && pan.length === 10 ? pan : "KVJPK5493R").toUpperCase();
     const satyaTradelines = [
       {
@@ -2602,7 +2602,8 @@ async function pullExperianReport(params) {
         raw: envelope
       };
     }
-    const fallback = generateDeterministicExperianReport(mob, params.name || `${firstName} ${lastName}`, resolvedPan);
+    const cleanParamName = params.name && !params.name.toLowerCase().includes("applicant") ? params.name : void 0;
+    const fallback = generateDeterministicExperianReport(mob, cleanParamName, resolvedPan);
     return {
       ...fallback,
       providerRef: envelope.request_id || envelope.client_ref_num || fallback.providerRef,
@@ -2628,7 +2629,8 @@ async function pullExperianReport(params) {
         raw: { network_error: err.message }
       };
     }
-    const fallback = generateDeterministicExperianReport(mob, params.name || `${firstName} ${lastName}`, resolvedPan);
+    const cleanParamName = params.name && !params.name.toLowerCase().includes("applicant") ? params.name : void 0;
+    const fallback = generateDeterministicExperianReport(mob, cleanParamName, resolvedPan);
     return {
       ...fallback,
       status: "FETCHED",
@@ -17105,8 +17107,9 @@ gnCoRouter.get("/gn/co/applicants", requirePerm("gn.co.view"), asyncH(async (req
   const where = ["a.tenant_id = ?", TAB_WHERE[tab] ?? "1 = 1"];
   const params = [T6(req)];
   if (query) {
-    where.push("(a.ref LIKE ? OR a.name LIKE ? OR a.mobile LIKE ?)");
-    params.push(`%${query}%`, `%${query}%`, `%${query}%`);
+    where.push("(LOWER(a.ref) LIKE LOWER(?) OR LOWER(a.name) LIKE LOWER(?) OR a.mobile LIKE ? OR LOWER(COALESCE(a.pan, '')) LIKE LOWER(?) OR LOWER(COALESCE(a.email, '')) LIKE LOWER(?))");
+    const qTerm = `%${query}%`;
+    params.push(qTerm, qTerm, qTerm, qTerm, qTerm);
   }
   if (loan_type) {
     where.push("a.loan_type = ?");

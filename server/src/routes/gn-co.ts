@@ -80,7 +80,11 @@ gnCoRouter.get("/gn/co/applicants", requirePerm("gn.co.view"), asyncH(async (req
   const { tab = "all", q: query = "", loan_type = "", source = "", page = 1, limit = 25 } = req.query as Record<string, string>;
   const where = ["a.tenant_id = ?", TAB_WHERE[tab] ?? "1 = 1"];
   const params: unknown[] = [T(req)];
-  if (query) { where.push("(a.ref LIKE ? OR a.name LIKE ? OR a.mobile LIKE ?)"); params.push(`%${query}%`, `%${query}%`, `%${query}%`); }
+  if (query) {
+    where.push("(LOWER(a.ref) LIKE LOWER(?) OR LOWER(a.name) LIKE LOWER(?) OR a.mobile LIKE ? OR LOWER(COALESCE(a.pan, '')) LIKE LOWER(?) OR LOWER(COALESCE(a.email, '')) LIKE LOWER(?))");
+    const qTerm = `%${query}%`;
+    params.push(qTerm, qTerm, qTerm, qTerm, qTerm);
+  }
   if (loan_type) { where.push("a.loan_type = ?"); params.push(loan_type); }
   if (source) { where.push("a.source = ?"); params.push(source); }
   const total = (await q1<{ n: number }>(`SELECT COUNT(*) AS n FROM gn_applicants a WHERE ${where.join(" AND ")}`, params))!.n;

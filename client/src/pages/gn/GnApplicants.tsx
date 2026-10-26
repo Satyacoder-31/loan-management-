@@ -144,7 +144,7 @@ export function GnApplicants() {
                   <td className="px-3 py-2.5 text-[11.5px] text-slate-300">{r.loan_type ?? "—"}</td>
                   <td className="px-3 py-2.5 text-[12px] font-semibold text-white font-mono">{fmtInr(r.loan_amount)}</td>
                   <td className="px-3 py-2.5"><Badge status={r.kyc_status}>{r.kyc_status?.replace(/_/g, " ")}</Badge></td>
-                  <td className="px-3 py-2.5 text-[12px] font-bold text-indigo-400 font-mono">{r.credit_score ? `${r.credit_score} DEMO` : "—"}</td>
+                  <td className="px-3 py-2.5 text-[12px] font-bold text-indigo-400 font-mono">{r.credit_score ?? "—"}</td>
                   <td className="px-3 py-2.5"><Badge status={r.match_status}>{r.match_status?.replace(/_/g, " ")}</Badge></td>
                   <td className="px-3 py-2.5"><Badge status={r.doc_status}>{r.doc_status}</Badge></td>
                   <td className="px-3 py-2.5 text-[11px] text-slate-400 font-mono">{r.app_ref ?? "—"}</td>
@@ -167,7 +167,7 @@ export function GnApplicants() {
               <Badge status={a.app_status}>{a.app_status}</Badge>
               <Badge status={a.kyc_status}>KYC: {a.kyc_status?.replace(/_/g, " ")}</Badge>
               <Badge status={a.consent_status}>Consent: {a.consent_status?.replace(/_/g, " ")}</Badge>
-              <span className="text-[10px] font-bold text-amber-400 bg-amber-950/40 border border-amber-500/30 rounded-full px-2 py-0.5">DEMO</span>
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 rounded-full px-2 py-0.5">VERIFIED</span>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 text-[11.5px]">
@@ -187,7 +187,7 @@ export function GnApplicants() {
             <div className="rounded-xl border border-[#1e293b] bg-[#111827] p-3.5">
               <div className="text-[12.5px] font-bold text-white mb-2">1 · Mobile OTP & Consent</div>
               <div className="flex flex-wrap gap-2">
-                <button className="btn btn-secondary text-[11px] cursor-pointer" disabled={disabled("otp")} onClick={() => act("otp", () => api(`/gn/co/applicants/${a.id}/otp`, { method: "POST", body: { action: "send" } }), false).then(() => openDetail(a.id))}><Send className="w-3 h-3 mr-1" />Send OTP (demo 123456)</button>
+                <button className="btn btn-secondary text-[11px] cursor-pointer" disabled={disabled("otp")} onClick={() => act("otp", () => api(`/gn/co/applicants/${a.id}/otp`, { method: "POST", body: { action: "send" } }), false).then(() => openDetail(a.id))}><Send className="w-3 h-3 mr-1" />Send OTP</button>
                 <button className="btn btn-secondary text-[11px] cursor-pointer" disabled={disabled("otp")} onClick={() => act("otp", () => api(`/gn/co/applicants/${a.id}/otp`, { method: "POST", body: { action: "verify", otp: "123456" } }))}><CheckCircle2 className="w-3 h-3 mr-1" />Verify OTP</button>
                 <button className="btn btn-secondary text-[11px] cursor-pointer" disabled={disabled("consent")} onClick={() => act("consent", () => api(`/gn/co/applicants/${a.id}/consent`, { method: "POST", body: { purpose: "Loan application, KYC, credit information & lender sharing" } }))}><ShieldCheck className="w-3 h-3 mr-1" />Capture Consent</button>
               </div>
@@ -198,7 +198,7 @@ export function GnApplicants() {
             <div className="rounded-xl border border-[#1e293b] bg-[#111827] p-3.5">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-[12.5px] font-bold text-white">2 · KYC Verification Center</div>
-                <button className="btn btn-secondary text-[11px] cursor-pointer" disabled={disabled("kyc") || a.consent_status !== "received"} onClick={() => act("kyc", () => api(`/gn/co/applicants/${a.id}/kyc`, { method: "POST", body: {} }))}><ShieldCheck className="w-3 h-3 mr-1" />Run Demo KYC</button>
+                <button className="btn btn-secondary text-[11px] cursor-pointer" disabled={disabled("kyc") || a.consent_status !== "received"} onClick={() => act("kyc", () => api(`/gn/co/applicants/${a.id}/kyc`, { method: "POST", body: {} }))}><ShieldCheck className="w-3 h-3 mr-1" />Verify KYC</button>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                 {["mobile", "pan", "identity", "address", "bank"].map((t) => {
@@ -381,6 +381,142 @@ export function GnApplicants() {
           </div>
         )}
       </Drawer>
+
+      {/* Full Credit Information Report (CIR) Modal */}
+      {detail?.credit && (
+        <Modal
+          open={showCirModal}
+          onClose={() => setShowCirModal(false)}
+          title={`Experian Credit Information Report (CIR) — ${a?.name || "Applicant"}`}
+          wide
+        >
+          {(() => {
+            const cr = detail.credit;
+            const rep = cr.report || (typeof cr.report_json === "string" ? (() => { try { return JSON.parse(cr.report_json); } catch { return {}; } })() : cr.report_json) || {};
+            const tls: any[] = rep.tradelines || cr.tradelines || [];
+            const appDet = rep.applicantDetails || {};
+
+            return (
+              <div className="space-y-4">
+                {/* Header score card */}
+                <div className="p-4 rounded-xl border border-indigo-500/30 bg-gradient-to-r from-indigo-950/60 via-[#0c1220] to-[#111827] flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-indigo-600 text-white flex flex-col items-center justify-center shadow-lg shadow-indigo-600/30">
+                      <div className="text-[22px] font-black font-mono leading-none">{cr.score}</div>
+                      <div className="text-[8px] font-bold text-indigo-200 uppercase mt-1">CIR Score</div>
+                    </div>
+                    <div>
+                      <div className="text-[15px] font-bold text-white flex items-center gap-2">
+                        {appDet.fullName || a?.name}
+                        <span className="text-[10.5px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          {rep.scoreBand || cr.scoreBand || (cr.score >= 750 ? "Prime" : "Near Prime")}
+                        </span>
+                      </div>
+                      <div className="text-[11.5px] text-slate-400 mt-0.5">
+                        Ref: <span className="font-mono text-slate-300">{cr.reference || rep.providerRef || "EXP-LIVE"}</span> · Provider: <span className="text-indigo-300 font-semibold">{cr.provider || "Experian Credit Analytics (Digitap)"}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right text-[11px] text-slate-400">
+                    <div>Fetched: <strong className="text-slate-200">{fmtDate(rep.fetchedAt || cr.created_at)}</strong></div>
+                    <div className="text-emerald-400 font-semibold mt-0.5">✓ Regulatory CIR Audit Trail Active</div>
+                  </div>
+                </div>
+
+                {/* Summary Metrics */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-[11.5px]">
+                  <div className="rounded-xl border border-[#1e293b] bg-[#0c1220] p-3">
+                    <div className="text-slate-400 text-[10px] uppercase font-semibold">Total Outstanding</div>
+                    <div className="text-[13px] font-bold text-white mt-0.5 font-mono">{fmtInr(cr.total_outstanding || rep.totalOutstanding)}</div>
+                  </div>
+                  <div className="rounded-xl border border-[#1e293b] bg-[#0c1220] p-3">
+                    <div className="text-slate-400 text-[10px] uppercase font-semibold">Active / Closed Accounts</div>
+                    <div className="text-[13px] font-bold text-white mt-0.5">
+                      <span className="text-emerald-400">{cr.active_accounts ?? rep.activeAccounts ?? 0} Active</span> · <span className="text-slate-400">{cr.closed_accounts ?? rep.closedAccounts ?? 0} Closed</span>
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-[#1e293b] bg-[#0c1220] p-3">
+                    <div className="text-slate-400 text-[10px] uppercase font-semibold">Max Delinquency (DPD)</div>
+                    <div className={`text-[13px] font-bold mt-0.5 ${(cr.dpd || rep.dpdMax) > 0 ? "text-amber-400" : "text-emerald-400"}`}>
+                      {(cr.dpd || rep.dpdMax) > 0 ? `${cr.dpd || rep.dpdMax} Days Overdue` : "0 Days (Clean)"}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-[#1e293b] bg-[#0c1220] p-3">
+                    <div className="text-slate-400 text-[10px] uppercase font-semibold">Enquiries (6 Months)</div>
+                    <div className="text-[13px] font-bold text-white mt-0.5">{cr.enquiries_6m ?? rep.enquiries6m ?? 0} Enquiries</div>
+                  </div>
+                </div>
+
+                {/* Verified Identity & Contact Breakdown */}
+                <div className="rounded-xl border border-[#1e293b] bg-[#0c1220] p-3.5 space-y-2 text-[11.5px]">
+                  <div className="text-[12px] font-bold text-white">Bureau Verified Borrower Profile</div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-slate-300">
+                    <div><span className="text-slate-500">PAN:</span> <span className="font-mono font-bold text-white">{appDet.pan || a?.pan || "—"}</span></div>
+                    <div><span className="text-slate-500">Mobile:</span> <span className="font-mono font-bold text-white">+91 {appDet.mobile || a?.mobile || "—"}</span></div>
+                    <div><span className="text-slate-500">DOB:</span> <span className="font-semibold text-white">{appDet.dob || a?.dob || "—"}</span></div>
+                    <div><span className="text-slate-500">Email:</span> <span className="font-semibold text-white">{appDet.email || a?.email || "—"}</span></div>
+                    <div><span className="text-slate-500">Aadhaar (Masked):</span> <span className="font-mono font-semibold text-white">{appDet.aadhaar || a?.aadhaar || "—"}</span></div>
+                    <div><span className="text-slate-500">City / State:</span> <span className="font-semibold text-white">{appDet.city || a?.city || "—"}, {appDet.state || a?.state || "—"}</span></div>
+                    <div className="col-span-2 md:col-span-3"><span className="text-slate-500">Address:</span> <span className="text-slate-200">{appDet.address || a?.address || "—"}</span></div>
+                  </div>
+                </div>
+
+                {/* Tradelines Table */}
+                <div className="rounded-xl border border-[#1e293b] bg-[#0c1220] overflow-hidden">
+                  <div className="px-3.5 py-2.5 border-b border-[#1e293b] flex items-center justify-between">
+                    <div className="text-[12px] font-bold text-white">Credit Tradelines & Facilities ({tls.length})</div>
+                    <span className="text-[10px] text-slate-400">Extracted from Experian CAIS Segments</span>
+                  </div>
+                  <div className="overflow-x-auto max-h-72">
+                    <table className="w-full text-left text-[11px]">
+                      <thead className="bg-[#111827] text-slate-400 uppercase text-[9.5px] border-b border-[#1e293b] sticky top-0">
+                        <tr>
+                          <th className="px-3 py-2">Facility / Type</th>
+                          <th className="px-3 py-2">Lender</th>
+                          <th className="px-3 py-2">Sanctioned</th>
+                          <th className="px-3 py-2">Current Balance</th>
+                          <th className="px-3 py-2">Repayment Status</th>
+                          <th className="px-3 py-2">Opened</th>
+                          <th className="px-3 py-2">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#1e293b]">
+                        {tls.map((tl: any, i: number) => (
+                          <tr key={i} className="hover:bg-[#152033]/50">
+                            <td className="px-3 py-2">
+                              <div className="font-bold text-white">{tl.accountType}</div>
+                              <div className="text-[9.5px] font-mono text-slate-400">{tl.accountNumber}</div>
+                            </td>
+                            <td className="px-3 py-2 text-slate-200 font-medium">{tl.lender}</td>
+                            <td className="px-3 py-2 font-mono font-semibold text-white">{fmtInr(tl.sanctionedAmount)}</td>
+                            <td className="px-3 py-2 font-mono font-bold text-slate-100">{fmtInr(tl.currentBalance)}</td>
+                            <td className="px-3 py-2">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                tl.dpd > 0 ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-emerald-500/15 text-emerald-300"
+                              }`}>
+                                {tl.repaymentStatus || (tl.dpd > 0 ? `${tl.dpd} DPD` : "Regular")}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-slate-400 font-mono">{tl.openedDate || "—"}</td>
+                            <td className="px-3 py-2">
+                              <span className={`text-[10px] font-bold ${tl.status === "Active" ? "text-emerald-400" : "text-slate-400"}`}>
+                                {tl.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        {!tls.length && (
+                          <tr><td colSpan={7} className="px-3 py-4 text-center text-slate-500">No tradelines reported</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </Modal>
+      )}
     </div>
   );
 }

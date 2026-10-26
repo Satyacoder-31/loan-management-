@@ -200,7 +200,8 @@ export function GnNewApplicant() {
 
   // Resume existing registered application ONLY when explicitly requested by clicking button
   const checkAndResumeApplicant = async (targetMobile?: string) => {
-    const cleanMobile = (targetMobile || form.mobile || "").replace(/\D/g, "");
+    const rawTarget = (targetMobile || form.mobile || "").replace(/\D/g, "");
+    const cleanMobile = rawTarget.length >= 10 ? rawTarget.slice(-10) : rawTarget;
     if (cleanMobile.length < 10) {
       setMsg("Please enter a valid 10-digit mobile number to look up existing records.");
       return;
@@ -265,7 +266,7 @@ export function GnNewApplicant() {
         setOtpSent(true);
 
         const resumeStep = typeof res.detected_step === "number" ? res.detected_step : 1;
-        setMaxReachedStep((prev) => Math.max(prev, resumeStep));
+        setMaxReachedStep((prev) => Math.max(prev, resumeStep, 1));
         setStep(resumeStep);
 
         setSuccessNotice(
@@ -825,7 +826,8 @@ export function GnNewApplicant() {
   const app = detail?.applications?.[0];
   const appStatus = app?.status;
   const credit = detail?.credit;
-  const cleanMobile = (form.mobile || "").replace(/\D/g, "");
+  const rawMobileDigits = (form.mobile || "").replace(/\D/g, "");
+  const cleanMobile = rawMobileDigits.length >= 10 ? rawMobileDigits.slice(-10) : rawMobileDigits;
 
   const creditReportObj =
     credit?.report && typeof credit.report === "object"
@@ -1703,11 +1705,11 @@ export function GnNewApplicant() {
             {/* Section 3: Verified Identity & Contact Fields */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[13px] font-bold text-zinc-800 flex items-center gap-1.5">
-                  <User className="w-4 h-4 text-brand-600" />
+                <span className="text-[13px] font-bold text-white flex items-center gap-1.5">
+                  <User className="w-4 h-4 text-indigo-400" />
                   Borrower Identity & Contact Details
                 </span>
-                <span className="text-[11px] text-zinc-400">Review or edit details if necessary</span>
+                <span className="text-[11px] text-slate-400">Review or edit details if necessary</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1723,7 +1725,7 @@ export function GnNewApplicant() {
 
                 <Field label="4. WhatsApp Number (Document Request)">
                   <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-zinc-400 text-[12px] font-semibold">+91</span>
+                    <span className="absolute left-3 top-2.5 text-slate-400 text-[12px] font-semibold">+91</span>
                     <input
                       className={`${input} pl-12 font-mono font-medium`}
                       value={form.whatsapp_number || (sameAsMobile ? form.mobile : "")}
