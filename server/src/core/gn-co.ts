@@ -402,6 +402,8 @@ export async function runCredit(tenantId: number, applicantId: number, userId: n
   let ref = `CR-EXP-${String(100000 + Math.floor(Math.random() * 900000))}`;
 
   let reportJson: string | null = null;
+  let dpd = 0;
+  let overdueAmount = 0;
 
   // Try live Experian pull if mobile is available and no override specified
   if (!score && a.mobile) {
@@ -420,6 +422,8 @@ export async function runCredit(tenantId: number, applicantId: number, userId: n
           enquiries6m = exp.enquiries6m ?? enquiries6m;
           totalOutstanding = exp.totalOutstanding ?? totalOutstanding;
           ref = exp.providerRef || ref;
+          dpd = exp.dpdMax ?? exp.creditReport?.dpdMax ?? 0;
+          overdueAmount = (exp.creditReport as any)?.overdueAmount ?? 0;
           if (exp.creditReport) {
             reportJson = JSON.stringify(exp.creditReport);
           }
@@ -439,7 +443,7 @@ export async function runCredit(tenantId: number, applicantId: number, userId: n
        total_outstanding, total_sanctioned, overdue_amount, dpd, utilization_pct, report_json, status, reference)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?)`,
     [tenantId, applicantId, provider, score, Math.round(Number(activeAccounts)), Math.round(Number(closedAccounts)), Math.round(Number(enquiries6m)),
-      Math.round(Number(totalOutstanding)), Math.round(Number((a.loan_amount ?? 0) + totalOutstanding)), 0, 0, 18, reportJson, ref]
+      Math.round(Number(totalOutstanding)), Math.round(Number((a.loan_amount ?? 0) + totalOutstanding)), overdueAmount, dpd, 18, reportJson, ref]
   );
   await run("UPDATE gn_applicants SET credit_status = 'completed', credit_score = ?, updated_at = datetime('now') WHERE id = ?", [score, applicantId]);
   await aplEvent(tenantId, applicantId, "CREDIT PROFILE FETCHED", `Credit score ${score} (${provider})`, userId);

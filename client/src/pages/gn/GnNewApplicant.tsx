@@ -168,23 +168,23 @@ export function GnNewApplicant() {
     state: "",
     pincode: "",
     applicant_type: "Individual",
-    employment_type: "Self-employed",
+    employment_type: "Salaried",
     employer: "",
     designation: "",
-    monthly_income: 150000,
+    monthly_income: 0,
     business_name: "",
-    business_type: "Private Limited",
-    business_vintage: 3,
-    annual_turnover: 24000000,
+    business_type: "",
+    business_vintage: 0,
+    annual_turnover: 0,
     gst: "",
     udyam: "",
     existing_emi: 0,
-    bank_name: "HDFC Bank",
+    bank_name: "",
     bank_account: "",
-    loan_type: "Business Loan",
-    loan_amount: 2500000,
-    tenure: 48,
-    purpose: "Working capital expansion"
+    loan_type: "Personal Loan",
+    loan_amount: 500000,
+    tenure: 36,
+    purpose: "Personal requirement"
   });
 
   // Countdown timer for OTP resend
@@ -245,20 +245,20 @@ export function GnNewApplicant() {
           employment_type: a.employment_type || (targetProfile === "personal" ? "Salaried" : "Self-employed"),
           employer: a.employer || prev.employer || "",
           designation: a.designation || prev.designation || "",
-          business_name: a.business_name || prev.business_name || "",
-          business_type: a.business_type || prev.business_type || "Private Limited",
-          business_vintage: a.business_vintage ?? prev.business_vintage ?? 3,
-          monthly_income: a.monthly_income ?? prev.monthly_income ?? 150000,
-          annual_turnover: a.annual_turnover ?? prev.annual_turnover ?? 24000000,
-          gst: a.gst || prev.gst || "",
-          udyam: a.udyam || prev.udyam || "",
-          bank_name: a.bank_name || prev.bank_name || "HDFC Bank",
-          bank_account: a.bank_account || prev.bank_account || "",
-          loan_type: a.loan_type || (targetProfile === "personal" ? "Green Energy Finance for Individual" : "Green Energy Finance for Business"),
-          loan_amount: a.loan_amount || prev.loan_amount || 2500000,
-          tenure: a.tenure || prev.tenure || 48,
-          purpose: a.purpose || prev.purpose || "Business requirement",
-          existing_emi: a.existing_emi ?? prev.existing_emi ?? 0
+          business_name: a.business_name || "",
+          business_type: a.business_type || "",
+          business_vintage: a.business_vintage ?? 0,
+          monthly_income: a.monthly_income ?? 0,
+          annual_turnover: a.annual_turnover ?? 0,
+          gst: a.gst || "",
+          udyam: a.udyam || "",
+          bank_name: a.bank_name || "",
+          bank_account: a.bank_account || "",
+          loan_type: a.loan_type || (targetProfile === "personal" ? "Personal Loan" : "Business Loan"),
+          loan_amount: a.loan_amount || 500000,
+          tenure: a.tenure || 36,
+          purpose: a.purpose || (targetProfile === "personal" ? "Personal requirement" : "Business requirement"),
+          existing_emi: a.existing_emi ?? 0
         }));
 
         setConsent1(true);
@@ -316,23 +316,23 @@ export function GnNewApplicant() {
       state: "",
       pincode: "",
       applicant_type: "Individual",
-      employment_type: "Self-employed",
+      employment_type: "Salaried",
       employer: "",
       designation: "",
-      monthly_income: 150000,
+      monthly_income: 0,
       business_name: "",
-      business_type: "Private Limited",
-      business_vintage: 3,
-      annual_turnover: 24000000,
+      business_type: "",
+      business_vintage: 0,
+      annual_turnover: 0,
       gst: "",
       udyam: "",
       existing_emi: 0,
-      bank_name: "HDFC Bank",
+      bank_name: "",
       bank_account: "",
-      loan_type: "Green Energy Finance for Business",
-      loan_amount: 2500000,
-      tenure: 48,
-      purpose: "Working capital expansion"
+      loan_type: "Personal Loan",
+      loan_amount: 500000,
+      tenure: 36,
+      purpose: "Personal requirement"
     });
     setSuccessNotice("✓ Application reset. Enter mobile number to begin fresh or auto-resume an existing client.");
   };
@@ -486,10 +486,10 @@ export function GnNewApplicant() {
         pincode: fetchedApl?.pincode || autoFetch?.pincode || expDetails?.pincode || p.pincode,
         gst: fetchedApl?.gst || autoFetch?.gst || p.gst || "",
         business_name: fetchedApl?.business_name || autoFetch?.business_name || p.business_name || "",
-        business_type: fetchedApl?.business_type || autoFetch?.business_type || p.business_type || "Private Limited",
-        business_vintage: fetchedApl?.business_vintage || autoFetch?.business_vintage || p.business_vintage || 1,
-        monthly_income: fetchedApl?.monthly_income || autoFetch?.monthly_income || p.monthly_income || 50000,
-        annual_turnover: fetchedApl?.annual_turnover || autoFetch?.annual_turnover || p.annual_turnover || 600000,
+        business_type: fetchedApl?.business_type || autoFetch?.business_type || p.business_type || "",
+        business_vintage: fetchedApl?.business_vintage || autoFetch?.business_vintage || p.business_vintage || 0,
+        monthly_income: fetchedApl?.monthly_income || autoFetch?.monthly_income || p.monthly_income || 0,
+        annual_turnover: fetchedApl?.annual_turnover || autoFetch?.annual_turnover || p.annual_turnover || 0,
         bank_name: fetchedApl?.bank_name || autoFetch?.bank_name || p.bank_name || ""
       }));
       setSuccessNotice(
@@ -3804,7 +3804,7 @@ export function GnNewApplicant() {
                             <div className="space-y-1">
                               <div className="flex justify-between py-0.5">
                                 <span className="text-slate-400">1. Gross Business Turnover / Gross Receipts</span>
-                                <span className="font-mono font-semibold text-white">₹{(form.annual_turnover || 24000000).toLocaleString("en-IN")}</span>
+                                <span className="font-mono font-semibold text-white">₹{(form.annual_turnover || 0).toLocaleString("en-IN")}</span>
                               </div>
                               <div className="flex justify-between py-0.5">
                                 <span className="text-slate-400">2. Gross Total Income from Business & Profession</span>

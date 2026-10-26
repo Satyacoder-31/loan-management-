@@ -3652,6 +3652,8 @@ async function runCredit(tenantId, applicantId, userId, scoreOverride) {
   let provider = "Digitap Experian (Prod)";
   let ref = `CR-EXP-${String(1e5 + Math.floor(Math.random() * 9e5))}`;
   let reportJson = null;
+  let dpd = 0;
+  let overdueAmount = 0;
   if (!score && a.mobile) {
     const norm2 = normalizeMobile(a.mobile);
     try {
@@ -3668,6 +3670,8 @@ async function runCredit(tenantId, applicantId, userId, scoreOverride) {
         enquiries6m = exp.enquiries6m ?? enquiries6m;
         totalOutstanding = exp.totalOutstanding ?? totalOutstanding;
         ref = exp.providerRef || ref;
+        dpd = exp.dpdMax ?? exp.creditReport?.dpdMax ?? 0;
+        overdueAmount = exp.creditReport?.overdueAmount ?? 0;
         if (exp.creditReport) {
           reportJson = JSON.stringify(exp.creditReport);
         }
@@ -3694,8 +3698,8 @@ async function runCredit(tenantId, applicantId, userId, scoreOverride) {
       Math.round(Number(enquiries6m)),
       Math.round(Number(totalOutstanding)),
       Math.round(Number((a.loan_amount ?? 0) + totalOutstanding)),
-      0,
-      0,
+      overdueAmount,
+      dpd,
       18,
       reportJson,
       ref
