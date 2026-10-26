@@ -867,20 +867,20 @@ export function GnNewApplicant() {
                 paymentHistory: "0000000000000010000000000000000?????"
               },
               {
-                accountNumber: "XXXXXXXXXXXX0001",
-                lender: "Krazybee Services Pvt Ltd",
+                accountNumber: "XXXXXXXXXXXXXXXXXX6080",
+                lender: "Mpokket Financial Services Pvt Ltd",
                 accountType: "Short Term Personal Loan",
-                sanctionedAmount: 10000,
+                sanctionedAmount: 2000,
                 currentBalance: 960,
                 repaymentStatus: "Current / Regular",
                 dpd: 0,
-                openedDate: "2026-05-18",
+                openedDate: "2026-08-04",
                 status: "Active",
-                paymentHistory: "0000????????????????????????????????"
+                paymentHistory: "00??????????????????????????????????"
               },
               {
-                accountNumber: "XXXXXXXXXXXX0002",
-                lender: "Bhanix Finance And Investment Ltd",
+                accountNumber: "XXXXXXXXXXXXXXXXXX6338",
+                lender: "Mpokket Financial Services Pvt Ltd",
                 accountType: "Short Term Personal Loan",
                 sanctionedAmount: 3000,
                 currentBalance: 720,
@@ -889,6 +889,30 @@ export function GnNewApplicant() {
                 openedDate: "2026-05-24",
                 status: "Active",
                 paymentHistory: "0000????????????????????????????????"
+              },
+              {
+                accountNumber: "XXXXXXXXXXXXXXXXXX4821",
+                lender: "Mpokket Financial Services Pvt Ltd",
+                accountType: "Short Term Personal Loan",
+                sanctionedAmount: 5000,
+                currentBalance: 0,
+                repaymentStatus: "4 Days Overdue",
+                dpd: 4,
+                openedDate: "2026-01-29",
+                status: "Closed",
+                paymentHistory: "0000000?????????????????????????????"
+              },
+              {
+                accountNumber: "XXXXXXXXXXXXXXXXXX6005",
+                lender: "Mpokket Financial Services Pvt Ltd",
+                accountType: "Short Term Personal Loan",
+                sanctionedAmount: 3000,
+                currentBalance: 0,
+                repaymentStatus: "Current / Regular",
+                dpd: 0,
+                openedDate: "2025-11-15",
+                status: "Closed",
+                paymentHistory: "000000000???????????????????????????"
               }
             ]
           : (cleanMobile === "9820123456"

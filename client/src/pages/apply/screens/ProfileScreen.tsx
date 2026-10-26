@@ -180,7 +180,7 @@ export function ProfileScreen({ journey, onSuccess }: ProfileScreenProps) {
             </span>
           </div>
           <p className="text-xs text-zinc-300 leading-relaxed">
-            Name, PAN, registered address, and Experian Credit Score (782) were automatically retrieved from the verified mobile number{" "}
+            Name, PAN, registered address, and Experian Credit Score were automatically retrieved from the verified mobile number{" "}
             <strong className="text-white font-mono">{journey.masked_mobile || journey.mobile}</strong>.
           </p>
         </div>
