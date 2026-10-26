@@ -17180,8 +17180,8 @@ gnCoRouter.post("/gn/co/applicants", requirePerm("gn.co.create"), asyncH(async (
     const cleanMobile = b.mobile.replace(/\D/g, "");
     if (cleanMobile.length >= 10) {
       const existing = await q1(
-        "SELECT * FROM gn_applicants WHERE tenant_id = ? AND (mobile LIKE ? OR alt_mobile LIKE ?) ORDER BY id DESC LIMIT 1",
-        [t, `%${cleanMobile}%`, `%${cleanMobile}%`]
+        "SELECT * FROM gn_applicants WHERE tenant_id = ? AND (mobile = ? OR mobile = ? OR mobile = ? OR mobile = ?) ORDER BY id DESC LIMIT 1",
+        [t, cleanMobile, `+91${cleanMobile}`, `91${cleanMobile}`, `+91 ${cleanMobile}`]
       );
       if (existing) {
         res.json(existing);
@@ -17260,8 +17260,8 @@ gnCoRouter.get("/gn/co/applicants/lookup-by-mobile/:mobile", requirePerm("gn.co.
     return;
   }
   const a = await q1(
-    "SELECT * FROM gn_applicants WHERE tenant_id = ? AND (mobile LIKE ? OR alt_mobile LIKE ?) ORDER BY id DESC LIMIT 1",
-    [t, `%${cleanMobile}%`, `%${cleanMobile}%`]
+    "SELECT * FROM gn_applicants WHERE tenant_id = ? AND (mobile = ? OR mobile = ? OR mobile = ? OR mobile = ?) ORDER BY id DESC LIMIT 1",
+    [t, cleanMobile, `+91${cleanMobile}`, `91${cleanMobile}`, `+91 ${cleanMobile}`]
   );
   if (!a) {
     res.json({ found: false });

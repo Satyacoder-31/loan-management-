@@ -198,10 +198,15 @@ export function GnNewApplicant() {
 
   const f = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
 
-  // Auto-resume existing application whenever a 10-digit mobile number is entered
-  const checkAndResumeApplicant = async (cleanMobile: string) => {
-    if (cleanMobile.length < 10) return;
+  // Resume existing registered application ONLY when explicitly requested by clicking button
+  const checkAndResumeApplicant = async (targetMobile?: string) => {
+    const cleanMobile = (targetMobile || form.mobile || "").replace(/\D/g, "");
+    if (cleanMobile.length < 10) {
+      setMsg("Please enter a valid 10-digit mobile number to look up existing records.");
+      return;
+    }
     setCheckingMobile(true);
+    setMsg(null);
     try {
       const res = await api(`/gn/co/applicants/lookup-by-mobile/${cleanMobile}`);
       if (res?.found && res.applicant) {
@@ -266,25 +271,16 @@ export function GnNewApplicant() {
         setSuccessNotice(
           `✓ Client record found for +91 ${cleanMobile} (${a.name || "Customer"}). Resumed at Step ${resumeStep + 1}: ${STEPS[resumeStep]}.`
         );
+      } else {
+        setMsg(`No prior application found for +91 ${cleanMobile}. Please accept consents and click "Send Verification OTP" below to start fresh.`);
       }
     } catch (e: any) {
-      console.warn("Mobile auto-resume lookup error:", e);
+      console.warn("Mobile resume lookup error:", e);
+      setMsg("Failed to lookup application: " + (e?.message || String(e)));
     } finally {
       setCheckingMobile(false);
     }
   };
-
-  // Watch for 10-digit mobile number entry while on Step 0
-  useEffect(() => {
-    if (step !== 0 || applicant) return;
-    const clean = (form.mobile || "").replace(/\D/g, "");
-    if (clean.length === 10) {
-      const timer = setTimeout(() => {
-        checkAndResumeApplicant(clean);
-      }, 350);
-      return () => clearTimeout(timer);
-    }
-  }, [form.mobile, step, applicant]);
 
   // Restart / Reset Application
   const handleRestartApplication = () => {
@@ -383,6 +379,23 @@ export function GnNewApplicant() {
         }
       });
       setApplicant(a);
+      setDetail(null);
+      setForm((prev: any) => ({
+        ...prev,
+        mobile: cleanMobile,
+        whatsapp_number: cleanMobile,
+        name: "",
+        address: "",
+        email: "",
+        alt_mobile: "",
+        alt_email: "",
+        pan: "",
+        aadhaar: "",
+        dob: "",
+        city: "",
+        state: "",
+        pincode: ""
+      }));
       try {
         localStorage.setItem("gn_last_mobile", cleanMobile);
       } catch {}
@@ -923,7 +936,7 @@ export function GnNewApplicant() {
     credit?.score ??
     creditReportObj?.score ??
     applicant?.credit_score ??
-    (cleanMobile === "8838864869" ? 714 : (cleanMobile === "9820123456" ? 785 : 742));
+    (tradelinesList.length > 0 ? (cleanMobile === "8838864869" ? 714 : (cleanMobile === "9820123456" ? 785 : 750)) : null);
 
   const input = "input text-[12.5px] w-full";
 
@@ -974,7 +987,7 @@ export function GnNewApplicant() {
             <div className="text-[11.5px] text-slate-300 mt-1 leading-relaxed">
               {experianLive
                 ? "Production Experian API is active. Live bureau pulls incur charges per request."
-                : "Live Experian API calls are deactivated to protect your credit wallet. Pre-extracted CIR records for 8838864869 (Satyajeet Kere) are auto-served with ₹0 billing."}
+                : "Experian API is running in cost-saver mode. Real-time test bureau profiles are simulated with ₹0 billing."}
             </div>
           </div>
         </div>
@@ -1125,47 +1138,30 @@ export function GnNewApplicant() {
                   />
                 </div>
 
-                {/* Auto-Resume / Lookup Notification */}
-                {checkingMobile && (
-                  <div className="flex items-center gap-2 pt-1 text-[11.5px] text-indigo-400 font-semibold animate-pulse">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
-                    Searching for existing application in progress for +91 {form.mobile}...
-                  </div>
-                )}
-
-                {/* Resume Recent Client Badge */}
-                {!otpSent && recentMobile && recentMobile !== form.mobile && !checkingMobile && (
-                  <div className="pt-1 flex items-center gap-2">
+                {/* Explicit action: Fetch details of user already registered */}
+                {!otpSent && cleanMobile.length === 10 && (
+                  <div className="pt-2 flex items-center justify-between flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => {
-                        f("mobile", recentMobile);
-                        f("whatsapp_number", recentMobile);
-                      }}
-                      className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-300 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/30 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                      disabled={checkingMobile || busy}
+                      onClick={() => checkAndResumeApplicant(cleanMobile)}
+                      className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-indigo-300 bg-indigo-950/60 hover:bg-indigo-900/80 border border-indigo-500/40 px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-sm disabled:opacity-50"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                      Resume Recent Client: +91 {recentMobile}
+                      {checkingMobile ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+                          Checking registered records for +91 {cleanMobile}…
+                        </>
+                      ) : (
+                        <>
+                          <RotateCcw className="w-3.5 h-3.5 text-indigo-400" />
+                          Fetch details of user already registered (+91 {cleanMobile})
+                        </>
+                      )}
                     </button>
-                    <span className="text-[10.5px] text-slate-400">Click to resume form at saved step</span>
-                  </div>
-                )}
-
-
-                {!otpSent && experianLive && (
-                  <div className="flex items-center justify-between pt-1 text-[11px] text-emerald-400 font-semibold bg-emerald-950/30 border border-emerald-500/30 px-3 py-1.5 rounded-lg flex-wrap gap-2">
-                    <span className="flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                      Live Experian Production Active: Real-time Credit Information Report (CIR)
+                    <span className="text-[11px] text-slate-400">
+                      Already registered? Click to jump to the step you left off.
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowReportModal(true)}
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-300 hover:text-white underline underline-offset-2 cursor-pointer ml-auto"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      Open Credit Report (CIR)
-                    </button>
                   </div>
                 )}
               </Field>
@@ -1347,10 +1343,10 @@ export function GnNewApplicant() {
                     <span className="text-[10px] bg-emerald-500/15 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30">CIR Record</span>
                   </div>
                   <div className="text-[12.5px] font-semibold text-slate-200 line-clamp-2 leading-snug" title={form.address || "N/A"}>
-                    {form.address || [form.city, form.state, form.pincode].filter(Boolean).join(", ") || applicant?.address || creditReportObj?.applicantDetails?.address || (cleanMobile === "8838864869" ? "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD MAHARASHTRA 431103" : (cleanMobile === "9820123456" ? "402, Sea Green Heights, Worli Sea Face, Mumbai, Maharashtra 400018" : <span className="text-slate-500 font-normal italic">No address in bureau records (Enter below)</span>))}
+                    {form.address || [form.city, form.state, form.pincode].filter(Boolean).join(", ") || applicant?.address || creditReportObj?.applicantDetails?.address || <span className="text-slate-500 font-normal italic">No address in bureau records (Enter below)</span>}
                   </div>
                   <div className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-rose-400" /> Pincode: {form.pincode || applicant?.pincode || creditReportObj?.applicantDetails?.pincode || (cleanMobile === "8838864869" ? "431103" : (cleanMobile === "9820123456" ? "400018" : "—"))} · {form.state || applicant?.state || creditReportObj?.applicantDetails?.state || (cleanMobile === "8838864869" ? "Maharashtra" : (cleanMobile === "9820123456" ? "Maharashtra" : "—"))}
+                    <MapPin className="w-3.5 h-3.5 text-rose-400" /> Pincode: {form.pincode || applicant?.pincode || creditReportObj?.applicantDetails?.pincode || "—"} · {form.state || applicant?.state || creditReportObj?.applicantDetails?.state || "—"}
                   </div>
                 </div>
 
@@ -1364,7 +1360,7 @@ export function GnNewApplicant() {
                     <span className="text-[10px] bg-emerald-500/15 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30">Primary</span>
                   </div>
                   <div className="text-[13.5px] font-bold text-white truncate" title={form.email || "N/A"}>
-                    {form.email || applicant?.email || creditReportObj?.applicantDetails?.email || (cleanMobile === "8838864869" ? "SATYJEET004@GMAIL.COM" : (cleanMobile === "9820123456" ? "ranjodh.dhillon@gmail.com" : <span className="text-slate-500 font-normal italic">None in bureau records</span>))}
+                    {form.email || applicant?.email || creditReportObj?.applicantDetails?.email || <span className="text-slate-500 font-normal italic">None in bureau records</span>}
                   </div>
                   <div className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5 text-blue-400" /> Bureau reported electronic contact
@@ -1381,7 +1377,7 @@ export function GnNewApplicant() {
                     <span className="text-[10px] bg-[#111827] text-slate-400 font-bold px-2 py-0.5 rounded border border-[#1e293b]">Secondary</span>
                   </div>
                   <div className="text-[13.5px] font-bold text-white">
-                    {(form.alt_mobile || applicant?.alt_mobile || creditReportObj?.applicantDetails?.altMobile) ? `+91 ${form.alt_mobile || applicant?.alt_mobile || creditReportObj?.applicantDetails?.altMobile}` : (cleanMobile === "8838864869" ? "+91 8838864869" : (cleanMobile === "9820123456" ? "+91 9820987654" : <span className="text-slate-500 font-normal italic">None in tradelines (Optional)</span>))}
+                    {(form.alt_mobile || applicant?.alt_mobile || creditReportObj?.applicantDetails?.altMobile) ? `+91 ${form.alt_mobile || applicant?.alt_mobile || creditReportObj?.applicantDetails?.altMobile}` : <span className="text-slate-500 font-normal italic">None in tradelines (Optional)</span>}
                   </div>
                   <div className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1.5">
                     <Phone className="w-3.5 h-3.5 text-emerald-400" /> Tradelines secondary telephone
@@ -1398,7 +1394,7 @@ export function GnNewApplicant() {
                     <span className="text-[10px] bg-[#111827] text-slate-400 font-bold px-2 py-0.5 rounded border border-[#1e293b]">Secondary</span>
                   </div>
                   <div className="text-[13.5px] font-bold text-white truncate" title={form.alt_email || "N/A"}>
-                    {form.alt_email || applicant?.alt_email || creditReportObj?.applicantDetails?.altEmail || (cleanMobile === "8838864869" ? "kere.enterprises@gmail.com" : (cleanMobile === "9820123456" ? "ranjodh.business@gmail.com" : <span className="text-slate-500 font-normal italic">None in tradelines (Optional)</span>))}
+                    {form.alt_email || applicant?.alt_email || creditReportObj?.applicantDetails?.altEmail || <span className="text-slate-500 font-normal italic">None in tradelines (Optional)</span>}
                   </div>
                   <div className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5 text-purple-400" /> Tradelines secondary email
@@ -1415,7 +1411,7 @@ export function GnNewApplicant() {
                     <span className="text-[10px] bg-emerald-500/15 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30">ITD Matched</span>
                   </div>
                   <div className="text-[14.5px] font-mono font-bold text-white tracking-wider">
-                    {form.pan || applicant?.pan || creditReportObj?.applicantDetails?.pan || (cleanMobile === "8838864869" ? "KVJPK5493R" : (cleanMobile === "9820123456" ? "ABCDE1234F" : <span className="text-slate-500 font-normal italic font-sans text-[12px]">None linked (Enter below)</span>))}
+                    {form.pan || applicant?.pan || creditReportObj?.applicantDetails?.pan || <span className="text-slate-500 font-normal italic font-sans text-[12px]">None linked (Enter below)</span>}
                   </div>
                   <div className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1.5">
                     <CreditCard className="w-3.5 h-3.5 text-amber-400" /> Income Tax Department (CBDT)
@@ -1432,7 +1428,7 @@ export function GnNewApplicant() {
                     <span className="text-[10px] bg-emerald-500/15 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30">Masked</span>
                   </div>
                   <div className="text-[14.5px] font-mono font-bold text-white tracking-wider">
-                    {form.aadhaar || applicant?.aadhaar || creditReportObj?.applicantDetails?.aadhaar || (cleanMobile === "8838864869" ? "XXXX-XXXX-3926" : (cleanMobile === "9820123456" ? "XXXX-XXXX-5521" : <span className="text-slate-500 font-normal italic font-sans text-[12px]">None linked (UIDAI)</span>))}
+                    {form.aadhaar || applicant?.aadhaar || creditReportObj?.applicantDetails?.aadhaar || <span className="text-slate-500 font-normal italic font-sans text-[12px]">None linked (UIDAI)</span>}
                   </div>
                   <div className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5 text-teal-400" /> UIDAI & Experian Security Compliant
@@ -1451,7 +1447,7 @@ export function GnNewApplicant() {
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-[22px] font-black text-indigo-300 num">{score ?? 742}</span>
+                    <span className="text-[22px] font-black text-indigo-300 num">{score ?? "—"}</span>
                     {typeof score === "number" && <span className="text-[11px] font-bold text-slate-400">/ 900</span>}
                   </div>
                   <div className="text-[11px] text-indigo-400 font-medium mt-1.5 flex items-center gap-1.5">
@@ -1469,7 +1465,7 @@ export function GnNewApplicant() {
                     <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/40">Active CIR</span>
                   </div>
                   <div className="text-[13.5px] font-bold text-white">
-                    {tradelinesList.length} Tradelines · {fmtInr(credit?.report?.totalOutstanding ?? credit?.total_outstanding ?? (!experianLive && cleanMobile === "8838864869" ? 726805 : 0))}
+                    {tradelinesList.length} Tradelines · {fmtInr(credit?.report?.totalOutstanding ?? credit?.total_outstanding ?? 0)}
                   </div>
                   <div className="text-[11px] text-indigo-300 font-semibold mt-1.5 flex items-center justify-between">
                     <span className="flex items-center gap-1"><FileText className="w-3.5 h-3.5 text-indigo-400" /> {tradelinesList.length} Accounts Loaded</span>
@@ -1499,13 +1495,13 @@ export function GnNewApplicant() {
                 </div>
                 <div className="flex items-center gap-2 text-[11.5px]">
                   <span className="px-2.5 py-1 rounded-lg bg-[#0c1220] border border-[#1e293b] text-slate-300 font-semibold">
-                    Active: <strong className="text-emerald-400">{credit?.active_accounts ?? credit?.report?.activeAccounts ?? (!experianLive && cleanMobile === "8838864869" ? 3 : 0)}</strong>
+                    Active: <strong className="text-emerald-400">{credit?.active_accounts ?? credit?.report?.activeAccounts ?? 0}</strong>
                   </span>
                   <span className="px-2.5 py-1 rounded-lg bg-[#0c1220] border border-[#1e293b] text-slate-300 font-semibold">
-                    Closed: <strong className="text-slate-400">{credit?.closed_accounts ?? credit?.report?.closedAccounts ?? (!experianLive && cleanMobile === "8838864869" ? 7 : 0)}</strong>
+                    Closed: <strong className="text-slate-400">{credit?.closed_accounts ?? credit?.report?.closedAccounts ?? 0}</strong>
                   </span>
                   <span className="px-2.5 py-1 rounded-lg bg-[#0c1220] border border-[#1e293b] text-slate-300 font-semibold">
-                    Max DPD: <strong className={(credit?.dpd ?? credit?.report?.dpdMax ?? 0) > 0 ? "text-amber-400" : "text-emerald-400"}>{credit?.dpd ?? credit?.report?.dpdMax ?? (!experianLive && cleanMobile === "8838864869" ? 41 : 0)} Days</strong>
+                    Max DPD: <strong className={(credit?.dpd ?? credit?.report?.dpdMax ?? 0) > 0 ? "text-amber-400" : "text-emerald-400"}>{credit?.dpd ?? credit?.report?.dpdMax ?? 0} Days</strong>
                   </span>
                   <button
                     type="button"
@@ -2231,7 +2227,7 @@ export function GnNewApplicant() {
                     <div className="text-[13.5px] font-bold text-white flex items-center gap-2 flex-wrap">
                       <span>Client Mobile Upload Portal:</span>
                       <span className="font-mono text-indigo-300 bg-indigo-950/80 px-2.5 py-0.5 rounded-md border border-indigo-500/40 font-bold">
-                        +91 {form.mobile || "8838864869"}
+                        +91 {form.mobile || cleanMobile || "—"}
                       </span>
                       <span className="text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold px-2 py-0.5 rounded-full">
                         Zero Google Sign-in
@@ -2447,7 +2443,7 @@ export function GnNewApplicant() {
                 <div className="flex items-center gap-2 text-slate-300">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span>
-                    Form can be sent to <strong className="text-white">any WhatsApp number</strong>. Incoming documents are matched & fetched by <strong className="text-white">Registered Mobile (+91 {form.mobile || "8838864869"})</strong>.
+                    Form can be sent to <strong className="text-white">any WhatsApp number</strong>. Incoming documents are matched & fetched by <strong className="text-white">Registered Mobile (+91 {form.mobile || cleanMobile || "—"})</strong>.
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -3954,7 +3950,7 @@ export function GnNewApplicant() {
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-400 mt-0.5">
-                    Provider: <span className="font-semibold text-slate-300">Experian Credit Analytics (Digitap)</span> · Ref: <span className="font-mono text-slate-300 font-semibold">{credit?.reference || credit?.report?.providerRef || (experianLive ? "EXP-LIVE-CIR" : "EXP-LOCAL-8838864869")}</span>
+                    Provider: <span className="font-semibold text-slate-300">Experian Credit Analytics (Digitap)</span> · Ref: <span className="font-mono text-slate-300 font-semibold">{credit?.reference || credit?.report?.providerRef || (experianLive ? "EXP-LIVE-CIR" : "EXP-OFFLINE-CIR")}</span>
                   </div>
                 </div>
               </div>
@@ -3973,7 +3969,7 @@ export function GnNewApplicant() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-xl border border-indigo-500/30 bg-gradient-to-r from-indigo-950/50 via-[#0c1220] to-[#111827]">
                 <div className="flex items-center gap-3 md:col-span-1">
                   <div className="w-16 h-16 rounded-xl bg-indigo-600 text-white flex flex-col items-center justify-center shadow-lg shadow-indigo-600/30">
-                    <div className="text-[20px] font-black leading-none">{score ?? (experianLive ? "Thin File" : 714)}</div>
+                    <div className="text-[20px] font-black leading-none">{score ?? (tradelinesList.length > 0 ? 750 : "—")}</div>
                     <div className="text-[7.5px] font-bold uppercase tracking-wider text-indigo-200 mt-1">Score</div>
                   </div>
                   <div>
@@ -3988,16 +3984,16 @@ export function GnNewApplicant() {
                 <div className="grid grid-cols-3 gap-2 md:col-span-3">
                   <div className="rounded-lg bg-[#0c1220] p-2.5 border border-[#1e293b] text-center">
                     <div className="text-[10px] text-slate-400 uppercase font-semibold">Active Accounts</div>
-                    <div className="text-[14px] font-bold text-white mt-0.5">{credit?.active_accounts ?? credit?.report?.activeAccounts ?? (!experianLive && cleanMobile === "8838864869" ? 3 : 0)}</div>
+                    <div className="text-[14px] font-bold text-white mt-0.5">{credit?.active_accounts ?? credit?.report?.activeAccounts ?? 0}</div>
                   </div>
                   <div className="rounded-lg bg-[#0c1220] p-2.5 border border-[#1e293b] text-center">
                     <div className="text-[10px] text-slate-400 uppercase font-semibold">Total Outstanding</div>
-                    <div className="text-[14px] font-bold text-white mt-0.5">{fmtInr(credit?.report?.totalOutstanding ?? credit?.total_outstanding ?? (!experianLive && cleanMobile === "8838864869" ? 726805 : 0))}</div>
+                    <div className="text-[14px] font-bold text-white mt-0.5">{fmtInr(credit?.report?.totalOutstanding ?? credit?.total_outstanding ?? 0)}</div>
                   </div>
                   <div className="rounded-lg bg-[#0c1220] p-2.5 border border-[#1e293b] text-center">
                     <div className="text-[10px] text-slate-400 uppercase font-semibold">Highest DPD</div>
                     <div className={`text-[14px] font-bold mt-0.5 ${(credit?.dpd ?? credit?.report?.dpdMax ?? 0) > 0 ? "text-amber-400" : "text-emerald-400"}`}>
-                      {credit?.dpd ?? credit?.report?.dpdMax ?? (!experianLive && cleanMobile === "8838864869" ? 41 : 0)} Days
+                      {credit?.dpd ?? credit?.report?.dpdMax ?? 0} Days
                     </div>
                   </div>
                 </div>
@@ -4012,15 +4008,15 @@ export function GnNewApplicant() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#0c1220] p-3.5 rounded-xl border border-[#1e293b] text-[11px]">
                   <div>
                     <span className="text-slate-400 block text-[10px] uppercase font-semibold">1. Full Name</span>
-                    <span className="font-bold text-white">{form.name || applicant?.name || creditReportObj?.applicantDetails?.fullName || (cleanMobile === "8838864869" ? "Satyajeet Shashikant Kere" : (cleanMobile === "9820123456" ? "Ranjodh Singh Dhillon" : "Verified Applicant"))}</span>
+                    <span className="font-bold text-white">{form.name || applicant?.name || creditReportObj?.applicantDetails?.fullName || "Verified Applicant"}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px] uppercase font-semibold">6. PAN Card</span>
-                    <span className="font-mono font-bold text-white">{form.pan || applicant?.pan || creditReportObj?.applicantDetails?.pan || (cleanMobile === "8838864869" ? "KVJPK5493R" : (cleanMobile === "9820123456" ? "ABCDE1234F" : "—"))}</span>
+                    <span className="font-mono font-bold text-white">{form.pan || applicant?.pan || creditReportObj?.applicantDetails?.pan || "—"}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px] uppercase font-semibold">7. Aadhaar (UID)</span>
-                    <span className="font-mono font-bold text-white">{form.aadhaar || applicant?.aadhaar || creditReportObj?.applicantDetails?.aadhaar || (cleanMobile === "8838864869" ? "XXXX-XXXX-3926" : (cleanMobile === "9820123456" ? "XXXX-XXXX-5521" : "—"))}</span>
+                    <span className="font-mono font-bold text-white">{form.aadhaar || applicant?.aadhaar || creditReportObj?.applicantDetails?.aadhaar || "—"}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px] uppercase font-semibold">Primary Mobile</span>
@@ -4028,15 +4024,15 @@ export function GnNewApplicant() {
                   </div>
                   <div className="col-span-2">
                     <span className="text-slate-400 block text-[10px] uppercase font-semibold">2. Registered Address</span>
-                    <span className="font-semibold text-slate-300">{form.address || applicant?.address || creditReportObj?.applicantDetails?.address || (cleanMobile === "8838864869" ? "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD MAHARASHTRA 431103" : (cleanMobile === "9820123456" ? "402, Sea Green Heights, Worli Sea Face, Mumbai, Maharashtra 400018" : "Not recorded"))}</span>
+                    <span className="font-semibold text-slate-300">{form.address || applicant?.address || creditReportObj?.applicantDetails?.address || "Not recorded"}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px] uppercase font-semibold">3. Primary Mail ID</span>
-                    <span className="font-semibold text-white truncate block">{form.email || applicant?.email || creditReportObj?.applicantDetails?.email || (cleanMobile === "8838864869" ? "SATYJEET004@GMAIL.COM" : (cleanMobile === "9820123456" ? "ranjodh.dhillon@gmail.com" : "Not recorded"))}</span>
+                    <span className="font-semibold text-white truncate block">{form.email || applicant?.email || creditReportObj?.applicantDetails?.email || "Not recorded"}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px] uppercase font-semibold">4. Alternate Mobile</span>
-                    <span className="font-semibold text-slate-300">{(form.alt_mobile || applicant?.alt_mobile || creditReportObj?.applicantDetails?.altMobile) ? `+91 ${form.alt_mobile || applicant?.alt_mobile || creditReportObj?.applicantDetails?.altMobile}` : (cleanMobile === "8838864869" ? "+91 8838864869" : (cleanMobile === "9820123456" ? "+91 9820987654" : "None recorded"))}</span>
+                    <span className="font-semibold text-slate-300">{(form.alt_mobile || applicant?.alt_mobile || creditReportObj?.applicantDetails?.altMobile) ? `+91 ${form.alt_mobile || applicant?.alt_mobile || creditReportObj?.applicantDetails?.altMobile}` : "None recorded"}</span>
                   </div>
                 </div>
               </div>
