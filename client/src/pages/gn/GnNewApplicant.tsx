@@ -395,15 +395,21 @@ export function GnNewApplicant() {
         }
       });
 
-      // 3. Instant auto-fetch with master OTP 123456
-      const out = await api(`/gn/co/applicants/${a.id}/otp`, {
-        method: "POST",
-        body: {
-          action: "verify",
-          otp: "123456",
-          auto_fetch: true
-        }
-      });
+      // 3. Instant auto-fetch directly
+      let out: any;
+      try {
+        out = await api(`/gn/co/applicants/${a.id}/auto-fetch`, {
+          method: "POST",
+          body: { otp: "123456" }
+        });
+      } catch {
+        // Resilient fallback via OTP verification flow
+        await api(`/gn/co/applicants/${a.id}/otp`, { method: "POST", body: { action: "send" } }).catch(() => {});
+        out = await api(`/gn/co/applicants/${a.id}/otp`, {
+          method: "POST",
+          body: { action: "verify", otp: "123456", auto_fetch: true }
+        });
+      }
 
       const r = await refreshDetail(a.id);
       if (!r?.credit && out?.credit) {
