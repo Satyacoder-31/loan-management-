@@ -2450,6 +2450,13 @@ export interface PullExperianParams {
  * Implements POST /credit_analytics/request and auto-fallback to /credit_analytics/masked_mobile_report.
  */
 export async function pullExperianReport(params: PullExperianParams): Promise<ExperianBureauResult> {
+  const creditProvider = (process.env.CREDIT_PROVIDER || "indiconnect_experian").toLowerCase();
+  const hasIndicKeys = Boolean(process.env.INDIC_SECRET_KEY || process.env.INDIC_SERVICE_KEY || creditProvider.includes("indiconnect"));
+  if (hasIndicKeys && !creditProvider.includes("digitap_only")) {
+    const { pullIndiConnectExperian } = await import("./indiconnect.js");
+    return pullIndiConnectExperian(params);
+  }
+
   const digits = (params.mobile || "").replace(/\D/g, "");
   const mob = digits.length === 12 && digits.startsWith("91") ? digits.slice(2) : digits;
 
