@@ -166,6 +166,10 @@ gnCoRouter.post("/gn/co/applicants", requirePerm("gn.co.create"), asyncH(async (
         [t, cleanMobile, `+91${cleanMobile}`, `91${cleanMobile}`, `+91 ${cleanMobile}`]
       );
       if (existing) {
+        if (b.name && b.name !== "Applicant" && b.name !== "New Applicant" && b.name !== existing.name) {
+          await run("UPDATE gn_applicants SET name = ?, updated_at = datetime('now') WHERE id = ?", [b.name, existing.id]);
+          existing.name = b.name;
+        }
         res.json(existing);
         return;
       }

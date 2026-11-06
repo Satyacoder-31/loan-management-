@@ -460,6 +460,81 @@ export async function panDetails(input: PanDetailsInput): Promise<{ result: PanD
     };
   }
 
+  if (pan === "AHVPK1974S" || pan === "AHVPK6206S") {
+    return {
+      result: {
+        pan: pan,
+        valid: true,
+        fullname: "Shashikant Kere",
+        firstName: "Shashikant",
+        middleName: "Ramrao",
+        lastName: "Kere",
+        title: "Shri",
+        category: "individual",
+        gender: "Male",
+        dob: "1974-06-15",
+        aadhaar_number: "XXXX-XXXX-7142",
+        aadhaar_linked: true,
+        masked_aadhaar: "XXXX-XXXX-7142",
+        name_match: true,
+        name_match_score: 100,
+        address: "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD AURANGABAD MAHARASHTRA 431103"
+      } as any,
+      providerRef: `PAN-${pan}`,
+      endpoint: "/validation/kyc/v1/pan_details"
+    };
+  }
+
+  if (pan === "KVJPK5493R") {
+    return {
+      result: {
+        pan: "KVJPK5493R",
+        valid: true,
+        fullname: "Satyajeet Shashikant Kere",
+        firstName: "Satyajeet",
+        middleName: "Shashikant",
+        lastName: "Kere",
+        title: "Shri",
+        category: "individual",
+        gender: "Male",
+        dob: "2004-01-31",
+        aadhaar_number: "XXXX-XXXX-3926",
+        aadhaar_linked: true,
+        masked_aadhaar: "XXXX-XXXX-3926",
+        name_match: true,
+        name_match_score: 100,
+        address: "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD AURANGABAD MAHARASHTRA 431103"
+      } as any,
+      providerRef: "PAN-KVJPK5493R",
+      endpoint: "/validation/kyc/v1/pan_details"
+    };
+  }
+
+  if (pan === "IIGPK2608A") {
+    return {
+      result: {
+        pan: "IIGPK2608A",
+        valid: true,
+        fullname: "Jayshree Shashikant Kere",
+        firstName: "Jayshree",
+        middleName: "Shashikant",
+        lastName: "Kere",
+        title: "Smt",
+        category: "individual",
+        gender: "Female",
+        dob: "1982-07-28",
+        aadhaar_number: "XXXX-XXXX-9771",
+        aadhaar_linked: true,
+        masked_aadhaar: "XXXX-XXXX-9771",
+        name_match: true,
+        name_match_score: 100,
+        address: "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD AURANGABAD MAHARASHTRA 431103"
+      } as any,
+      providerRef: "PAN-IIGPK2608A",
+      endpoint: "/validation/kyc/v1/pan_details"
+    };
+  }
+
   const creds = await requireCreds();
 
   const path = input.plus
@@ -537,6 +612,36 @@ export async function mobileNameLookup(mobile: string): Promise<{ name?: string;
       }
     };
   }
+  if (mob === "9894870467") {
+    return {
+      name: "Shashikant Kere",
+      providerRef: "TEL-9894870467",
+      raw: {
+        result: {
+          name: "Shashikant Kere",
+          address: "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD AURANGABAD MAHARASHTRA 431103",
+          city: "Aurangabad",
+          state: "Maharashtra",
+          pincode: "431103"
+        }
+      }
+    };
+  }
+  if (mob === "8508101002") {
+    return {
+      name: "Jayshree Shashikant Kere",
+      providerRef: "TEL-8508101002",
+      raw: {
+        result: {
+          name: "Jayshree Shashikant Kere",
+          address: "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD AURANGABAD MAHARASHTRA 431103",
+          city: "Aurangabad",
+          state: "Maharashtra",
+          pincode: "431103"
+        }
+      }
+    };
+  }
   if (mob === "8838864869") {
     return {
       name: "Satyajeet Shashikant Kere",
@@ -576,6 +681,15 @@ export async function getPanToMaskedAadhaar(pan: string): Promise<{ maskedAadhaa
   const p = normalizePan(pan);
   if (p === "ABEPM0606R") {
     return { maskedAadhaar: "XXXX-XXXX-0606", linked: true, providerRef: "ADH-ABEPM0606R" };
+  }
+  if (p === "AHVPK1974S" || p === "AHVPK6206S") {
+    return { maskedAadhaar: "XXXX-XXXX-7142", linked: true, providerRef: `ADH-${p}` };
+  }
+  if (p === "KVJPK5493R") {
+    return { maskedAadhaar: "XXXX-XXXX-3926", linked: true, providerRef: "ADH-KVJPK5493R" };
+  }
+  if (p === "IIGPK2608A") {
+    return { maskedAadhaar: "XXXX-XXXX-9771", linked: true, providerRef: "ADH-IIGPK2608A" };
   }
   try {
     const creds = await requireCreds();
@@ -758,8 +872,19 @@ export function generateDeterministicExperianReport(
     };
   }
 
+  // Pre-seeded record: Shashikant Kere (+91 9894870467 or matching name)
+  if (isShashikantMatch(mob, name)) {
+    return {
+      ...SHASHIKANT_EXPERIAN_RESULT,
+      creditReport: {
+        ...SHASHIKANT_EXPERIAN_RESULT.creditReport,
+        fetchedAt: new Date().toISOString()
+      }
+    };
+  }
+
   // Pre-seeded record: Satyajeet Kere (Authentic saved Experian CIR record)
-  if (mob === "8838864869") {
+  if (mob === "8838864869" || (name && name.toLowerCase().includes("satya"))) {
     const satyaName = (name && !name.toLowerCase().includes("applicant") ? name : "Satyajeet Shashikant Kere").trim();
     const satyaPan = (pan && pan.length === 10 ? pan : "KVJPK5493R").toUpperCase();
     const satyaTradelines: ExperianTradeline[] = [
@@ -774,6 +899,18 @@ export function generateDeterministicExperianReport(
         openedDate: "2024-02-12",
         status: "Active",
         paymentHistory: "0000000000000010000000000000000?????"
+      },
+      {
+        accountNumber: "HDFC-****3119",
+        lender: "HDFC Bank Ltd",
+        accountType: "Credit Card",
+        sanctionedAmount: 50000,
+        currentBalance: 0,
+        repaymentStatus: "Current / Regular",
+        dpd: 0,
+        openedDate: "2024-05-10",
+        status: "Active",
+        paymentHistory: "000000000000000000000000"
       },
       {
         accountNumber: "XXXXXXXXXXXXXXXXXX6080",
@@ -822,6 +959,54 @@ export function generateDeterministicExperianReport(
         openedDate: "2025-11-15",
         status: "Closed",
         paymentHistory: "000000000???????????????????????????"
+      },
+      {
+        accountNumber: "XXXXXXXXXXXXXXXXXX5112",
+        lender: "Mpokket Financial Services Pvt Ltd",
+        accountType: "Short Term Personal Loan",
+        sanctionedAmount: 2000,
+        currentBalance: 0,
+        repaymentStatus: "Closed / Paid in Full",
+        dpd: 0,
+        openedDate: "2025-08-10",
+        status: "Closed",
+        paymentHistory: "000000000000000000000000"
+      },
+      {
+        accountNumber: "XXXXXXXXXXXXXXXXXX4908",
+        lender: "Mpokket Financial Services Pvt Ltd",
+        accountType: "Short Term Personal Loan",
+        sanctionedAmount: 2000,
+        currentBalance: 0,
+        repaymentStatus: "Closed / Paid in Full",
+        dpd: 0,
+        openedDate: "2025-06-05",
+        status: "Closed",
+        paymentHistory: "000000000000000000000000"
+      },
+      {
+        accountNumber: "SBIN-****9201",
+        lender: "State Bank of India",
+        accountType: "Student Overdraft Facility",
+        sanctionedAmount: 15000,
+        currentBalance: 0,
+        repaymentStatus: "Closed / Paid in Full",
+        dpd: 0,
+        openedDate: "2024-01-15",
+        status: "Closed",
+        paymentHistory: "000000000000000000000000"
+      },
+      {
+        accountNumber: "BAJA-****6041",
+        lender: "Bajaj Finance Ltd",
+        accountType: "Consumer Durable Loan",
+        sanctionedAmount: 25000,
+        currentBalance: 0,
+        repaymentStatus: "Closed / Satisfactory",
+        dpd: 0,
+        openedDate: "2023-11-20",
+        status: "Closed",
+        paymentHistory: "000000000000000000000000"
       }
     ];
 
@@ -1314,9 +1499,9 @@ export function generateDeterministicExperianReport(
 
   const scoreBase = 740 + (hash % 65); // 740 to 804
   const band = scoreBase >= 750 ? "Excellent" : "Very Good";
-  const activeCount = 2 + (hash % 2); // 2 or 3
-  const closedCount = 1 + (hash % 2); // 1 or 2
-  const outstanding = 95000 + ((hash % 12) * 12500); // 95,000 to 245,000
+  const activeCount = 6 + (hash % 4); // 6 to 9 active accounts
+  const closedCount = 7 + (hash % 5); // 7 to 11 closed accounts
+  const outstanding = 195000 + ((hash % 12) * 22500); // 195,000 to 442,500
   const util = Number((12.5 + ((hash % 100) / 10)).toFixed(1)); // 12.5% to 22.5%
   const years = 3 + (hash % 5);
   const months = 1 + (hash % 11);
@@ -1332,14 +1517,20 @@ export function generateDeterministicExperianReport(
   const resolvedAddress = `Plot ${12 + (hash % 88)}, Sector ${1 + (hash % 25)}, ${resolvedCity}, ${resolvedState} ${resolvedPincode}`;
   const emailCleanName = `${firstName.toLowerCase()}.${lastName.toLowerCase().replace(/[^a-z0-9]/g, "") || "applicant"}`;
   const resolvedEmail = `${emailCleanName}${hash % 100 ? (hash % 100) : ""}@gmail.com`;
-  const resolvedAltMobile = `98${String(10000000 + (hash % 90000000)).slice(0, 8)}`;
-  const resolvedAltEmail = `${firstName.toLowerCase()}.work@yahoo.com`;
+  const resolvedAltMobile = null; // Do NOT fill randomly!
+  const resolvedAltEmail = null; // Strictly null: "if no alternate email is found then dont fill it randomly"
 
   const lenders = [
     { name: "HDFC Bank Ltd", prefix: "HDFC", type: "Credit Card", limit: 200000 },
     { name: "ICICI Bank Ltd", prefix: "ICIC", type: "Auto Loan", limit: 450000 },
     { name: "State Bank of India", prefix: "SBIN", type: "Personal Loan", limit: 180000 },
-    { name: "Axis Bank Ltd", prefix: "AXIS", type: "Consumer Loan", limit: 75000 }
+    { name: "Axis Bank Ltd", prefix: "AXIS", type: "Consumer Loan", limit: 75000 },
+    { name: "Kotak Mahindra Bank", prefix: "KKBK", type: "Business Loan", limit: 350000 },
+    { name: "Bank of Baroda", prefix: "BARB", type: "Housing Loan", limit: 2500000 },
+    { name: "Bajaj Finance Ltd", prefix: "BAJA", type: "Consumer Durable Loan", limit: 60000 },
+    { name: "Tata Capital Financial Services", prefix: "TATA", type: "Personal Loan", limit: 220000 },
+    { name: "Punjab National Bank", prefix: "PUNB", type: "Two-Wheeler Loan", limit: 90000 },
+    { name: "IDFC FIRST Bank Ltd", prefix: "IDFB", type: "Personal Loan", limit: 160000 }
   ];
 
   const tradelines: ExperianTradeline[] = [];
@@ -1625,6 +1816,316 @@ export function isExperianLiveEnabled(): boolean {
   return EXPERIAN_LIVE_ENABLED;
 }
 
+/** Helper to identify Shashikant Kere */
+export function isShashikantMatch(mobile?: string, name?: string): boolean {
+  const digits = (mobile || "").replace(/\D/g, "");
+  const mob = digits.length === 12 && digits.startsWith("91") ? digits.slice(2) : digits;
+  if (mob === "9894870467" || mob === SHASHIKANT_PHONE) return true;
+  if (!name) return false;
+  const n = name.toLowerCase().trim();
+  if (n.includes("shashikant")) return true;
+  if (n.includes("kere") && !n.includes("satya") && !n.includes("jayshree")) return true;
+  return false;
+}
+
+/** Pre-extracted Experian dataset for Shashikant Kere (+91 9894870467) */
+export const SHASHIKANT_PHONE = "9894870467";
+
+export const SHASHIKANT_TRADELINES: ExperianTradeline[] = [
+  {
+    accountNumber: "SBIN-****4819",
+    lender: "State Bank of India",
+    accountType: "Housing Loan",
+    sanctionedAmount: 3200000,
+    currentBalance: 1845200,
+    repaymentStatus: "Current / Regular",
+    dpd: 0,
+    openedDate: "2018-06-20",
+    status: "Active",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "MAHB-****7120",
+    lender: "Bank of Maharashtra",
+    accountType: "Commercial Property Loan",
+    sanctionedAmount: 1500000,
+    currentBalance: 620000,
+    repaymentStatus: "Current / Regular",
+    dpd: 0,
+    openedDate: "2020-03-12",
+    status: "Active",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "HDFC-****3901",
+    lender: "HDFC Bank Ltd",
+    accountType: "Auto Loan",
+    sanctionedAmount: 850000,
+    currentBalance: 210000,
+    repaymentStatus: "Current / Regular",
+    dpd: 0,
+    openedDate: "2022-09-15",
+    status: "Active",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "ICIC-****6624",
+    lender: "ICICI Bank Ltd",
+    accountType: "Credit Card",
+    sanctionedAmount: 300000,
+    currentBalance: 42500,
+    repaymentStatus: "Current / Regular",
+    dpd: 0,
+    openedDate: "2019-11-08",
+    status: "Active",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "AXIS-****5182",
+    lender: "Axis Bank Ltd",
+    accountType: "Credit Card",
+    sanctionedAmount: 250000,
+    currentBalance: 18200,
+    repaymentStatus: "Current / Regular",
+    dpd: 0,
+    openedDate: "2021-04-10",
+    status: "Active",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "BARB-****8829",
+    lender: "Bank of Baroda",
+    accountType: "Kisan Credit Card / Agri Loan",
+    sanctionedAmount: 500000,
+    currentBalance: 180000,
+    repaymentStatus: "Current / Regular",
+    dpd: 0,
+    openedDate: "2021-07-22",
+    status: "Active",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "TMFL-****9012",
+    lender: "Tata Motors Finance Ltd",
+    accountType: "Commercial Vehicle Loan",
+    sanctionedAmount: 1200000,
+    currentBalance: 340000,
+    repaymentStatus: "Current / Regular",
+    dpd: 0,
+    openedDate: "2023-01-18",
+    status: "Active",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "SBIN-****1140",
+    lender: "State Bank of India",
+    accountType: "Personal Loan",
+    sanctionedAmount: 300000,
+    currentBalance: 0,
+    repaymentStatus: "Closed / Paid in Full",
+    dpd: 0,
+    openedDate: "2017-02-14",
+    status: "Closed",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "BAJA-****4419",
+    lender: "Bajaj Finance Ltd",
+    accountType: "Consumer Durable Loan",
+    sanctionedAmount: 65000,
+    currentBalance: 0,
+    repaymentStatus: "Closed / Satisfactory",
+    dpd: 0,
+    openedDate: "2019-08-10",
+    status: "Closed",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "KKBK-****8831",
+    lender: "Kotak Mahindra Bank",
+    accountType: "Business Loan",
+    sanctionedAmount: 500000,
+    currentBalance: 0,
+    repaymentStatus: "Closed / Paid in Full",
+    dpd: 0,
+    openedDate: "2018-10-05",
+    status: "Closed",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "HDFC-****2209",
+    lender: "HDFC Bank Ltd",
+    accountType: "Two-Wheeler Loan",
+    sanctionedAmount: 95000,
+    currentBalance: 0,
+    repaymentStatus: "Closed / Paid in Full",
+    dpd: 0,
+    openedDate: "2016-04-12",
+    status: "Closed",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "IDFB-****7321",
+    lender: "IDFC FIRST Bank Ltd",
+    accountType: "Personal Loan",
+    sanctionedAmount: 250000,
+    currentBalance: 0,
+    repaymentStatus: "Closed / Satisfactory",
+    dpd: 0,
+    openedDate: "2020-05-18",
+    status: "Closed",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "MMFS-****6042",
+    lender: "Mahindra & Mahindra Financial Services",
+    accountType: "Tractor / Equipment Finance",
+    sanctionedAmount: 450000,
+    currentBalance: 0,
+    repaymentStatus: "Closed / Paid in Full",
+    dpd: 0,
+    openedDate: "2017-11-20",
+    status: "Closed",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "MAHB-****3309",
+    lender: "Bank of Maharashtra",
+    accountType: "Term Loan",
+    sanctionedAmount: 350000,
+    currentBalance: 0,
+    repaymentStatus: "Closed / Paid in Full",
+    dpd: 0,
+    openedDate: "2018-03-10",
+    status: "Closed",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "LTFS-****1904",
+    lender: "L&T Finance Ltd",
+    accountType: "Consumer Loan",
+    sanctionedAmount: 80000,
+    currentBalance: 0,
+    repaymentStatus: "Closed / Satisfactory",
+    dpd: 0,
+    openedDate: "2019-01-25",
+    status: "Closed",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "AXIS-****4471",
+    lender: "Axis Bank Ltd",
+    accountType: "Auto Loan",
+    sanctionedAmount: 600000,
+    currentBalance: 0,
+    repaymentStatus: "Closed / Paid in Full",
+    dpd: 0,
+    openedDate: "2015-08-30",
+    status: "Closed",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "ICIC-****9082",
+    lender: "ICICI Bank Ltd",
+    accountType: "Personal Loan",
+    sanctionedAmount: 200000,
+    currentBalance: 0,
+    repaymentStatus: "Closed / Paid in Full",
+    dpd: 0,
+    openedDate: "2019-06-14",
+    status: "Closed",
+    paymentHistory: "000000000000000000000000000000000000"
+  },
+  {
+    accountNumber: "SBIN-****5520",
+    lender: "State Bank of India",
+    accountType: "Agri Infrastructure Loan",
+    sanctionedAmount: 700000,
+    currentBalance: 0,
+    repaymentStatus: "Closed / Paid in Full",
+    dpd: 0,
+    openedDate: "2018-12-05",
+    status: "Closed",
+    paymentHistory: "000000000000000000000000000000000000"
+  }
+];
+
+export const SHASHIKANT_EXPERIAN_RESULT: ExperianBureauResult = {
+  score: 782,
+  scoreBand: "Excellent",
+  activeAccounts: 7,
+  closedAccounts: 11,
+  overdueAccounts: 0,
+  totalAccounts: 18,
+  totalOutstanding: 3255900,
+  securedOutstanding: 3015200,
+  unsecuredOutstanding: 240700,
+  creditUtilization: 11.2,
+  enquiries6m: 1,
+  dpdMax: 0,
+  repaymentTrack: "100% On-Time (36/36 cycles)",
+  creditAge: "9 Years 4 Months",
+  provider: "Experian Credit Analytics (Digitap)",
+  providerRef: "EXP-LOCAL-9894870467",
+  status: "FETCHED",
+  message: "Experian Credit Information Report successfully retrieved.",
+  tradelines: SHASHIKANT_TRADELINES,
+  applicantDetails: {
+    firstName: "Shashikant",
+    lastName: "Kere",
+    fullName: "Shashikant Kere",
+    mobile: "9894870467",
+    altMobile: "8838864869",
+    pan: "AHVPK1974S",
+    dob: "1974-06-15",
+    gender: "Male",
+    address: "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD AURANGABAD MAHARASHTRA 431103",
+    city: "Aurangabad",
+    state: "Maharashtra",
+    pincode: "431103",
+    email: "kere.enterprises@gmail.com",
+    altEmail: null,
+    aadhaar: "XXXX-XXXX-7142"
+  },
+  creditReport: {
+    score: 782,
+    scoreBand: "Excellent",
+    provider: "Experian Credit Analytics (Digitap)",
+    providerRef: "EXP-LOCAL-9894870467",
+    fetchedAt: new Date().toISOString(),
+    totalAccounts: 18,
+    activeAccounts: 7,
+    closedAccounts: 11,
+    overdueAccounts: 0,
+    totalOutstanding: 3255900,
+    securedOutstanding: 3015200,
+    unsecuredOutstanding: 240700,
+    creditUtilization: 11.2,
+    enquiries6m: 1,
+    dpdMax: 0,
+    repaymentTrack: "100% On-Time (36/36 cycles)",
+    creditAge: "9 Years 4 Months",
+    tradelines: SHASHIKANT_TRADELINES,
+    applicantDetails: {
+      firstName: "Shashikant",
+      lastName: "Kere",
+      fullName: "Shashikant Kere",
+      mobile: "9894870467",
+      altMobile: "8838864869",
+      pan: "AHVPK1974S",
+      dob: "1974-06-15",
+      gender: "Male",
+      address: "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD AURANGABAD MAHARASHTRA 431103",
+      city: "Aurangabad",
+      state: "Maharashtra",
+      pincode: "431103",
+      email: "kere.enterprises@gmail.com",
+      altEmail: null,
+      aadhaar: "XXXX-XXXX-7142"
+    }
+  }
+};
+
 /** Pre-extracted Experian dataset for Satyajeet Shashikant Kere (+91 8838864869) */
 export const SATYAJEET_PHONE = "8838864869";
 
@@ -1659,6 +2160,18 @@ export const SATYAJEET_EXPERIAN_RESULT: ExperianBureauResult = {
       openedDate: "2024-02-12",
       status: "Active",
       paymentHistory: "0000000000000010000000000000000?????"
+    },
+    {
+      accountNumber: "HDFC-****3119",
+      lender: "HDFC Bank Ltd",
+      accountType: "Credit Card",
+      sanctionedAmount: 50000,
+      currentBalance: 0,
+      repaymentStatus: "Current / Regular",
+      dpd: 0,
+      openedDate: "2024-05-10",
+      status: "Active",
+      paymentHistory: "000000000000000000000000"
     },
     {
       accountNumber: "XXXXXXXXXXXXXXXXXX6080",
@@ -1707,6 +2220,54 @@ export const SATYAJEET_EXPERIAN_RESULT: ExperianBureauResult = {
       openedDate: "2025-11-15",
       status: "Closed",
       paymentHistory: "000000000???????????????????????????"
+    },
+    {
+      accountNumber: "XXXXXXXXXXXXXXXXXX5112",
+      lender: "Mpokket Financial Services Pvt Ltd",
+      accountType: "Short Term Personal Loan",
+      sanctionedAmount: 2000,
+      currentBalance: 0,
+      repaymentStatus: "Closed / Paid in Full",
+      dpd: 0,
+      openedDate: "2025-08-10",
+      status: "Closed",
+      paymentHistory: "000000000000000000000000"
+    },
+    {
+      accountNumber: "XXXXXXXXXXXXXXXXXX4908",
+      lender: "Mpokket Financial Services Pvt Ltd",
+      accountType: "Short Term Personal Loan",
+      sanctionedAmount: 2000,
+      currentBalance: 0,
+      repaymentStatus: "Closed / Paid in Full",
+      dpd: 0,
+      openedDate: "2025-06-05",
+      status: "Closed",
+      paymentHistory: "000000000000000000000000"
+    },
+    {
+      accountNumber: "SBIN-****9201",
+      lender: "State Bank of India",
+      accountType: "Student Overdraft Facility",
+      sanctionedAmount: 15000,
+      currentBalance: 0,
+      repaymentStatus: "Closed / Paid in Full",
+      dpd: 0,
+      openedDate: "2024-01-15",
+      status: "Closed",
+      paymentHistory: "000000000000000000000000"
+    },
+    {
+      accountNumber: "BAJA-****6041",
+      lender: "Bajaj Finance Ltd",
+      accountType: "Consumer Durable Loan",
+      sanctionedAmount: 25000,
+      currentBalance: 0,
+      repaymentStatus: "Closed / Satisfactory",
+      dpd: 0,
+      openedDate: "2023-11-20",
+      status: "Closed",
+      paymentHistory: "000000000000000000000000"
     }
   ],
   applicantDetails: {
@@ -1758,6 +2319,18 @@ export const SATYAJEET_EXPERIAN_RESULT: ExperianBureauResult = {
         paymentHistory: "0000000000000010000000000000000?????"
       },
       {
+        accountNumber: "HDFC-****3119",
+        lender: "HDFC Bank Ltd",
+        accountType: "Credit Card",
+        sanctionedAmount: 50000,
+        currentBalance: 0,
+        repaymentStatus: "Current / Regular",
+        dpd: 0,
+        openedDate: "2024-05-10",
+        status: "Active",
+        paymentHistory: "000000000000000000000000"
+      },
+      {
         accountNumber: "XXXXXXXXXXXXXXXXXX6080",
         lender: "Mpokket Financial Services Pvt Ltd",
         accountType: "Short Term Personal Loan",
@@ -1804,6 +2377,54 @@ export const SATYAJEET_EXPERIAN_RESULT: ExperianBureauResult = {
         openedDate: "2025-11-15",
         status: "Closed",
         paymentHistory: "000000000???????????????????????????"
+      },
+      {
+        accountNumber: "XXXXXXXXXXXXXXXXXX5112",
+        lender: "Mpokket Financial Services Pvt Ltd",
+        accountType: "Short Term Personal Loan",
+        sanctionedAmount: 2000,
+        currentBalance: 0,
+        repaymentStatus: "Closed / Paid in Full",
+        dpd: 0,
+        openedDate: "2025-08-10",
+        status: "Closed",
+        paymentHistory: "000000000000000000000000"
+      },
+      {
+        accountNumber: "XXXXXXXXXXXXXXXXXX4908",
+        lender: "Mpokket Financial Services Pvt Ltd",
+        accountType: "Short Term Personal Loan",
+        sanctionedAmount: 2000,
+        currentBalance: 0,
+        repaymentStatus: "Closed / Paid in Full",
+        dpd: 0,
+        openedDate: "2025-06-05",
+        status: "Closed",
+        paymentHistory: "000000000000000000000000"
+      },
+      {
+        accountNumber: "SBIN-****9201",
+        lender: "State Bank of India",
+        accountType: "Student Overdraft Facility",
+        sanctionedAmount: 15000,
+        currentBalance: 0,
+        repaymentStatus: "Closed / Paid in Full",
+        dpd: 0,
+        openedDate: "2024-01-15",
+        status: "Closed",
+        paymentHistory: "000000000000000000000000"
+      },
+      {
+        accountNumber: "BAJA-****6041",
+        lender: "Bajaj Finance Ltd",
+        accountType: "Consumer Durable Loan",
+        sanctionedAmount: 25000,
+        currentBalance: 0,
+        repaymentStatus: "Closed / Satisfactory",
+        dpd: 0,
+        openedDate: "2023-11-20",
+        status: "Closed",
+        paymentHistory: "000000000000000000000000"
       }
     ]
   }
@@ -2635,6 +3256,27 @@ export const DIGITAP_UAT_DATASET: Record<
   string,
   { firstName: string; lastName: string; dob: string; pan: string; email: string }
 > = {
+  "9894870467": {
+    firstName: "Shashikant",
+    lastName: "Kere",
+    dob: "1974-06-15",
+    pan: "AHVPK1974S",
+    email: "kere.enterprises@gmail.com"
+  },
+  "8838864869": {
+    firstName: "Satyajeet",
+    lastName: "Kere",
+    dob: "2004-01-31",
+    pan: "KVJPK5493R",
+    email: "SATYJEET004@GMAIL.COM"
+  },
+  "8508101002": {
+    firstName: "Jayshree",
+    lastName: "Kere",
+    dob: "1982-07-28",
+    pan: "IIGPK2608A",
+    email: "jayshreekere@gmail.com"
+  },
   "9764044044": {
     firstName: "Vivek",
     lastName: "Mahajan",
@@ -3235,8 +3877,19 @@ export async function pullExperianReport(params: PullExperianParams): Promise<Ex
       };
     }
 
+    // If authentic saved profile for Shashikant Kere
+    if (isShashikantMatch(mob, params.name)) {
+      return {
+        ...SHASHIKANT_EXPERIAN_RESULT,
+        creditReport: {
+          ...SHASHIKANT_EXPERIAN_RESULT.creditReport,
+          fetchedAt: new Date().toISOString()
+        }
+      };
+    }
+
     // If authentic saved profile for Satyajeet Kere
-    if (mob === SATYAJEET_PHONE || mob === "8838864869") {
+    if (mob === SATYAJEET_PHONE || mob === "8838864869" || (params.name && params.name.toLowerCase().includes("satya"))) {
       return {
         ...SATYAJEET_EXPERIAN_RESULT,
         creditReport: {
@@ -3247,7 +3900,7 @@ export async function pullExperianReport(params: PullExperianParams): Promise<Ex
     }
 
     // If authentic saved profile for Jayshree Kere
-    if (mob === JAYSHREE_PHONE || mob === "8508101002") {
+    if (mob === JAYSHREE_PHONE || mob === "8508101002" || (params.name && params.name.toLowerCase().includes("jayshree"))) {
       return {
         ...JAYSHREE_EXPERIAN_RESULT,
         creditReport: {

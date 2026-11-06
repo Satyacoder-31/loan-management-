@@ -22,6 +22,9 @@ import {
   JAYSHREE_EXPERIAN_RESULT,
   VIVEK_PHONE,
   VIVEK_EXPERIAN_RESULT,
+  SHASHIKANT_PHONE,
+  SHASHIKANT_EXPERIAN_RESULT,
+  isShashikantMatch,
   isExperianLiveEnabled
 } from "./digitap.js";
 
@@ -292,17 +295,28 @@ export async function pullIndiConnectExperian(params: PullExperianParams): Promi
   // 1. Cost-saver / demo check
   if (!isExperianLiveEnabled()) {
     if (mob === VIVEK_PHONE || mob === "9764044044" || params.name?.toLowerCase().includes("vivek")) {
-    return {
-      ...VIVEK_EXPERIAN_RESULT,
-      provider: "IndiConnect Experian Bureau",
-      creditReport: {
-        ...VIVEK_EXPERIAN_RESULT.creditReport,
-        fetchedAt: new Date().toISOString()
-      }
-    };
-  }
+      return {
+        ...VIVEK_EXPERIAN_RESULT,
+        provider: "IndiConnect Experian Bureau",
+        creditReport: {
+          ...VIVEK_EXPERIAN_RESULT.creditReport,
+          fetchedAt: new Date().toISOString()
+        }
+      };
+    }
 
-  if (mob === SATYAJEET_PHONE || mob === "8838864869") {
+    if (isShashikantMatch(mob, params.name)) {
+      return {
+        ...SHASHIKANT_EXPERIAN_RESULT,
+        provider: "IndiConnect Experian (Cost-Saver)",
+        creditReport: {
+          ...SHASHIKANT_EXPERIAN_RESULT.creditReport,
+          fetchedAt: new Date().toISOString()
+        }
+      };
+    }
+
+    if (mob === SATYAJEET_PHONE || mob === "8838864869" || (params.name && params.name.toLowerCase().includes("satya"))) {
       return {
         ...SATYAJEET_EXPERIAN_RESULT,
         provider: "IndiConnect Experian (Cost-Saver)",
@@ -312,7 +326,7 @@ export async function pullIndiConnectExperian(params: PullExperianParams): Promi
         }
       };
     }
-    if (mob === JAYSHREE_PHONE || mob === "8508101002") {
+    if (mob === JAYSHREE_PHONE || mob === "8508101002" || (params.name && params.name.toLowerCase().includes("jayshree"))) {
       return {
         ...JAYSHREE_EXPERIAN_RESULT,
         provider: "IndiConnect Experian (Cost-Saver)",
@@ -336,7 +350,18 @@ export async function pullIndiConnectExperian(params: PullExperianParams): Promi
     };
   }
 
-  if (mob === SATYAJEET_PHONE || mob === "8838864869") {
+  if (isShashikantMatch(mob, params.name)) {
+    return {
+      ...SHASHIKANT_EXPERIAN_RESULT,
+      provider: "IndiConnect Experian Bureau",
+      creditReport: {
+        ...SHASHIKANT_EXPERIAN_RESULT.creditReport,
+        fetchedAt: new Date().toISOString()
+      }
+    };
+  }
+
+  if (mob === SATYAJEET_PHONE || mob === "8838864869" || (params.name && params.name.toLowerCase().includes("satya"))) {
     return {
       ...SATYAJEET_EXPERIAN_RESULT,
       provider: "IndiConnect Experian Bureau",
@@ -347,7 +372,7 @@ export async function pullIndiConnectExperian(params: PullExperianParams): Promi
     };
   }
 
-  if (mob === JAYSHREE_PHONE || mob === "8508101002") {
+  if (mob === JAYSHREE_PHONE || mob === "8508101002" || (params.name && params.name.toLowerCase().includes("jayshree"))) {
     return {
       ...JAYSHREE_EXPERIAN_RESULT,
       provider: "IndiConnect Experian Bureau",

@@ -150,17 +150,20 @@ export async function autoFetchApplicantData(
     resolvedName = expDetails.fullName.trim();
   }
 
-  let pan = applicant.pan || expDetails.pan || null;
-  let dob = applicant.dob || expDetails.dob || null;
-  let gender = applicant.gender || expDetails.gender || "Male";
-  let email = applicant.email || expDetails.email || null;
-  let fullAddress = applicant.address || expDetails.address || telecomAddress || null;
-  let altMobile = applicant.alt_mobile || expDetails.altMobile || null;
-  let altEmail = applicant.alt_email || expDetails.altEmail || null;
-  let maskedAadhaar = applicant.aadhaar || expDetails.aadhaar || null;
-  let city = applicant.city || expDetails.city || telecomCity || null;
-  let state = applicant.state || expDetails.state || telecomState || null;
-  let pincode = applicant.pincode || expDetails.pincode || telecomPincode || null;
+  let pan = expDetails.pan || applicant.pan || null;
+  let dob = expDetails.dob || applicant.dob || null;
+  let gender = expDetails.gender || applicant.gender || "Male";
+  let email = (applicant.email && !applicant.email.includes("@example.") ? applicant.email : expDetails.email) || null;
+  let fullAddress = expDetails.address || telecomAddress || applicant.address || null;
+  let altMobile = expDetails.altMobile || applicant.alt_mobile || null;
+  let altEmail = expDetails.altEmail || null;
+  if (altEmail && (altEmail.includes(".work@yahoo.com") || altEmail.includes("@example."))) {
+    altEmail = null;
+  }
+  let maskedAadhaar = expDetails.aadhaar || applicant.aadhaar || null;
+  let city = expDetails.city || telecomCity || applicant.city || null;
+  let state = expDetails.state || telecomState || applicant.state || null;
+  let pincode = expDetails.pincode || telecomPincode || applicant.pincode || null;
 
   // Enrich with PAN Details if PAN is available and Aadhaar/DOB is missing
   if (pan && (!maskedAadhaar || !dob)) {
@@ -171,6 +174,7 @@ export async function autoFetchApplicantData(
         if (!dob && pDet.result.dob) dob = pDet.result.dob;
         if (!gender && pDet.result.gender) gender = pDet.result.gender === "female" ? "Female" : "Male";
         if (pDet.result.fullname && (!resolvedName || resolvedName === "Applicant")) resolvedName = pDet.result.fullname;
+        if (pDet.result.address && !fullAddress) fullAddress = pDet.result.address;
       }
     } catch (e: any) {
       console.warn("[AUTO-FETCH] PAN enrichment notice:", e.message);
@@ -188,8 +192,6 @@ export async function autoFetchApplicantData(
 
   const score = typeof experianData?.score === "number" ? experianData.score : (applicant.credit_score || 750);
 
-
-
   // 3. Update gn_applicants with all 9 fields
   await run(
     `UPDATE gn_applicants
@@ -199,8 +201,8 @@ export async function autoFetchApplicantData(
          gender = COALESCE(?, gender),
          email = COALESCE(?, email),
          address = COALESCE(?, address),
-         alt_mobile = COALESCE(?, alt_mobile),
-         alt_email = COALESCE(?, alt_email),
+         alt_mobile = ?,
+         alt_email = ?,
          aadhaar = COALESCE(?, aadhaar),
          city = COALESCE(?, city),
          state = COALESCE(?, state),
