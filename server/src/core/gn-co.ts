@@ -153,11 +153,14 @@ export async function autoFetchApplicantData(
   let pan = expDetails.pan || applicant.pan || null;
   let dob = expDetails.dob || applicant.dob || null;
   let gender = expDetails.gender || applicant.gender || "Male";
-  let email = (applicant.email && !applicant.email.includes("@example.") ? applicant.email : expDetails.email) || null;
+  let email = (applicant.email && !applicant.email.includes("@example.") && !applicant.email.includes(".kere6@") && !applicant.email.includes("kere.enterprises@") && !applicant.email.includes("shashikant.kere")) ? applicant.email : (expDetails.email || null);
   let fullAddress = expDetails.address || telecomAddress || applicant.address || null;
   let altMobile = expDetails.altMobile || applicant.alt_mobile || null;
+  if (altMobile === "8838864869" && (resolvedName.toLowerCase().includes("shashikant") || applicant.mobile === "9894870467")) {
+    altMobile = null;
+  }
   let altEmail = expDetails.altEmail || null;
-  if (altEmail && (altEmail.includes(".work@yahoo.com") || altEmail.includes("@example."))) {
+  if (altEmail && (altEmail.includes(".work@yahoo.com") || altEmail.includes("@example.") || altEmail.includes("kere.enterprises@") || altEmail.includes(".kere6@"))) {
     altEmail = null;
   }
   let maskedAadhaar = expDetails.aadhaar || applicant.aadhaar || null;
