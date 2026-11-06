@@ -319,6 +319,48 @@ export async function autoFetchApplicantData(
     );
   }
 
+  // 6. Automatically insert/upsert verified documents into gn_documents for this applicant
+  const docsToSeed = [
+    {
+      doc_type: "experian_cir",
+      name: `Experian Credit Information Report (Score: ${score}, ERN: ${ref})`,
+      file_url: `/api/documents/experian_cir_${applicantId}.pdf`,
+      source: "IndiConnect Experian Bureau"
+    },
+    {
+      doc_type: "pan",
+      name: `PAN Verification Document (${pan || "PAN"}) - ITD Validated`,
+      file_url: `/api/documents/pan_${applicantId}.pdf`,
+      source: "CBDT Income Tax Department"
+    },
+    {
+      doc_type: "aadhaar",
+      name: `Aadhaar Identity Proof (${maskedAadhaar || "UIDAI Masked"})`,
+      file_url: `/api/documents/aadhaar_${applicantId}.pdf`,
+      source: "UIDAI e-KYC Verification"
+    },
+    {
+      doc_type: "address",
+      name: `Telecom & Bureau Verified Address Proof (${city || "Pune"}, ${state || "Maharashtra"} - ${pincode || "411045"})`,
+      file_url: `/api/documents/address_${applicantId}.pdf`,
+      source: "Experian Address Registry & Telecom Directory"
+    }
+  ];
+
+  for (const d of docsToSeed) {
+    const existing = await q1<Record<string, any>>(
+      "SELECT id FROM gn_documents WHERE tenant_id = ? AND entity_type = 'applicant' AND entity_id = ? AND doc_type = ?",
+      [tenantId, applicantId, d.doc_type]
+    );
+    if (!existing) {
+      await run(
+        `INSERT INTO gn_documents (tenant_id, entity_type, entity_id, doc_type, name, status, source, file_url, verified_at, verified_by)
+         VALUES (?, 'applicant', ?, ?, ?, 'verified', ?, ?, datetime('now'), ?)`,
+        [tenantId, applicantId, d.doc_type, d.name, d.source, d.file_url, userId]
+      );
+    }
+  }
+
   await aplEvent(
     tenantId,
     applicantId,
