@@ -1142,8 +1142,12 @@ function parseIndiConnectExperian(result, envelope, params) {
     creditAge = `${diffYears} Years ${diffMonths} Months`;
   }
   const firstHolder = tradelinesRaw[0]?.CAIS_Holder_Details || {};
-  const firstAddr = tradelinesRaw[0]?.CAIS_Holder_Address_Details || {};
-  const firstPhone = tradelinesRaw[0]?.CAIS_Holder_Phone_Details || {};
+  const firstAddrRaw = tradelinesRaw[0]?.CAIS_Holder_Address_Details;
+  const firstAddr = Array.isArray(firstAddrRaw) ? firstAddrRaw[0] : firstAddrRaw || {};
+  const firstPhoneRaw = tradelinesRaw[0]?.CAIS_Holder_Phone_Details;
+  const firstPhone = Array.isArray(firstPhoneRaw) ? firstPhoneRaw[0] : firstPhoneRaw || {};
+  const firstIdRaw = tradelinesRaw[0]?.CAIS_Holder_ID_Details;
+  const firstId = Array.isArray(firstIdRaw) ? firstIdRaw[0] : firstIdRaw || {};
   let dobFormatted = void 0;
   const rawDob = String(firstHolder.Date_of_birth || "");
   if (rawDob.length === 8) {
@@ -1151,19 +1155,24 @@ function parseIndiConnectExperian(result, envelope, params) {
   }
   const rawAddrLine1 = firstAddr.First_Line_Of_Address_non_normalized || "";
   const rawAddrLine2 = firstAddr.Second_Line_Of_Address_non_normalized || "";
+  const rawAddrLine3 = firstAddr.Third_Line_Of_Address_non_normalized || "";
   const pincode = firstAddr.ZIP_Postal_Code_non_normalized || "";
-  const fullAddress = [rawAddrLine1, rawAddrLine2, pincode].filter(Boolean).join(", ");
+  const fullAddress = [rawAddrLine1, rawAddrLine2, rawAddrLine3, pincode].filter(Boolean).join(", ").replace(/^,\s*/, "").replace(/,\s*,/g, ",");
   let city = firstAddr.City_non_normalized || "";
   if (!city && fullAddress) {
     if (fullAddress.toLowerCase().includes("aurangabad")) city = "Aurangabad";
     else if (fullAddress.toLowerCase().includes("pune")) city = "Pune";
     else if (fullAddress.toLowerCase().includes("mumbai")) city = "Mumbai";
+    else if (fullAddress.toLowerCase().includes("kolkata")) city = "Kolkata";
   }
   let state = "Maharashtra";
   if (firstAddr.State_non_normalized === "27") state = "Maharashtra";
+  const resolvedPan = result.pan || firstId.Income_TAX_PAN || firstHolder.Income_TAX_PAN || params.pan || void 0;
+  const rawEmail = firstPhone.EMailId || firstId.EMailId || "";
+  const cleanEmail = rawEmail ? rawEmail.trim().toLowerCase() : void 0;
   const applicantDetails = {
     fullName: (firstHolder.Surname_Non_Normalized ? `${firstHolder.First_Name_Non_Normalized || ""} ${firstHolder.Surname_Non_Normalized}`.trim() : result.name) || params.name || void 0,
-    pan: result.pan || firstHolder.Income_TAX_PAN || params.pan || void 0,
+    pan: resolvedPan,
     mobile: result.mobile || firstPhone.Mobile_Telephone_Number || params.mob || void 0,
     dob: dobFormatted,
     gender: firstHolder.Gender_Code === "2" ? "Female" : "Male",
@@ -1171,7 +1180,7 @@ function parseIndiConnectExperian(result, envelope, params) {
     city: city || void 0,
     state,
     pincode: pincode || void 0,
-    email: firstPhone.EMailId ? firstPhone.EMailId.trim().toLowerCase() : void 0,
+    email: cleanEmail,
     altMobile: null,
     altEmail: null
   };
@@ -1744,6 +1753,30 @@ async function panDetails(input) {
       endpoint: "/validation/kyc/v1/pan_details"
     };
   }
+  if (pan === "AHKPW8422H") {
+    return {
+      result: {
+        pan: "AHKPW8422H",
+        valid: true,
+        fullname: "MAYURI BALU WAGHMARE",
+        firstName: "Mayuri",
+        middleName: "Balu",
+        lastName: "Waghmare",
+        title: "Kumari",
+        category: "individual",
+        gender: "Female",
+        dob: "2001-10-22",
+        aadhaar_number: "XXXX-XXXX-8422",
+        aadhaar_linked: true,
+        masked_aadhaar: "XXXX-XXXX-8422",
+        name_match: true,
+        name_match_score: 100,
+        address: "KAILASH NAGAR DATTA NAGAR LANE NO 6, SAMSHAN MAROTI ROAD, AURANGABAD, MAHARASHTRA 431001"
+      },
+      providerRef: "PAN-AHKPW8422H",
+      endpoint: "/validation/kyc/v1/pan_details"
+    };
+  }
   if (pan === "BAFPK2482N" || pan === "AHVPK1974S" || pan === "AHVPK6206S") {
     return {
       result: {
@@ -1925,6 +1958,9 @@ async function mobileNameLookup(mobile) {
 }
 async function getPanToMaskedAadhaar(pan) {
   const p = normalizePan(pan);
+  if (p === "AHKPW8422H") {
+    return { maskedAadhaar: "XXXX-XXXX-8422", linked: true, providerRef: "ADH-AHKPW8422H" };
+  }
   if (p === "BAFPK2482N") {
     return { maskedAadhaar: "74XXXXXXXX44", linked: true, providerRef: "ADH-BAFPK2482N" };
   }

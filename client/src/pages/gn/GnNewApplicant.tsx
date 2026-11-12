@@ -299,7 +299,7 @@ export function GnNewApplicant() {
         targetMob = searchParams.get("mobile") || "";
       }
     }
-    const mobileToResume = targetMob || recentMobile || "9894870467";
+    const mobileToResume = targetMob || recentMobile || "9284141503";
     if (mobileToResume && mobileToResume.replace(/\D/g, "").length >= 10) {
       checkAndResumeApplicant(mobileToResume);
     }
@@ -980,7 +980,7 @@ export function GnNewApplicant() {
     credit?.score ??
     creditReportObj?.score ??
     applicant?.credit_score ??
-    (tradelinesList.length > 0 ? 768 : null);
+    null;
 
   const input = "input text-[12.5px] w-full";
 

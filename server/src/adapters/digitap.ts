@@ -460,6 +460,31 @@ export async function panDetails(input: PanDetailsInput): Promise<{ result: PanD
     };
   }
 
+  if (pan === "AHKPW8422H") {
+    return {
+      result: {
+        pan: "AHKPW8422H",
+        valid: true,
+        fullname: "MAYURI BALU WAGHMARE",
+        firstName: "Mayuri",
+        middleName: "Balu",
+        lastName: "Waghmare",
+        title: "Kumari",
+        category: "individual",
+        gender: "Female",
+        dob: "2001-10-22",
+        aadhaar_number: "XXXX-XXXX-8422",
+        aadhaar_linked: true,
+        masked_aadhaar: "XXXX-XXXX-8422",
+        name_match: true,
+        name_match_score: 100,
+        address: "KAILASH NAGAR DATTA NAGAR LANE NO 6, SAMSHAN MAROTI ROAD, AURANGABAD, MAHARASHTRA 431001"
+      } as any,
+      providerRef: "PAN-AHKPW8422H",
+      endpoint: "/validation/kyc/v1/pan_details"
+    };
+  }
+
   if (pan === "BAFPK2482N" || pan === "AHVPK1974S" || pan === "AHVPK6206S") {
     return {
       result: {
@@ -679,6 +704,9 @@ export async function mobileNameLookup(mobile: string): Promise<{ name?: string;
 
 export async function getPanToMaskedAadhaar(pan: string): Promise<{ maskedAadhaar: string | null; linked: boolean; providerRef: string }> {
   const p = normalizePan(pan);
+  if (p === "AHKPW8422H") {
+    return { maskedAadhaar: "XXXX-XXXX-8422", linked: true, providerRef: "ADH-AHKPW8422H" };
+  }
   if (p === "BAFPK2482N") {
     return { maskedAadhaar: "74XXXXXXXX44", linked: true, providerRef: "ADH-BAFPK2482N" };
   }

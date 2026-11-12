@@ -275,8 +275,12 @@ export function parseIndiConnectExperian(
   }
 
   const firstHolder = tradelinesRaw[0]?.CAIS_Holder_Details || {};
-  const firstAddr = tradelinesRaw[0]?.CAIS_Holder_Address_Details || {};
-  const firstPhone = tradelinesRaw[0]?.CAIS_Holder_Phone_Details || {};
+  const firstAddrRaw = tradelinesRaw[0]?.CAIS_Holder_Address_Details;
+  const firstAddr = Array.isArray(firstAddrRaw) ? firstAddrRaw[0] : (firstAddrRaw || {});
+  const firstPhoneRaw = tradelinesRaw[0]?.CAIS_Holder_Phone_Details;
+  const firstPhone = Array.isArray(firstPhoneRaw) ? firstPhoneRaw[0] : (firstPhoneRaw || {});
+  const firstIdRaw = tradelinesRaw[0]?.CAIS_Holder_ID_Details;
+  const firstId = Array.isArray(firstIdRaw) ? firstIdRaw[0] : (firstIdRaw || {});
 
   let dobFormatted: string | undefined = undefined;
   const rawDob = String(firstHolder.Date_of_birth || "");
@@ -286,22 +290,28 @@ export function parseIndiConnectExperian(
 
   const rawAddrLine1 = firstAddr.First_Line_Of_Address_non_normalized || "";
   const rawAddrLine2 = firstAddr.Second_Line_Of_Address_non_normalized || "";
+  const rawAddrLine3 = firstAddr.Third_Line_Of_Address_non_normalized || "";
   const pincode = firstAddr.ZIP_Postal_Code_non_normalized || "";
-  const fullAddress = [rawAddrLine1, rawAddrLine2, pincode].filter(Boolean).join(", ");
+  const fullAddress = [rawAddrLine1, rawAddrLine2, rawAddrLine3, pincode].filter(Boolean).join(", ").replace(/^,\s*/, "").replace(/,\s*,/g, ",");
 
   let city = firstAddr.City_non_normalized || "";
   if (!city && fullAddress) {
     if (fullAddress.toLowerCase().includes("aurangabad")) city = "Aurangabad";
     else if (fullAddress.toLowerCase().includes("pune")) city = "Pune";
     else if (fullAddress.toLowerCase().includes("mumbai")) city = "Mumbai";
+    else if (fullAddress.toLowerCase().includes("kolkata")) city = "Kolkata";
   }
 
   let state = "Maharashtra";
   if (firstAddr.State_non_normalized === "27") state = "Maharashtra";
 
+  const resolvedPan = result.pan || firstId.Income_TAX_PAN || firstHolder.Income_TAX_PAN || params.pan || undefined;
+  const rawEmail = firstPhone.EMailId || firstId.EMailId || "";
+  const cleanEmail = rawEmail ? rawEmail.trim().toLowerCase() : undefined;
+
   const applicantDetails: ExperianApplicantProfile = {
     fullName: (firstHolder.Surname_Non_Normalized ? `${firstHolder.First_Name_Non_Normalized || ""} ${firstHolder.Surname_Non_Normalized}`.trim() : result.name) || params.name || undefined,
-    pan: result.pan || firstHolder.Income_TAX_PAN || params.pan || undefined,
+    pan: resolvedPan,
     mobile: result.mobile || firstPhone.Mobile_Telephone_Number || params.mob || undefined,
     dob: dobFormatted,
     gender: firstHolder.Gender_Code === "2" ? "Female" : "Male",
@@ -309,7 +319,7 @@ export function parseIndiConnectExperian(
     city: city || undefined,
     state: state,
     pincode: pincode || undefined,
-    email: firstPhone.EMailId ? firstPhone.EMailId.trim().toLowerCase() : undefined,
+    email: cleanEmail,
     altMobile: null,
     altEmail: null
   };
