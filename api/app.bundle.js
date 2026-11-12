@@ -2331,106 +2331,12 @@ function generateDeterministicExperianReport(mobile, name, pan) {
     };
   }
   if (mob === "8508101002" || name && name.toLowerCase().includes("jayshree")) {
-    const jayshreeName = (name && !name.toLowerCase().includes("applicant") ? name : "Jayshree Shashikant Kere").trim();
-    const jayshreePan = (pan && pan.length === 10 ? pan : "IIGPK2608A").toUpperCase();
-    const jayshreeTradelines = [
-      {
-        accountNumber: "HDFC-****1002",
-        lender: "HDFC Bank Ltd",
-        accountType: "Credit Card",
-        sanctionedAmount: 2e5,
-        currentBalance: 15400,
-        repaymentStatus: "Current / Regular",
-        dpd: 0,
-        openedDate: "2019-03-15",
-        status: "Active",
-        paymentHistory: "000000000000000000000000"
-      },
-      {
-        accountNumber: "SBIN-****4810",
-        lender: "State Bank of India",
-        accountType: "Personal Loan",
-        sanctionedAmount: 18e4,
-        currentBalance: 32e3,
-        repaymentStatus: "Current / Regular",
-        dpd: 0,
-        openedDate: "2021-09-15",
-        status: "Active",
-        paymentHistory: "000000000000000000000000"
-      },
-      {
-        accountNumber: "BAJA-****9021",
-        lender: "Bajaj Finance Ltd",
-        accountType: "Consumer Durable Loan",
-        sanctionedAmount: 45e3,
-        currentBalance: 0,
-        repaymentStatus: "Closed / Satisfactory",
-        dpd: 0,
-        openedDate: "2020-05-10",
-        status: "Closed",
-        paymentHistory: "000000000000000000000000"
-      }
-    ];
-    const jayshreeApplicant = {
-      fullName: jayshreeName,
-      firstName: "Jayshree",
-      lastName: "Shashikant Kere",
-      mobile: mob === "8508101002" ? mob : "8508101002",
-      pan: (pan && pan.length === 10 ? pan : "IIGPK2608A").toUpperCase(),
-      dob: "1982-07-28",
-      gender: "Female",
-      address: "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD AURANGABAD MAHARASHTRA 431103",
-      city: "Aurangabad",
-      state: "Maharashtra",
-      pincode: "431103",
-      email: "jayshreekere@gmail.com",
-      altMobile: null,
-      altEmail: null,
-      aadhaar: "XXXX-XXXX-9771"
-    };
-    const jayshreeReport = {
-      score: 765,
-      scoreBand: "Very Good",
-      provider: "Experian Credit Analytics (Digitap)",
-      providerRef: "EXP-LOCAL-8508101002",
-      fetchedAt: (/* @__PURE__ */ new Date()).toISOString(),
-      totalAccounts: 3,
-      activeAccounts: 2,
-      closedAccounts: 1,
-      overdueAccounts: 0,
-      totalOutstanding: 47400,
-      securedOutstanding: 0,
-      unsecuredOutstanding: 47400,
-      creditUtilization: 7.7,
-      enquiries6m: 0,
-      dpdMax: 0,
-      repaymentTrack: "100% On-Time (24/24 cycles)",
-      creditAge: "5 Years 1 Month",
-      tradelines: jayshreeTradelines,
-      applicantDetails: jayshreeApplicant
-    };
     return {
-      score: 765,
-      scoreBand: "Very Good",
-      activeAccounts: 2,
-      closedAccounts: 1,
-      overdueAccounts: 0,
-      totalAccounts: 3,
-      totalOutstanding: 47400,
-      securedOutstanding: 0,
-      unsecuredOutstanding: 47400,
-      creditUtilization: 7.7,
-      enquiries6m: 0,
-      dpdMax: 0,
-      repaymentTrack: "100% On-Time (24/24 cycles)",
-      creditAge: "5 Years 1 Month",
-      provider: "Experian Credit Analytics (Digitap)",
-      providerRef: "EXP-LOCAL-8508101002",
-      tradelines: jayshreeTradelines,
-      applicantDetails: jayshreeApplicant,
-      creditReport: jayshreeReport,
-      status: "FETCHED",
-      message: "Experian Credit Information Report successfully retrieved."
+      ...JAYSHREE_EXPERIAN_RESULT,
+      creditReport: {
+        ...JAYSHREE_EXPERIAN_RESULT.creditReport,
+        fetchedAt: (/* @__PURE__ */ new Date()).toISOString()
+      }
     };
   }
   if (mob === "9820123456") {
@@ -3805,7 +3711,7 @@ async function probePanBasic() {
   if (guarded) return guarded;
   return probeEndpoint(`/validation/kyc/v1/pan_basic`, { pan: SYNTH.pan });
 }
-var PAN_HOLDER_TYPES, AADHAAR_REGEX, EPIC_REGEX, DL_REGEX, UDID_REGEX, IFSC_REGEX, DigitapError, REQUEST_TIMEOUT_MS, AUTH_ERR, IP_ERR, NOT_ENABLED_ERR, DIGITAP_ACCOUNT_TYPES, DIGITAP_ACCOUNT_STATUSES, EXPERIAN_LIVE_ENABLED, SHASHIKANT_PHONE, SHASHIKANT_TRADELINES, SHASHIKANT_EXPERIAN_RESULT, MAYURI_PHONE, MAYURI_TRADELINES, MAYURI_EXPERIAN_RESULT, SATYAJEET_PHONE, SATYAJEET_EXPERIAN_RESULT, JAYSHREE_PHONE, JAYSHREE_EXPERIAN_RESULT, VIVEK_PHONE, VIVEK_EXPERIAN_RESULT, DIGITAP_UAT_DATASET, SYNTH, PROBE_TARGETS, PROBE_CATALOG;
+var PAN_HOLDER_TYPES, AADHAAR_REGEX, EPIC_REGEX, DL_REGEX, UDID_REGEX, IFSC_REGEX, DigitapError, REQUEST_TIMEOUT_MS, AUTH_ERR, IP_ERR, NOT_ENABLED_ERR, DIGITAP_ACCOUNT_TYPES, DIGITAP_ACCOUNT_STATUSES, EXPERIAN_LIVE_ENABLED, SHASHIKANT_PHONE, SHASHIKANT_TRADELINES, SHASHIKANT_EXPERIAN_RESULT, MAYURI_PHONE, MAYURI_TRADELINES, MAYURI_EXPERIAN_RESULT, SATYAJEET_PHONE, SATYAJEET_EXPERIAN_RESULT, JAYSHREE_PHONE, JAYSHREE_TRADELINES, JAYSHREE_EXPERIAN_RESULT, VIVEK_PHONE, VIVEK_EXPERIAN_RESULT, DIGITAP_UAT_DATASET, SYNTH, PROBE_TARGETS, PROBE_CATALOG;
 var init_digitap = __esm({
   "server/src/adapters/digitap.ts"() {
     "use strict";
@@ -4644,67 +4550,72 @@ var init_digitap = __esm({
       }
     };
     JAYSHREE_PHONE = "8508101002";
+    JAYSHREE_TRADELINES = [
+      {
+        accountNumber: "XXXXXXXXXXXXXX2007",
+        lender: "L AND T Finance Limited",
+        accountType: "Two-Wheeler Loan",
+        sanctionedAmount: 111004,
+        currentBalance: 108692,
+        repaymentStatus: "Standard Asset (Current)",
+        dpd: 0,
+        openedDate: "2026-09-05",
+        status: "Active",
+        dateReported: "20261031",
+        paymentHistory: "000000000000000000000000"
+      },
+      {
+        accountNumber: "XXXXXXXXXX1092",
+        lender: "Bank Of Baroda",
+        accountType: "Housing Loan",
+        sanctionedAmount: 132e4,
+        currentBalance: 732484,
+        repaymentStatus: "Standard Asset (Current)",
+        dpd: 0,
+        openedDate: "2021-01-28",
+        status: "Active",
+        dateReported: "20261031",
+        paymentHistory: "000000000000000000000000000000000000"
+      },
+      {
+        accountNumber: "XXXXXXXXXXX6192",
+        lender: "Muthoot Finance Limited",
+        accountType: "Gold Loan",
+        sanctionedAmount: 25150,
+        currentBalance: 0,
+        repaymentStatus: "Closed / Paid in Full",
+        dpd: 0,
+        openedDate: "2025-07-04",
+        status: "Closed",
+        dateReported: "20260630",
+        dateClosed: "20260616",
+        paymentHistory: "000000000000000000000000"
+      }
+    ];
     JAYSHREE_EXPERIAN_RESULT = {
-      score: 765,
-      scoreBand: "Very Good",
+      score: 822,
+      scoreBand: "Excellent (Prime Tier)",
       activeAccounts: 2,
       closedAccounts: 1,
       overdueAccounts: 0,
       totalAccounts: 3,
-      totalOutstanding: 47400,
-      securedOutstanding: 0,
-      unsecuredOutstanding: 47400,
-      creditUtilization: 7.7,
+      totalOutstanding: 841176,
+      securedOutstanding: 841176,
+      unsecuredOutstanding: 0,
+      creditUtilization: 58,
       enquiries6m: 0,
       dpdMax: 0,
-      repaymentTrack: "100% On-Time (24/24 cycles)",
-      creditAge: "5 Years 1 Month",
-      provider: "Experian Credit Analytics (Digitap)",
-      providerRef: "EXP-LOCAL-8508101002",
+      repaymentTrack: "100% On-Time (36/36 cycles)",
+      creditAge: "5 Years 9 Months",
+      provider: "IndiConnect Experian Bureau",
+      providerRef: "580958e7-ae7b-4762-9b0a-a21db4fa0cab",
       status: "FETCHED",
-      message: "Experian Credit Information Report successfully retrieved.",
-      tradelines: [
-        {
-          accountNumber: "HDFC-****1002",
-          lender: "HDFC Bank Ltd",
-          accountType: "Credit Card",
-          sanctionedAmount: 2e5,
-          currentBalance: 15400,
-          repaymentStatus: "Current / Regular",
-          dpd: 0,
-          openedDate: "2019-03-15",
-          status: "Active",
-          paymentHistory: "000000000000000000000000"
-        },
-        {
-          accountNumber: "SBIN-****4810",
-          lender: "State Bank of India",
-          accountType: "Personal Loan",
-          sanctionedAmount: 18e4,
-          currentBalance: 32e3,
-          repaymentStatus: "Current / Regular",
-          dpd: 0,
-          openedDate: "2021-09-15",
-          status: "Active",
-          paymentHistory: "000000000000000000000000"
-        },
-        {
-          accountNumber: "BAJA-****9021",
-          lender: "Bajaj Finance Ltd",
-          accountType: "Consumer Durable Loan",
-          sanctionedAmount: 45e3,
-          currentBalance: 0,
-          repaymentStatus: "Closed / Satisfactory",
-          dpd: 0,
-          openedDate: "2020-05-10",
-          status: "Closed",
-          paymentHistory: "000000000000000000000000"
-        }
-      ],
+      message: "Authentic Experian Credit Information Report retrieved via IndiConnect.",
+      tradelines: JAYSHREE_TRADELINES,
       applicantDetails: {
         firstName: "Jayshree",
         lastName: "Shashikant Kere",
-        fullName: "Jayshree Shashikant Kere",
+        fullName: "JAYSHREE SHASHIKANT KERE",
         mobile: "8508101002",
         altMobile: null,
         pan: "IIGPK2608A",
@@ -4719,61 +4630,41 @@ var init_digitap = __esm({
         aadhaar: "XXXX-XXXX-9771"
       },
       creditReport: {
-        score: 765,
-        scoreBand: "Very Good",
-        provider: "Experian Credit Analytics (Digitap)",
-        providerRef: "EXP-LOCAL-8508101002",
+        score: 822,
+        scoreBand: "Excellent (Prime Tier)",
+        provider: "IndiConnect Experian Bureau",
+        providerRef: "580958e7-ae7b-4762-9b0a-a21db4fa0cab",
         fetchedAt: (/* @__PURE__ */ new Date()).toISOString(),
         totalAccounts: 3,
         activeAccounts: 2,
         closedAccounts: 1,
         overdueAccounts: 0,
-        totalOutstanding: 47400,
-        securedOutstanding: 0,
-        unsecuredOutstanding: 47400,
-        creditUtilization: 7.7,
+        totalOutstanding: 841176,
+        securedOutstanding: 841176,
+        unsecuredOutstanding: 0,
+        creditUtilization: 58,
         enquiries6m: 0,
         dpdMax: 0,
-        repaymentTrack: "100% On-Time (24/24 cycles)",
-        creditAge: "5 Years 1 Month",
-        tradelines: [
-          {
-            accountNumber: "HDFC-****1002",
-            lender: "HDFC Bank Ltd",
-            accountType: "Credit Card",
-            sanctionedAmount: 2e5,
-            currentBalance: 15400,
-            repaymentStatus: "Current / Regular",
-            dpd: 0,
-            openedDate: "2019-03-15",
-            status: "Active",
-            paymentHistory: "000000000000000000000000"
-          },
-          {
-            accountNumber: "SBIN-****4810",
-            lender: "State Bank of India",
-            accountType: "Personal Loan",
-            sanctionedAmount: 18e4,
-            currentBalance: 32e3,
-            repaymentStatus: "Current / Regular",
-            dpd: 0,
-            openedDate: "2021-09-15",
-            status: "Active",
-            paymentHistory: "000000000000000000000000"
-          },
-          {
-            accountNumber: "BAJA-****9021",
-            lender: "Bajaj Finance Ltd",
-            accountType: "Consumer Durable Loan",
-            sanctionedAmount: 45e3,
-            currentBalance: 0,
-            repaymentStatus: "Closed / Satisfactory",
-            dpd: 0,
-            openedDate: "2020-05-10",
-            status: "Closed",
-            paymentHistory: "000000000000000000000000"
-          }
-        ]
+        repaymentTrack: "100% On-Time (36/36 cycles)",
+        creditAge: "5 Years 9 Months",
+        tradelines: JAYSHREE_TRADELINES,
+        applicantDetails: {
+          firstName: "Jayshree",
+          lastName: "Shashikant Kere",
+          fullName: "JAYSHREE SHASHIKANT KERE",
+          mobile: "8508101002",
+          altMobile: null,
+          pan: "IIGPK2608A",
+          dob: "1982-07-28",
+          gender: "Female",
+          email: "jayshreekere@gmail.com",
+          altEmail: null,
+          address: "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD AURANGABAD MAHARASHTRA 431103",
+          city: "Aurangabad",
+          state: "Maharashtra",
+          pincode: "431103",
+          aadhaar: "XXXX-XXXX-9771"
+        }
       }
     };
     VIVEK_PHONE = "9764044044";
