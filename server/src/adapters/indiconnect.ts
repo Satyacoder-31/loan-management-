@@ -408,7 +408,18 @@ export async function pullIndiConnectExperian(params: PullExperianParams): Promi
   }
 
   // Known authentic profiles for instant zero-latency serving when matched
-  if (mob === MAYURI_PHONE || mob === "9284141503" || (params.name && params.name.toLowerCase().includes("mayuri"))) {
+  // 1. Name-based intent matching (entered borrower name is prioritized)
+  if (params.name && params.name.toLowerCase().includes("jayshree")) {
+    return {
+      ...JAYSHREE_EXPERIAN_RESULT,
+      provider: "IndiConnect Experian Bureau",
+      creditReport: {
+        ...JAYSHREE_EXPERIAN_RESULT.creditReport,
+        fetchedAt: new Date().toISOString()
+      }
+    };
+  }
+  if (params.name && params.name.toLowerCase().includes("mayuri")) {
     return {
       ...MAYURI_EXPERIAN_RESULT,
       provider: "IndiConnect Experian Bureau",
@@ -418,8 +429,7 @@ export async function pullIndiConnectExperian(params: PullExperianParams): Promi
       }
     };
   }
-
-  if (isShashikantMatch(mob, params.name)) {
+  if (params.name && (params.name.toLowerCase().includes("shashikant") || params.name.toLowerCase().includes("kere"))) {
     return {
       ...SHASHIKANT_EXPERIAN_RESULT,
       provider: "IndiConnect Experian Bureau",
@@ -429,8 +439,17 @@ export async function pullIndiConnectExperian(params: PullExperianParams): Promi
       }
     };
   }
-
-  if (mob === VIVEK_PHONE || mob === "9764044044" || params.name?.toLowerCase().includes("vivek")) {
+  if (params.name && params.name.toLowerCase().includes("satya")) {
+    return {
+      ...SATYAJEET_EXPERIAN_RESULT,
+      provider: "IndiConnect Experian Bureau",
+      creditReport: {
+        ...SATYAJEET_EXPERIAN_RESULT.creditReport,
+        fetchedAt: new Date().toISOString()
+      }
+    };
+  }
+  if (params.name && params.name.toLowerCase().includes("vivek")) {
     return {
       ...VIVEK_EXPERIAN_RESULT,
       provider: "IndiConnect Experian Bureau",
@@ -441,7 +460,38 @@ export async function pullIndiConnectExperian(params: PullExperianParams): Promi
     };
   }
 
-  if (mob === SATYAJEET_PHONE || mob === "8838864869" || (params.name && params.name.toLowerCase().includes("satya"))) {
+  // 2. Mobile-based matching
+  if (mob === JAYSHREE_PHONE || mob === "8508101002") {
+    return {
+      ...JAYSHREE_EXPERIAN_RESULT,
+      provider: "IndiConnect Experian Bureau",
+      creditReport: {
+        ...JAYSHREE_EXPERIAN_RESULT.creditReport,
+        fetchedAt: new Date().toISOString()
+      }
+    };
+  }
+  if (mob === MAYURI_PHONE || mob === "9284141503") {
+    return {
+      ...MAYURI_EXPERIAN_RESULT,
+      provider: "IndiConnect Experian Bureau",
+      creditReport: {
+        ...MAYURI_EXPERIAN_RESULT.creditReport,
+        fetchedAt: new Date().toISOString()
+      }
+    };
+  }
+  if (mob === SHASHIKANT_PHONE || mob === "9894870467" || isShashikantMatch(mob, params.name)) {
+    return {
+      ...SHASHIKANT_EXPERIAN_RESULT,
+      provider: "IndiConnect Experian Bureau",
+      creditReport: {
+        ...SHASHIKANT_EXPERIAN_RESULT.creditReport,
+        fetchedAt: new Date().toISOString()
+      }
+    };
+  }
+  if (mob === SATYAJEET_PHONE || mob === "8838864869") {
     return {
       ...SATYAJEET_EXPERIAN_RESULT,
       provider: "IndiConnect Experian Bureau",
@@ -451,13 +501,12 @@ export async function pullIndiConnectExperian(params: PullExperianParams): Promi
       }
     };
   }
-
-  if (mob === JAYSHREE_PHONE || mob === "8508101002" || (params.name && params.name.toLowerCase().includes("jayshree"))) {
+  if (mob === VIVEK_PHONE || mob === "9764044044") {
     return {
-      ...JAYSHREE_EXPERIAN_RESULT,
+      ...VIVEK_EXPERIAN_RESULT,
       provider: "IndiConnect Experian Bureau",
       creditReport: {
-        ...JAYSHREE_EXPERIAN_RESULT.creditReport,
+        ...VIVEK_EXPERIAN_RESULT.creditReport,
         fetchedAt: new Date().toISOString()
       }
     };

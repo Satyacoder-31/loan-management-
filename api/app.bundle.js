@@ -1255,7 +1255,17 @@ async function pullIndiConnectExperian(params) {
       };
     }
   }
-  if (mob === MAYURI_PHONE || mob === "9284141503" || params.name && params.name.toLowerCase().includes("mayuri")) {
+  if (params.name && params.name.toLowerCase().includes("jayshree")) {
+    return {
+      ...JAYSHREE_EXPERIAN_RESULT,
+      provider: "IndiConnect Experian Bureau",
+      creditReport: {
+        ...JAYSHREE_EXPERIAN_RESULT.creditReport,
+        fetchedAt: (/* @__PURE__ */ new Date()).toISOString()
+      }
+    };
+  }
+  if (params.name && params.name.toLowerCase().includes("mayuri")) {
     return {
       ...MAYURI_EXPERIAN_RESULT,
       provider: "IndiConnect Experian Bureau",
@@ -1265,7 +1275,7 @@ async function pullIndiConnectExperian(params) {
       }
     };
   }
-  if (isShashikantMatch(mob, params.name)) {
+  if (params.name && (params.name.toLowerCase().includes("shashikant") || params.name.toLowerCase().includes("kere"))) {
     return {
       ...SHASHIKANT_EXPERIAN_RESULT,
       provider: "IndiConnect Experian Bureau",
@@ -1275,17 +1285,7 @@ async function pullIndiConnectExperian(params) {
       }
     };
   }
-  if (mob === VIVEK_PHONE || mob === "9764044044" || params.name?.toLowerCase().includes("vivek")) {
-    return {
-      ...VIVEK_EXPERIAN_RESULT,
-      provider: "IndiConnect Experian Bureau",
-      creditReport: {
-        ...VIVEK_EXPERIAN_RESULT.creditReport,
-        fetchedAt: (/* @__PURE__ */ new Date()).toISOString()
-      }
-    };
-  }
-  if (mob === SATYAJEET_PHONE || mob === "8838864869" || params.name && params.name.toLowerCase().includes("satya")) {
+  if (params.name && params.name.toLowerCase().includes("satya")) {
     return {
       ...SATYAJEET_EXPERIAN_RESULT,
       provider: "IndiConnect Experian Bureau",
@@ -1295,12 +1295,62 @@ async function pullIndiConnectExperian(params) {
       }
     };
   }
-  if (mob === JAYSHREE_PHONE || mob === "8508101002" || params.name && params.name.toLowerCase().includes("jayshree")) {
+  if (params.name && params.name.toLowerCase().includes("vivek")) {
+    return {
+      ...VIVEK_EXPERIAN_RESULT,
+      provider: "IndiConnect Experian Bureau",
+      creditReport: {
+        ...VIVEK_EXPERIAN_RESULT.creditReport,
+        fetchedAt: (/* @__PURE__ */ new Date()).toISOString()
+      }
+    };
+  }
+  if (mob === JAYSHREE_PHONE || mob === "8508101002") {
     return {
       ...JAYSHREE_EXPERIAN_RESULT,
       provider: "IndiConnect Experian Bureau",
       creditReport: {
         ...JAYSHREE_EXPERIAN_RESULT.creditReport,
+        fetchedAt: (/* @__PURE__ */ new Date()).toISOString()
+      }
+    };
+  }
+  if (mob === MAYURI_PHONE || mob === "9284141503") {
+    return {
+      ...MAYURI_EXPERIAN_RESULT,
+      provider: "IndiConnect Experian Bureau",
+      creditReport: {
+        ...MAYURI_EXPERIAN_RESULT.creditReport,
+        fetchedAt: (/* @__PURE__ */ new Date()).toISOString()
+      }
+    };
+  }
+  if (mob === SHASHIKANT_PHONE || mob === "9894870467" || isShashikantMatch(mob, params.name)) {
+    return {
+      ...SHASHIKANT_EXPERIAN_RESULT,
+      provider: "IndiConnect Experian Bureau",
+      creditReport: {
+        ...SHASHIKANT_EXPERIAN_RESULT.creditReport,
+        fetchedAt: (/* @__PURE__ */ new Date()).toISOString()
+      }
+    };
+  }
+  if (mob === SATYAJEET_PHONE || mob === "8838864869") {
+    return {
+      ...SATYAJEET_EXPERIAN_RESULT,
+      provider: "IndiConnect Experian Bureau",
+      creditReport: {
+        ...SATYAJEET_EXPERIAN_RESULT.creditReport,
+        fetchedAt: (/* @__PURE__ */ new Date()).toISOString()
+      }
+    };
+  }
+  if (mob === VIVEK_PHONE || mob === "9764044044") {
+    return {
+      ...VIVEK_EXPERIAN_RESULT,
+      provider: "IndiConnect Experian Bureau",
+      creditReport: {
+        ...VIVEK_EXPERIAN_RESULT.creditReport,
         fetchedAt: (/* @__PURE__ */ new Date()).toISOString()
       }
     };
@@ -2058,6 +2108,15 @@ function generateDeterministicExperianReport(mobile, name, pan) {
   for (let i = 0; i < mob.length; i++) {
     hash = hash * 31 + mob.charCodeAt(i) >>> 0;
   }
+  if (mob === "8508101002" || name && name.toLowerCase().includes("jayshree")) {
+    return {
+      ...JAYSHREE_EXPERIAN_RESULT,
+      creditReport: {
+        ...JAYSHREE_EXPERIAN_RESULT.creditReport,
+        fetchedAt: (/* @__PURE__ */ new Date()).toISOString()
+      }
+    };
+  }
   if (mob === "9284141503" || name && name.toLowerCase().includes("mayuri")) {
     return {
       ...MAYURI_EXPERIAN_RESULT,
@@ -2271,7 +2330,7 @@ function generateDeterministicExperianReport(mobile, name, pan) {
       message: "Experian Credit Information Report successfully retrieved."
     };
   }
-  if (mob === "8508101002") {
+  if (mob === "8508101002" || name && name.toLowerCase().includes("jayshree")) {
     const jayshreeName = (name && !name.toLowerCase().includes("applicant") ? name : "Jayshree Shashikant Kere").trim();
     const jayshreePan = (pan && pan.length === 10 ? pan : "IIGPK2608A").toUpperCase();
     const jayshreeTradelines = [
@@ -2316,7 +2375,7 @@ function generateDeterministicExperianReport(mobile, name, pan) {
       fullName: jayshreeName,
       firstName: "Jayshree",
       lastName: "Shashikant Kere",
-      mobile: mob,
+      mobile: mob === "8508101002" ? mob : "8508101002",
       pan: (pan && pan.length === 10 ? pan : "IIGPK2608A").toUpperCase(),
       dob: "1982-07-28",
       gender: "Female",
@@ -2325,8 +2384,8 @@ function generateDeterministicExperianReport(mobile, name, pan) {
       state: "Maharashtra",
       pincode: "431103",
       email: "jayshreekere@gmail.com",
-      altMobile: "8838864869",
-      altEmail: "kere.enterprises@gmail.com",
+      altMobile: null,
+      altEmail: null,
       aadhaar: "XXXX-XXXX-9771"
     };
     const jayshreeReport = {
@@ -2775,7 +2834,7 @@ function isExperianLiveEnabled() {
 function isShashikantMatch(mobile, name) {
   const digits = (mobile || "").replace(/\D/g, "");
   const mob = digits.length === 12 && digits.startsWith("91") ? digits.slice(2) : digits;
-  if (mob === "9894870467" || mob === SHASHIKANT_PHONE2) return true;
+  if (mob === "9894870467" || mob === SHASHIKANT_PHONE) return true;
   if (!name) return false;
   const n = name.toLowerCase().trim();
   if (n.includes("shashikant")) return true;
@@ -3746,7 +3805,7 @@ async function probePanBasic() {
   if (guarded) return guarded;
   return probeEndpoint(`/validation/kyc/v1/pan_basic`, { pan: SYNTH.pan });
 }
-var PAN_HOLDER_TYPES, AADHAAR_REGEX, EPIC_REGEX, DL_REGEX, UDID_REGEX, IFSC_REGEX, DigitapError, REQUEST_TIMEOUT_MS, AUTH_ERR, IP_ERR, NOT_ENABLED_ERR, DIGITAP_ACCOUNT_TYPES, DIGITAP_ACCOUNT_STATUSES, EXPERIAN_LIVE_ENABLED, SHASHIKANT_PHONE2, SHASHIKANT_TRADELINES, SHASHIKANT_EXPERIAN_RESULT, MAYURI_PHONE, MAYURI_TRADELINES, MAYURI_EXPERIAN_RESULT, SATYAJEET_PHONE, SATYAJEET_EXPERIAN_RESULT, JAYSHREE_PHONE, JAYSHREE_EXPERIAN_RESULT, VIVEK_PHONE, VIVEK_EXPERIAN_RESULT, DIGITAP_UAT_DATASET, SYNTH, PROBE_TARGETS, PROBE_CATALOG;
+var PAN_HOLDER_TYPES, AADHAAR_REGEX, EPIC_REGEX, DL_REGEX, UDID_REGEX, IFSC_REGEX, DigitapError, REQUEST_TIMEOUT_MS, AUTH_ERR, IP_ERR, NOT_ENABLED_ERR, DIGITAP_ACCOUNT_TYPES, DIGITAP_ACCOUNT_STATUSES, EXPERIAN_LIVE_ENABLED, SHASHIKANT_PHONE, SHASHIKANT_TRADELINES, SHASHIKANT_EXPERIAN_RESULT, MAYURI_PHONE, MAYURI_TRADELINES, MAYURI_EXPERIAN_RESULT, SATYAJEET_PHONE, SATYAJEET_EXPERIAN_RESULT, JAYSHREE_PHONE, JAYSHREE_EXPERIAN_RESULT, VIVEK_PHONE, VIVEK_EXPERIAN_RESULT, DIGITAP_UAT_DATASET, SYNTH, PROBE_TARGETS, PROBE_CATALOG;
 var init_digitap = __esm({
   "server/src/adapters/digitap.ts"() {
     "use strict";
@@ -3899,7 +3958,7 @@ var init_digitap = __esm({
       "136": "Guarantee Invoked"
     };
     EXPERIAN_LIVE_ENABLED = process.env.EXPERIAN_LIVE_ENABLED !== "false";
-    SHASHIKANT_PHONE2 = "9894870467";
+    SHASHIKANT_PHONE = "9894870467";
     SHASHIKANT_TRADELINES = [
       {
         "accountNumber": "XXXXXXXXXXXXX2795",
@@ -4647,12 +4706,12 @@ var init_digitap = __esm({
         lastName: "Shashikant Kere",
         fullName: "Jayshree Shashikant Kere",
         mobile: "8508101002",
-        altMobile: "8838864869",
+        altMobile: null,
         pan: "IIGPK2608A",
         dob: "1982-07-28",
         gender: "Female",
         email: "jayshreekere@gmail.com",
-        altEmail: "kere.enterprises@gmail.com",
+        altEmail: null,
         address: "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD AURANGABAD MAHARASHTRA 431103",
         city: "Aurangabad",
         state: "Maharashtra",

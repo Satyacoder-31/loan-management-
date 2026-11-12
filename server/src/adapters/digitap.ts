@@ -907,6 +907,17 @@ export function generateDeterministicExperianReport(
     hash = (hash * 31 + mob.charCodeAt(i)) >>> 0;
   }
 
+  // Pre-seeded record: Jayshree Shashikant Kere (+91 8508101002)
+  if (mob === "8508101002" || (name && name.toLowerCase().includes("jayshree"))) {
+    return {
+      ...JAYSHREE_EXPERIAN_RESULT,
+      creditReport: {
+        ...JAYSHREE_EXPERIAN_RESULT.creditReport,
+        fetchedAt: new Date().toISOString()
+      }
+    };
+  }
+
   // Pre-seeded record: Mayuri Balu Waghmare (+91 9284141503)
   if (mob === "9284141503" || (name && name.toLowerCase().includes("mayuri"))) {
     return {
@@ -1131,8 +1142,8 @@ export function generateDeterministicExperianReport(
     };
   }
 
-  // Pre-seeded record: Jayshree Shashikant Kere (+91 8508101002)
-  if (mob === "8508101002") {
+  // Pre-seeded record: Jayshree Shashikant Kere (+91 8508101002 or name match)
+  if (mob === "8508101002" || (name && name.toLowerCase().includes("jayshree"))) {
     const jayshreeName = (name && !name.toLowerCase().includes("applicant") ? name : "Jayshree Shashikant Kere").trim();
     const jayshreePan = (pan && pan.length === 10 ? pan : "IIGPK2608A").toUpperCase();
     const jayshreeTradelines: ExperianTradeline[] = [
@@ -1178,7 +1189,7 @@ export function generateDeterministicExperianReport(
       fullName: jayshreeName,
       firstName: "Jayshree",
       lastName: "Shashikant Kere",
-      mobile: mob,
+      mobile: mob === "8508101002" ? mob : "8508101002",
       pan: (pan && pan.length === 10 ? pan : "IIGPK2608A").toUpperCase(),
       dob: "1982-07-28",
       gender: "Female",
@@ -1187,8 +1198,8 @@ export function generateDeterministicExperianReport(
       state: "Maharashtra",
       pincode: "431103",
       email: "jayshreekere@gmail.com",
-      altMobile: "8838864869",
-      altEmail: "kere.enterprises@gmail.com",
+      altMobile: null,
+      altEmail: null,
       aadhaar: "XXXX-XXXX-9771"
     };
 
@@ -2055,18 +2066,18 @@ export const SHASHIKANT_EXPERIAN_RESULT: ExperianBureauResult = {
   message: "Authentic Experian Credit Information Report retrieved via IndiConnect.",
   tradelines: SHASHIKANT_TRADELINES,
   applicantDetails: {
-      "fullName": "SHASHIKANT SAMPATRAO KERE",
-      "pan": "BAFPK2482N",
-      "mobile": "9894870467",
-      "dob": "1975-05-22",
-      "gender": "Male",
-      "address": "S/O: SAMPATRAO KERE SARSWATI COLONY, KANNAD, AURANGABAD 431103",
-      "city": "Aurangabad",
-      "state": "Maharashtra",
-      "pincode": "431103",
-      "email": "shashikere@gmail.com",
-      "altMobile": null,
-      "altEmail": null
+    "fullName": "SHASHIKANT SAMPATRAO KERE",
+    "pan": "BAFPK2482N",
+    "mobile": "9894870467",
+    "dob": "1975-05-22",
+    "gender": "Male",
+    "address": "S/O: SAMPATRAO KERE SARSWATI COLONY, KANNAD, AURANGABAD 431103",
+    "city": "Aurangabad",
+    "state": "Maharashtra",
+    "pincode": "431103",
+    "email": "shashikere@gmail.com",
+    "altMobile": null,
+    "altEmail": null
   },
   creditReport: {
     score: 768,
@@ -2088,18 +2099,18 @@ export const SHASHIKANT_EXPERIAN_RESULT: ExperianBureauResult = {
     creditAge: "19 Years 2 Months",
     tradelines: SHASHIKANT_TRADELINES,
     applicantDetails: {
-          "fullName": "SHASHIKANT SAMPATRAO KERE",
-          "pan": "BAFPK2482N",
-          "mobile": "9894870467",
-          "dob": "1975-05-22",
-          "gender": "Male",
-          "address": "S/O: SAMPATRAO KERE SARSWATI COLONY, KANNAD, AURANGABAD 431103",
-          "city": "Aurangabad",
-          "state": "Maharashtra",
-          "pincode": "431103",
-          "email": "shashikere@gmail.com",
-          "altMobile": null,
-          "altEmail": null
+      "fullName": "SHASHIKANT SAMPATRAO KERE",
+      "pan": "BAFPK2482N",
+      "mobile": "9894870467",
+      "dob": "1975-05-22",
+      "gender": "Male",
+      "address": "S/O: SAMPATRAO KERE SARSWATI COLONY, KANNAD, AURANGABAD 431103",
+      "city": "Aurangabad",
+      "state": "Maharashtra",
+      "pincode": "431103",
+      "email": "shashikere@gmail.com",
+      "altMobile": null,
+      "altEmail": null
     }
   }
 };
@@ -2568,12 +2579,12 @@ export const JAYSHREE_EXPERIAN_RESULT: ExperianBureauResult = {
     lastName: "Shashikant Kere",
     fullName: "Jayshree Shashikant Kere",
     mobile: "8508101002",
-    altMobile: "8838864869",
+    altMobile: null,
     pan: "IIGPK2608A",
     dob: "1982-07-28",
     gender: "Female",
     email: "jayshreekere@gmail.com",
-    altEmail: "kere.enterprises@gmail.com",
+    altEmail: null,
     address: "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD AURANGABAD MAHARASHTRA 431103",
     city: "Aurangabad",
     state: "Maharashtra",

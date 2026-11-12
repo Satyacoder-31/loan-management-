@@ -299,7 +299,8 @@ export function GnNewApplicant() {
         targetMob = searchParams.get("mobile") || "";
       }
     }
-    const mobileToResume = targetMob || recentMobile || "9284141503";
+    // Only auto-resume if mobile is explicitly provided in the URL (e.g. ?mobile=9284141503)
+    const mobileToResume = targetMob;
     if (mobileToResume && mobileToResume.replace(/\D/g, "").length >= 10) {
       checkAndResumeApplicant(mobileToResume);
     }
@@ -1168,6 +1169,60 @@ export function GnNewApplicant() {
             />
 
             <div className="space-y-4">
+              {/* Quick Select Client Pills */}
+              {!otpSent && (
+                <div className="rounded-xl border border-indigo-500/30 bg-[#0c1220] p-3 space-y-2 shadow-sm">
+                  <div className="text-[11.5px] font-bold text-indigo-300 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                      Quick Select Borrower (Click to Auto-Fill Name & Number):
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        f("name", "Jayshree Shashikant Kere");
+                        f("mobile", "8508101002");
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-indigo-900/50 hover:bg-indigo-800 text-indigo-200 border border-indigo-500/40 transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                    >
+                      👩 Jayshree Kere (8508101002)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        f("name", "Mayuri Waghmare");
+                        f("mobile", "9284141503");
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-emerald-900/50 hover:bg-emerald-800 text-emerald-200 border border-emerald-500/40 transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                    >
+                      👩 Mayuri Waghmare (9284141503)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        f("name", "Shashikant Kere");
+                        f("mobile", "9894870467");
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-sky-900/50 hover:bg-sky-800 text-sky-200 border border-sky-500/40 transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                    >
+                      👨 Shashikant Kere (9894870467)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        f("name", "Vivek Mahajan");
+                        f("mobile", "9764044044");
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-purple-900/50 hover:bg-purple-800 text-purple-200 border border-purple-500/40 transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                    >
+                      👨 Vivek Mahajan (9764044044)
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <Field label="Applicant Full Name">
                   <div className="relative">
