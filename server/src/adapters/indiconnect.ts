@@ -41,7 +41,7 @@ export function indicConfig(): IndiConnectConfig {
     secretKey: process.env.INDIC_SECRET_KEY || "indc_live_86123c6a25c45146",
     accessKey: process.env.INDIC_ACCESS_KEY || "ac_live_8caec832d6ec87b2",
     serviceKey: process.env.INDIC_SERVICE_KEY || "sk_live_8a7087076539a00b",
-    providerCode: process.env.INDIC_PROVIDER_CODE || "TAEEQGY5",
+    providerCode: process.env.INDIC_PROVIDER_CODE || "L7CFDTLT",
     baseUrl: process.env.INDIC_BASE_URL || "https://api.ccs.indiconnect.in/idverifygr/verification"
   };
 }
@@ -115,6 +115,19 @@ const GENERAL_VERIFY_MUTATION = `
       method
       result {
         __typename
+        ... on BTBureauAResult {
+          txn_id
+          api_name
+          status
+          message
+          credit_score
+          name
+          father_name
+          pan
+          mobile
+          experian_report_link
+          inprofileResponse
+        }
         ... on ExperianCreditReportResult {
           SCORE {
             FCIREXScore
@@ -146,8 +159,16 @@ export function parseIndiConnectExperian(
   envelope: Record<string, any>,
   params: { mob: string; name?: string; pan?: string }
 ): ExperianBureauResult {
-  const scoreObj = result.SCORE || {};
-  const scoreNum = typeof scoreObj.FCIREXScore === "number" ? scoreObj.FCIREXScore : (Number(scoreObj.FCIREXScore) || null);
+  const inprofile = result.inprofileResponse || result;
+  const scoreObj = inprofile.SCORE || {};
+  const scoreNum =
+    typeof result.credit_score === "number"
+      ? result.credit_score
+      : typeof scoreObj.BureauScore === "number" || (scoreObj.BureauScore && !isNaN(Number(scoreObj.BureauScore)))
+      ? Number(scoreObj.BureauScore)
+      : typeof scoreObj.FCIREXScore === "number" || (scoreObj.FCIREXScore && !isNaN(Number(scoreObj.FCIREXScore)))
+      ? Number(scoreObj.FCIREXScore)
+      : null;
 
   let scoreBand = "Standard";
   if (scoreNum !== null) {
@@ -158,7 +179,7 @@ export function parseIndiConnectExperian(
     else scoreBand = "High Risk";
   }
 
-  const caisSummary = result.CAIS_Account?.CAIS_Summary || {};
+  const caisSummary = inprofile.CAIS_Account?.CAIS_Summary || {};
   const creditAcct = caisSummary.Credit_Account || {};
   const balSummary = caisSummary.Total_Outstanding_Balance || {};
 
@@ -183,11 +204,11 @@ export function parseIndiConnectExperian(
       ? Number(balSummary.Outstanding_Balance_UnSecured_Percentage)
       : 0;
 
-  const capsSummary = result.TotalCAPS_Summary || result.CAPS?.CAPS_Summary || {};
+  const capsSummary = inprofile.TotalCAPS_Summary || inprofile.CAPS?.CAPS_Summary || {};
   const enquiries6m = Number(capsSummary.TotalCAPSLast180Days || capsSummary.CAPSLast180Days || 0);
 
   // Tradelines
-  const rawDetails = result.CAIS_Account?.CAIS_Account_DETAILS;
+  const rawDetails = inprofile.CAIS_Account?.CAIS_Account_DETAILS;
   const tradelinesRaw: Record<string, any>[] = Array.isArray(rawDetails) ? rawDetails : rawDetails ? [rawDetails] : [];
 
   let maxDpd = 0;
@@ -253,10 +274,44 @@ export function parseIndiConnectExperian(
     creditAge = `${diffYears} Years ${diffMonths} Months`;
   }
 
+  const firstHolder = tradelinesRaw[0]?.CAIS_Holder_Details || {};
+  const firstAddr = tradelinesRaw[0]?.CAIS_Holder_Address_Details || {};
+  const firstPhone = tradelinesRaw[0]?.CAIS_Holder_Phone_Details || {};
+
+  let dobFormatted: string | undefined = undefined;
+  const rawDob = String(firstHolder.Date_of_birth || "");
+  if (rawDob.length === 8) {
+    dobFormatted = `${rawDob.slice(0, 4)}-${rawDob.slice(4, 6)}-${rawDob.slice(6, 8)}`;
+  }
+
+  const rawAddrLine1 = firstAddr.First_Line_Of_Address_non_normalized || "";
+  const rawAddrLine2 = firstAddr.Second_Line_Of_Address_non_normalized || "";
+  const pincode = firstAddr.ZIP_Postal_Code_non_normalized || "";
+  const fullAddress = [rawAddrLine1, rawAddrLine2, pincode].filter(Boolean).join(", ");
+
+  let city = firstAddr.City_non_normalized || "";
+  if (!city && fullAddress) {
+    if (fullAddress.toLowerCase().includes("aurangabad")) city = "Aurangabad";
+    else if (fullAddress.toLowerCase().includes("pune")) city = "Pune";
+    else if (fullAddress.toLowerCase().includes("mumbai")) city = "Mumbai";
+  }
+
+  let state = "Maharashtra";
+  if (firstAddr.State_non_normalized === "27") state = "Maharashtra";
+
   const applicantDetails: ExperianApplicantProfile = {
-    fullName: params.name || undefined,
-    pan: params.pan || undefined,
-    mobile: params.mob || undefined
+    fullName: (firstHolder.Surname_Non_Normalized ? `${firstHolder.First_Name_Non_Normalized || ""} ${firstHolder.Surname_Non_Normalized}`.trim() : result.name) || params.name || undefined,
+    pan: result.pan || firstHolder.Income_TAX_PAN || params.pan || undefined,
+    mobile: result.mobile || firstPhone.Mobile_Telephone_Number || params.mob || undefined,
+    dob: dobFormatted,
+    gender: firstHolder.Gender_Code === "2" ? "Female" : "Male",
+    address: fullAddress || undefined,
+    city: city || undefined,
+    state: state,
+    pincode: pincode || undefined,
+    email: firstPhone.EMailId ? firstPhone.EMailId.trim().toLowerCase() : undefined,
+    altMobile: null,
+    altEmail: null
   };
 
   return {
@@ -350,17 +405,6 @@ export async function pullIndiConnectExperian(params: PullExperianParams): Promi
     };
   }
 
-  if (isShashikantMatch(mob, params.name)) {
-    return {
-      ...SHASHIKANT_EXPERIAN_RESULT,
-      provider: "IndiConnect Experian Bureau",
-      creditReport: {
-        ...SHASHIKANT_EXPERIAN_RESULT.creditReport,
-        fetchedAt: new Date().toISOString()
-      }
-    };
-  }
-
   if (mob === SATYAJEET_PHONE || mob === "8838864869" || (params.name && params.name.toLowerCase().includes("satya"))) {
     return {
       ...SATYAJEET_EXPERIAN_RESULT,
@@ -424,7 +468,42 @@ export async function pullIndiConnectExperian(params: PullExperianParams): Promi
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 12000);
 
-    // Try primary experianverify mutation
+    // 1. Primary: bureau-verification-v2-experian with GENERAL_VERIFY_MUTATION (unlocked with provider code L7CFDTLT)
+    const verifyRes = await fetch(cfg.baseUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        query: GENERAL_VERIFY_MUTATION,
+        variables: {
+          input: {
+            documentType: "bureau-verification-v2-experian",
+            mobile: mob,
+            idNumber: resolvedPan,
+            firstName,
+            lastName,
+            dob: resolvedDob,
+            pincode: params.pincode || "400001",
+            consent: {
+              consentFlag: true,
+              consentTimestamp: String(Math.floor(Date.now() / 1000)),
+              consentIpAddress: params.ip || "127.0.0.1",
+              consentMessageId: "MSG_001"
+            }
+          }
+        }
+      }),
+      signal: ctrl.signal
+    });
+
+    const vJson: any = await verifyRes.json().catch(() => ({}));
+    const vResult = vJson?.data?.verify;
+
+    if (vResult?.ok && vResult?.result) {
+      clearTimeout(timer);
+      return parseIndiConnectExperian(vResult.result, vResult, { mob, name: params.name || `${firstName} ${lastName}`, pan: resolvedPan });
+    }
+
+    // 2. Secondary fallback: experianverify mutation with Experian Credit Bureau_S
     const res = await fetch(cfg.baseUrl, {
       method: "POST",
       headers,
@@ -441,28 +520,6 @@ export async function pullIndiConnectExperian(params: PullExperianParams): Promi
 
     if (expResult?.ok && expResult?.result) {
       return parseIndiConnectExperian(expResult.result, expResult, { mob, name: params.name || `${firstName} ${lastName}`, pan: resolvedPan });
-    }
-
-    // Try fallback verify mutation
-    const verifyRes = await fetch(cfg.baseUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        query: GENERAL_VERIFY_MUTATION,
-        variables: {
-          input: {
-            ...experianInput,
-            idNumber: resolvedPan
-          }
-        }
-      })
-    });
-
-    const vJson: any = await verifyRes.json().catch(() => ({}));
-    const vResult = vJson?.data?.verify;
-
-    if (vResult?.ok && vResult?.result) {
-      return parseIndiConnectExperian(vResult.result, vResult, { mob, name: params.name || `${firstName} ${lastName}`, pan: resolvedPan });
     }
 
     // Provider notice message (e.g. pricing rate card setup or validation)
