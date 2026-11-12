@@ -156,7 +156,7 @@ export async function autoFetchApplicantData(
   let email = (applicant.email && !applicant.email.includes("@example.") && !applicant.email.includes(".kere6@") && !applicant.email.includes("kere.enterprises@") && !applicant.email.includes("shashikant.kere")) ? applicant.email : (expDetails.email || null);
   let fullAddress = expDetails.address || telecomAddress || applicant.address || null;
   let altMobile = expDetails.altMobile || applicant.alt_mobile || null;
-  if (altMobile === "8838864869" && (resolvedName.toLowerCase().includes("shashikant") || applicant.mobile === "9894870467")) {
+  if (altMobile === "8838864869" && (resolvedName.toLowerCase().includes("shashikant") || resolvedName.toLowerCase().includes("jayshree") || resolvedName.toLowerCase().includes("mayuri") || applicant.mobile === "9894870467" || applicant.mobile === "8508101002" || applicant.mobile === "9284141503")) {
     altMobile = null;
   }
   let altEmail = expDetails.altEmail || null;
