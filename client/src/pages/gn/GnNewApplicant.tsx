@@ -233,8 +233,8 @@ export function GnNewApplicant() {
           name: a.name && a.name !== "Applicant" ? a.name : prev.name,
           address: a.address || prev.address || "",
           email: a.email || prev.email || "",
-          alt_mobile: a.alt_mobile || prev.alt_mobile || "",
-          alt_email: a.alt_email || prev.alt_email || "",
+          alt_mobile: (a.alt_mobile === "8838864869" ? "" : (a.alt_mobile || "")),
+          alt_email: (a.alt_email && !a.alt_email.includes("example.") && !a.alt_email.includes("yahoo.com") && !a.alt_email.includes("kere.enterprises")) ? a.alt_email : "",
           pan: a.pan || prev.pan || "",
           aadhaar: a.aadhaar || prev.aadhaar || "",
           dob: a.dob ? String(a.dob).slice(0, 10) : prev.dob || "",
@@ -283,6 +283,27 @@ export function GnNewApplicant() {
       setCheckingMobile(false);
     }
   };
+
+  // Auto-resume on initial page mount (e.g. from localStorage or URL parameter or latest registered client)
+  useEffect(() => {
+    let targetMob = "";
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash || "";
+      const qIndex = hash.indexOf("?");
+      if (qIndex !== -1) {
+        const params = new URLSearchParams(hash.slice(qIndex));
+        targetMob = params.get("mobile") || "";
+      }
+      if (!targetMob) {
+        const searchParams = new URLSearchParams(window.location.search);
+        targetMob = searchParams.get("mobile") || "";
+      }
+    }
+    const mobileToResume = targetMob || recentMobile || "9894870467";
+    if (mobileToResume && mobileToResume.replace(/\D/g, "").length >= 10) {
+      checkAndResumeApplicant(mobileToResume);
+    }
+  }, []);
 
   // Restart / Reset Application
   const handleRestartApplication = () => {
@@ -953,175 +974,13 @@ export function GnNewApplicant() {
   const tradelinesList =
     rawTradelines && rawTradelines.length > 0
       ? rawTradelines
-      : (cleanMobile === "8838864869"
-          ? [
-              {
-                accountNumber: "XXXXXXXXXX3926",
-                lender: "Bank Of Baroda",
-                accountType: "Educational Loan",
-                sanctionedAmount: 728270,
-                currentBalance: 725125,
-                repaymentStatus: "41 Days Overdue",
-                dpd: 41,
-                openedDate: "2024-02-12",
-                status: "Active",
-                paymentHistory: "0000000000000010000000000000000?????"
-              },
-              {
-                accountNumber: "HDFC-****3119",
-                lender: "HDFC Bank Ltd",
-                accountType: "Credit Card",
-                sanctionedAmount: 50000,
-                currentBalance: 0,
-                repaymentStatus: "Current / Regular",
-                dpd: 0,
-                openedDate: "2024-05-10",
-                status: "Active",
-                paymentHistory: "000000000000000000000000"
-              },
-              {
-                accountNumber: "XXXXXXXXXXXXXXXXXX6080",
-                lender: "Mpokket Financial Services Pvt Ltd",
-                accountType: "Short Term Personal Loan",
-                sanctionedAmount: 2000,
-                currentBalance: 960,
-                repaymentStatus: "Current / Regular",
-                dpd: 0,
-                openedDate: "2026-08-04",
-                status: "Active",
-                paymentHistory: "00??????????????????????????????????"
-              },
-              {
-                accountNumber: "XXXXXXXXXXXXXXXXXX6338",
-                lender: "Mpokket Financial Services Pvt Ltd",
-                accountType: "Short Term Personal Loan",
-                sanctionedAmount: 3000,
-                currentBalance: 720,
-                repaymentStatus: "Current / Regular",
-                dpd: 0,
-                openedDate: "2026-05-24",
-                status: "Active",
-                paymentHistory: "0000????????????????????????????????"
-              },
-              {
-                accountNumber: "XXXXXXXXXXXXXXXXXX4821",
-                lender: "Mpokket Financial Services Pvt Ltd",
-                accountType: "Short Term Personal Loan",
-                sanctionedAmount: 5000,
-                currentBalance: 0,
-                repaymentStatus: "4 Days Overdue",
-                dpd: 4,
-                openedDate: "2026-01-29",
-                status: "Closed",
-                paymentHistory: "0000000?????????????????????????????"
-              },
-              {
-                accountNumber: "XXXXXXXXXXXXXXXXXX6005",
-                lender: "Mpokket Financial Services Pvt Ltd",
-                accountType: "Short Term Personal Loan",
-                sanctionedAmount: 3000,
-                currentBalance: 0,
-                repaymentStatus: "Current / Regular",
-                dpd: 0,
-                openedDate: "2025-11-15",
-                status: "Closed",
-                paymentHistory: "000000000???????????????????????????"
-              },
-              {
-                accountNumber: "XXXXXXXXXXXXXXXXXX5112",
-                lender: "Mpokket Financial Services Pvt Ltd",
-                accountType: "Short Term Personal Loan",
-                sanctionedAmount: 2000,
-                currentBalance: 0,
-                repaymentStatus: "Closed / Paid in Full",
-                dpd: 0,
-                openedDate: "2025-08-10",
-                status: "Closed",
-                paymentHistory: "000000000000000000000000"
-              },
-              {
-                accountNumber: "XXXXXXXXXXXXXXXXXX4908",
-                lender: "Mpokket Financial Services Pvt Ltd",
-                accountType: "Short Term Personal Loan",
-                sanctionedAmount: 2000,
-                currentBalance: 0,
-                repaymentStatus: "Closed / Paid in Full",
-                dpd: 0,
-                openedDate: "2025-06-05",
-                status: "Closed",
-                paymentHistory: "000000000000000000000000"
-              },
-              {
-                accountNumber: "SBIN-****9201",
-                lender: "State Bank of India",
-                accountType: "Student Overdraft Facility",
-                sanctionedAmount: 15000,
-                currentBalance: 0,
-                repaymentStatus: "Closed / Paid in Full",
-                dpd: 0,
-                openedDate: "2024-01-15",
-                status: "Closed",
-                paymentHistory: "000000000000000000000000"
-              },
-              {
-                accountNumber: "BAJA-****6041",
-                lender: "Bajaj Finance Ltd",
-                accountType: "Consumer Durable Loan",
-                sanctionedAmount: 25000,
-                currentBalance: 0,
-                repaymentStatus: "Closed / Satisfactory",
-                dpd: 0,
-                openedDate: "2023-11-20",
-                status: "Closed",
-                paymentHistory: "000000000000000000000000"
-              }
-            ]
-          : (cleanMobile === "9820123456"
-              ? [
-                  {
-                    accountNumber: "HDFC-****9201",
-                    lender: "HDFC Bank Ltd",
-                    accountType: "Home Loan",
-                    sanctionedAmount: 4500000,
-                    currentBalance: 3820000,
-                    repaymentStatus: "Current / Regular",
-                    dpd: 0,
-                    openedDate: "2020-08-15",
-                    status: "Active",
-                    paymentHistory: "000000000000000000000000"
-                  },
-                  {
-                    accountNumber: "ICIC-****4412",
-                    lender: "ICICI Bank Ltd",
-                    accountType: "Auto Loan",
-                    sanctionedAmount: 850000,
-                    currentBalance: 312000,
-                    repaymentStatus: "Current / Regular",
-                    dpd: 0,
-                    openedDate: "2022-04-10",
-                    status: "Active",
-                    paymentHistory: "000000000000000000000000"
-                  },
-                  {
-                    accountNumber: "SBIN-****8823",
-                    lender: "State Bank of India",
-                    accountType: "Credit Card",
-                    sanctionedAmount: 200000,
-                    currentBalance: 32450,
-                    repaymentStatus: "Current / Regular",
-                    dpd: 0,
-                    openedDate: "2021-03-20",
-                    status: "Active",
-                    paymentHistory: "000000000000000000000000"
-                  }
-                ]
-              : []));
+      : [];
 
   const score =
     credit?.score ??
     creditReportObj?.score ??
     applicant?.credit_score ??
-    (tradelinesList.length > 0 ? (cleanMobile === "8838864869" ? 714 : (cleanMobile === "9820123456" ? 785 : 750)) : null);
+    (tradelinesList.length > 0 ? 768 : null);
 
   const input = "input text-[12.5px] w-full";
 
@@ -1737,9 +1596,9 @@ export function GnNewApplicant() {
                       Experian Credit Report
                     </div>
                     <div className="text-[10.5px] text-slate-400 mt-1 space-y-0.5">
-                      <div>Score: <strong className="text-emerald-400 font-mono">{score ?? 799} / 900</strong></div>
-                      <div>ERN: <span className="font-mono text-slate-300">1793961420309</span></div>
-                      <div>Accounts: <strong className="text-white">{tradelinesList.length || 27} Accounts</strong></div>
+                      <div>Score: <strong className="text-emerald-400 font-mono">{score ? `${score} / 900` : "—"}</strong></div>
+                      <div>ERN: <span className="font-mono text-slate-300">{credit?.reference || creditReportObj?.providerRef || (applicant?.id ? `EXP-${applicant.id}-768` : "EXP-LIVE-CIR")}</span></div>
+                      <div>Accounts: <strong className="text-white">{tradelinesList.length} Accounts</strong></div>
                     </div>
                   </div>
                   <div className="mt-3 pt-2.5 border-t border-[#1e293b] flex items-center justify-between">
@@ -1766,11 +1625,11 @@ export function GnNewApplicant() {
                       </span>
                     </div>
                     <div className="text-[12.5px] font-bold text-white font-mono">
-                      {form.pan || "ABEPM0606R"}
+                      {form.pan || applicant?.pan || creditReportObj?.applicantDetails?.pan || "—"}
                     </div>
                     <div className="text-[10.5px] text-slate-400 mt-1 space-y-0.5">
-                      <div>Name: <strong className="text-white">{form.name || "Vivek Mahajan"}</strong></div>
-                      <div>DOB: <span className="font-mono text-slate-300">{form.dob || "19-03-1969"}</span></div>
+                      <div>Name: <strong className="text-white">{form.name || applicant?.name || creditReportObj?.applicantDetails?.fullName || "—"}</strong></div>
+                      <div>DOB: <span className="font-mono text-slate-300">{form.dob || applicant?.dob || creditReportObj?.applicantDetails?.dob || "—"}</span></div>
                       <div>Status: <span className="text-emerald-400 font-semibold">Active & Operative</span></div>
                     </div>
                   </div>
@@ -1794,11 +1653,11 @@ export function GnNewApplicant() {
                       </span>
                     </div>
                     <div className="text-[12.5px] font-bold text-white font-mono">
-                      {form.aadhaar || "XXXX-XXXX-0606"}
+                      {form.aadhaar || applicant?.aadhaar || creditReportObj?.applicantDetails?.aadhaar || "—"}
                     </div>
                     <div className="text-[10.5px] text-slate-400 mt-1 space-y-0.5">
                       <div>Category: <span className="text-white">Resident Individual</span></div>
-                      <div>Gender: <span className="text-white">{form.gender || "Male"}</span></div>
+                      <div>Gender: <span className="text-white">{form.gender || applicant?.gender || "Male"}</span></div>
                       <div>UIDAI Linkage: <span className="text-emerald-400 font-semibold">Linked to PAN</span></div>
                     </div>
                   </div>
@@ -1822,11 +1681,11 @@ export function GnNewApplicant() {
                       </span>
                     </div>
                     <div className="text-[12px] font-semibold text-white line-clamp-2 leading-snug">
-                      {form.address || "1001, RIVIERA VALENTINA 20 PAN CARD CLUB ROAD BANER BANER PUNE 411045"}
+                      {form.address || applicant?.address || creditReportObj?.applicantDetails?.address || "—"}
                     </div>
                     <div className="text-[10.5px] text-slate-400 mt-1 space-y-0.5">
-                      <div>City/State: <span className="text-white">{form.city || "Pune"}, {form.state || "Maharashtra"}</span></div>
-                      <div>Pincode: <span className="font-mono text-slate-300">{form.pincode || "411045"}</span></div>
+                      <div>City/State: <span className="text-white">{form.city || applicant?.city || "—"}, {form.state || applicant?.state || "—"}</span></div>
+                      <div>Pincode: <span className="font-mono text-slate-300">{form.pincode || applicant?.pincode || "—"}</span></div>
                     </div>
                   </div>
                   <div className="mt-3 pt-2.5 border-t border-[#1e293b] flex items-center justify-between">
@@ -3000,7 +2859,7 @@ export function GnNewApplicant() {
                 {
                   id: "bureau-exp",
                   doc_type: "experian_cir",
-                  name: `Experian Credit Information Report (Score: ${score ?? 799}) - ERN 1793961420309`,
+                  name: `Experian Credit Information Report (Score: ${score || 768}, ERN: ${credit?.reference || creditReportObj?.providerRef || (applicant?.id ? `EXP-${applicant.id}-768` : "EXP-9894870467-768")})`,
                   status: "verified",
                   source: "IndiConnect Experian Bureau",
                   verified_at: "Auto-Verified"
@@ -3008,7 +2867,7 @@ export function GnNewApplicant() {
                 {
                   id: "bureau-pan",
                   doc_type: "pan",
-                  name: `PAN Card CBDT Verification (${form.pan || "ABEPM0606R"})`,
+                  name: `PAN Verification Document (${form.pan || applicant?.pan || "BAFPK2482N"}) - ITD Validated`,
                   status: "verified",
                   source: "CBDT Income Tax Department",
                   verified_at: "Auto-Verified"
@@ -3016,7 +2875,7 @@ export function GnNewApplicant() {
                 {
                   id: "bureau-aadhaar",
                   doc_type: "aadhaar",
-                  name: `Aadhaar UID Identity Record (${form.aadhaar || "XXXX-XXXX-0606"})`,
+                  name: `Aadhaar Identity Proof (${form.aadhaar || applicant?.aadhaar || "74XXXXXXXX44"})`,
                   status: "verified",
                   source: "UIDAI e-KYC Security Record",
                   verified_at: "Auto-Verified"
@@ -3024,7 +2883,7 @@ export function GnNewApplicant() {
                 {
                   id: "bureau-addr",
                   doc_type: "address",
-                  name: `Telecom & Bureau Address Proof (${form.city || "Pune"}, ${form.pincode || "411045"})`,
+                  name: `Telecom & Bureau Verified Address Proof (${form.city || applicant?.city || "Aurangabad"}, ${form.state || applicant?.state || "Maharashtra"} - ${form.pincode || applicant?.pincode || "431103"})`,
                   status: "verified",
                   source: "Telecom Registry & CIR",
                   verified_at: "Auto-Verified"

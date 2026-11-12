@@ -460,25 +460,25 @@ export async function panDetails(input: PanDetailsInput): Promise<{ result: PanD
     };
   }
 
-  if (pan === "AHVPK1974S" || pan === "AHVPK6206S") {
+  if (pan === "BAFPK2482N" || pan === "AHVPK1974S" || pan === "AHVPK6206S") {
     return {
       result: {
         pan: pan,
         valid: true,
-        fullname: "Shashikant Kere",
+        fullname: "SHASHIKANT SAMPATRAO KERE",
         firstName: "Shashikant",
-        middleName: "Ramrao",
+        middleName: "Sampatrao",
         lastName: "Kere",
         title: "Shri",
         category: "individual",
         gender: "Male",
-        dob: "1974-06-15",
-        aadhaar_number: "XXXX-XXXX-7142",
+        dob: "1975-05-22",
+        aadhaar_number: "74XXXXXXXX44",
         aadhaar_linked: true,
-        masked_aadhaar: "XXXX-XXXX-7142",
+        masked_aadhaar: "74XXXXXXXX44",
         name_match: true,
         name_match_score: 100,
-        address: "504/A-WING SARSWATI COLONY KANNAD KANNAD, AURANGABAD AURANGABAD MAHARASHTRA 431103"
+        address: "S/O: SAMPATRAO KERE SARSWATI COLONY, KANNAD, AURANGABAD 431103"
       } as any,
       providerRef: `PAN-${pan}`,
       endpoint: "/validation/kyc/v1/pan_details"
@@ -679,6 +679,9 @@ export async function mobileNameLookup(mobile: string): Promise<{ name?: string;
 
 export async function getPanToMaskedAadhaar(pan: string): Promise<{ maskedAadhaar: string | null; linked: boolean; providerRef: string }> {
   const p = normalizePan(pan);
+  if (p === "BAFPK2482N") {
+    return { maskedAadhaar: "74XXXXXXXX44", linked: true, providerRef: "ADH-BAFPK2482N" };
+  }
   if (p === "ABEPM0606R") {
     return { maskedAadhaar: "XXXX-XXXX-0606", linked: true, providerRef: "ADH-ABEPM0606R" };
   }

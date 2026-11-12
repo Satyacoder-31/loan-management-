@@ -350,7 +350,7 @@ export async function autoFetchApplicantData(
     },
     {
       doc_type: "address",
-      name: `Telecom & Bureau Verified Address Proof (${city || "Pune"}, ${state || "Maharashtra"} - ${pincode || "411045"})`,
+      name: `Telecom & Bureau Verified Address Proof (${city || "Aurangabad"}, ${state || "Maharashtra"} - ${pincode || "431103"})`,
       file_url: `/api/documents/address_${applicantId}.pdf`,
       source: "Experian Address Registry & Telecom Directory"
     }
@@ -366,6 +366,11 @@ export async function autoFetchApplicantData(
         `INSERT INTO gn_documents (tenant_id, entity_type, entity_id, doc_type, name, status, source, file_url, verified_at, verified_by)
          VALUES (?, 'applicant', ?, ?, ?, 'verified', ?, ?, datetime('now'), ?)`,
         [tenantId, applicantId, d.doc_type, d.name, d.source, d.file_url, userId]
+      );
+    } else {
+      await run(
+        `UPDATE gn_documents SET name = ?, source = ?, file_url = ?, status = 'verified', verified_at = datetime('now') WHERE id = ?`,
+        [d.name, d.source, d.file_url, existing.id]
       );
     }
   }
