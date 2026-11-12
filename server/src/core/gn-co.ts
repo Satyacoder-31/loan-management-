@@ -171,13 +171,13 @@ export async function autoFetchApplicantData(
   // Enrich with PAN Details if PAN is available and Aadhaar/DOB is missing
   if (pan && (!maskedAadhaar || !dob)) {
     try {
-      const pDet = await panDetails(pan);
-      if (pDet?.result?.valid) {
-        if (!maskedAadhaar && pDet.result.aadhaar_number) maskedAadhaar = pDet.result.aadhaar_number;
-        if (!dob && pDet.result.dob) dob = pDet.result.dob;
-        if (!gender && pDet.result.gender) gender = pDet.result.gender === "female" ? "Female" : "Male";
-        if (pDet.result.fullname && (!resolvedName || resolvedName === "Applicant")) resolvedName = pDet.result.fullname;
-        if (pDet.result.address && !fullAddress) fullAddress = pDet.result.address;
+      const pDet: any = await panDetails(pan);
+      if (pDet) {
+        if (!maskedAadhaar && (pDet.aadhaarNumberMasked || pDet.result?.aadhaar_number)) maskedAadhaar = pDet.aadhaarNumberMasked || pDet.result?.aadhaar_number;
+        if (!dob && (pDet.dob || pDet.result?.dob)) dob = pDet.dob || pDet.result?.dob;
+        if (!gender && (pDet.gender || pDet.result?.gender)) gender = (pDet.gender || pDet.result?.gender)?.toLowerCase() === "female" ? "Female" : "Male";
+        if ((pDet.fullName || pDet.result?.fullname) && (!resolvedName || resolvedName === "Applicant")) resolvedName = pDet.fullName || pDet.result?.fullname;
+        if ((pDet.address || pDet.result?.address) && !fullAddress) fullAddress = pDet.address || pDet.result?.address;
       }
     } catch (e: any) {
       console.warn("[AUTO-FETCH] PAN enrichment notice:", e.message);

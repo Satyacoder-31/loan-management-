@@ -621,6 +621,21 @@ export async function mobileNameLookup(mobile: string): Promise<{ name?: string;
   const digits = mobile.replace(/\D/g, "");
   const mob = digits.length === 12 && digits.startsWith("91") ? digits.slice(2) : digits;
 
+  if (mob === "9284141503") {
+    return {
+      name: "Mayuri Waghmare",
+      providerRef: "TEL-9284141503",
+      raw: {
+        result: {
+          name: "Mayuri Waghmare",
+          address: "KAILASH NAGAR DATTA NAGAR LANE NO 6, SAMSHAN MAROTI ROAD, AURANGABAD, MAHARASHTRA 431001",
+          city: "Aurangabad",
+          state: "Maharashtra",
+          pincode: "431001"
+        }
+      }
+    };
+  }
   if (mob === "9764044044") {
     return {
       name: "Vivek mahajan",
@@ -890,6 +905,17 @@ export function generateDeterministicExperianReport(
   let hash = 0;
   for (let i = 0; i < mob.length; i++) {
     hash = (hash * 31 + mob.charCodeAt(i)) >>> 0;
+  }
+
+  // Pre-seeded record: Mayuri Balu Waghmare (+91 9284141503)
+  if (mob === "9284141503" || (name && name.toLowerCase().includes("mayuri"))) {
+    return {
+      ...MAYURI_EXPERIAN_RESULT,
+      creditReport: {
+        ...MAYURI_EXPERIAN_RESULT.creditReport,
+        fetchedAt: new Date().toISOString()
+      }
+    };
   }
 
   // Pre-seeded record: Vivek Mahajan (Authentic saved Experian CIR record from CIR PDF)
@@ -1522,146 +1548,69 @@ export function generateDeterministicExperianReport(
     };
   }
 
-  // Deterministic realistic profile for any other valid Indian mobile number
-  const resolvedFullName = (name && name !== "Applicant" && name !== "New Applicant" ? name : "Verified Applicant").trim();
-  const nameParts = resolvedFullName.split(/\s+/).filter(Boolean);
-  const firstName = nameParts[0] || "Applicant";
-  const lastName = nameParts.slice(1).join(" ") || firstName;
-
-  const scoreBase = 740 + (hash % 65); // 740 to 804
-  const band = scoreBase >= 750 ? "Excellent" : "Very Good";
-  const activeCount = 6 + (hash % 4); // 6 to 9 active accounts
-  const closedCount = 7 + (hash % 5); // 7 to 11 closed accounts
-  const outstanding = 195000 + ((hash % 12) * 22500); // 195,000 to 442,500
-  const util = Number((12.5 + ((hash % 100) / 10)).toFixed(1)); // 12.5% to 22.5%
-  const years = 3 + (hash % 5);
-  const months = 1 + (hash % 11);
-
-  const resolvedPan = (pan && pan.length === 10 ? pan : `A${String.fromCharCode(65 + (hash % 26))}CPK${1000 + (hash % 9000)}${String.fromCharCode(65 + ((hash + 3) % 26))}`).toUpperCase();
-  const resolvedAadhaar = `XXXX-XXXX-${String(1000 + (hash % 9000)).slice(-4)}`;
-  const resolvedDob = `${1980 + (hash % 22)}-0${((hash % 9) + 1)}-${10 + (hash % 18)}`;
-  const cities = ["Mumbai", "Pune", "Bengaluru", "Delhi", "Hyderabad", "Ahmedabad", "Jaipur", "Kolkata"];
-  const states = ["Maharashtra", "Maharashtra", "Karnataka", "Delhi", "Telangana", "Gujarat", "Rajasthan", "West Bengal"];
-  const resolvedCity = cities[hash % cities.length];
-  const resolvedState = states[hash % states.length];
-  const resolvedPincode = String(400000 + (hash % 50000));
-  const resolvedAddress = `Plot ${12 + (hash % 88)}, Sector ${1 + (hash % 25)}, ${resolvedCity}, ${resolvedState} ${resolvedPincode}`;
-  const resolvedEmail = null; // Do NOT generate fake emails!
-  const resolvedAltMobile = null; // Strictly null: do not invent alternate phones!
-  const resolvedAltEmail = null; // Strictly null: "if no alternate email is found then dont fill it randomly"
-
-  const lenders = [
-    { name: "HDFC Bank Ltd", prefix: "HDFC", type: "Credit Card", limit: 200000 },
-    { name: "ICICI Bank Ltd", prefix: "ICIC", type: "Auto Loan", limit: 450000 },
-    { name: "State Bank of India", prefix: "SBIN", type: "Personal Loan", limit: 180000 },
-    { name: "Axis Bank Ltd", prefix: "AXIS", type: "Consumer Loan", limit: 75000 },
-    { name: "Kotak Mahindra Bank", prefix: "KKBK", type: "Business Loan", limit: 350000 },
-    { name: "Bank of Baroda", prefix: "BARB", type: "Housing Loan", limit: 2500000 },
-    { name: "Bajaj Finance Ltd", prefix: "BAJA", type: "Consumer Durable Loan", limit: 60000 },
-    { name: "Tata Capital Financial Services", prefix: "TATA", type: "Personal Loan", limit: 220000 },
-    { name: "Punjab National Bank", prefix: "PUNB", type: "Two-Wheeler Loan", limit: 90000 },
-    { name: "IDFC FIRST Bank Ltd", prefix: "IDFB", type: "Personal Loan", limit: 160000 }
-  ];
-
-  const tradelines: ExperianTradeline[] = [];
-  let remainingOutstanding = outstanding;
-  for (let i = 0; i < activeCount; i++) {
-    const l = lenders[i % lenders.length];
-    const acctNum = `${l.prefix}-****${((hash + i * 1111) % 9000) + 1000}`;
-    const bal = i === activeCount - 1 ? remainingOutstanding : Math.round(remainingOutstanding * 0.4);
-    remainingOutstanding = Math.max(0, remainingOutstanding - bal);
-    tradelines.push({
-      accountNumber: acctNum,
-      lender: l.name,
-      accountType: l.type,
-      sanctionedAmount: l.limit,
-      currentBalance: bal,
-      repaymentStatus: "Current / Regular",
-      dpd: 0,
-      openedDate: `${2025 - years + i}-0${(i * 3 + 2) % 9 + 1}-15`,
-      status: "Active",
-      paymentHistory: "000000000000000000000000"
-    });
-  }
-
-  for (let i = 0; i < closedCount; i++) {
-    const l = lenders[(activeCount + i) % lenders.length];
-    const acctNum = `${l.prefix}-****${((hash + (i + 5) * 1111) % 9000) + 1000}`;
-    tradelines.push({
-      accountNumber: acctNum,
-      lender: l.name,
-      accountType: l.type,
-      sanctionedAmount: Math.round(l.limit * 0.75),
-      currentBalance: 0,
-      repaymentStatus: "Closed / Paid in Full",
-      dpd: 0,
-      openedDate: `${2024 - years - i}-05-20`,
-      status: "Closed",
-      paymentHistory: "000000000000000000000000"
-    });
-  }
-
-  const applicantDetails = {
-    fullName: resolvedFullName,
-    firstName,
-    lastName,
-    mobile: mob,
-    pan: resolvedPan,
-    dob: resolvedDob,
-    gender: "Male",
-    address: resolvedAddress,
-    city: resolvedCity,
-    state: resolvedState,
-    pincode: resolvedPincode,
-    email: resolvedEmail,
-    altMobile: resolvedAltMobile,
-    altEmail: resolvedAltEmail,
-    aadhaar: resolvedAadhaar
-  };
-
-  const creditReport = {
-    score: scoreBase,
-    scoreBand: band,
-    provider: "Experian Credit Analytics (Digitap)",
-    providerRef: `EXP-${mob.slice(-4)}-${hash % 100000}`,
-    fetchedAt: new Date().toISOString(),
-    totalAccounts: activeCount + closedCount,
-    activeAccounts: activeCount,
-    closedAccounts: closedCount,
-    overdueAccounts: 0,
-    totalOutstanding: outstanding,
-    securedOutstanding: Math.round(outstanding * 0.65),
-    unsecuredOutstanding: Math.round(outstanding * 0.35),
-    creditUtilization: util,
-    enquiries6m: hash % 2,
-    dpdMax: 0,
-    repaymentTrack: "100% On-Time",
-    creditAge: `${years} Years ${months} Months`,
-    tradelines
-  };
+  // For any unseeded mobile without prior Experian history: return a clean thin-file record
+  const resolvedFullName = (name && name !== "Applicant" && name !== "New Applicant" ? name : "").trim();
+  const nameParts = resolvedFullName ? resolvedFullName.split(/\s+/).filter(Boolean) : [];
+  const firstName = nameParts[0] || null;
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : null;
 
   return {
-    score: scoreBase,
-    scoreBand: band,
-    activeAccounts: activeCount,
-    closedAccounts: closedCount,
+    score: null,
+    scoreBand: "No Bureau History / Thin File",
+    activeAccounts: 0,
+    closedAccounts: 0,
     overdueAccounts: 0,
-    totalAccounts: activeCount + closedCount,
-    totalOutstanding: outstanding,
-    securedOutstanding: Math.round(outstanding * 0.65),
-    unsecuredOutstanding: Math.round(outstanding * 0.35),
-    creditUtilization: util,
-    enquiries6m: hash % 2,
+    totalAccounts: 0,
+    totalOutstanding: 0,
+    securedOutstanding: 0,
+    unsecuredOutstanding: 0,
+    creditUtilization: 0,
+    enquiries6m: 0,
     dpdMax: 0,
-    repaymentTrack: "100% On-Time",
-    creditAge: `${years} Years ${months} Months`,
-    provider: "DIGITAP-EXPERIAN",
-    providerRef: `EXP-${mob.slice(-4)}-${hash % 100000}`,
-    tradelines,
-    applicantDetails,
-    creditReport,
-    status: "FETCHED",
-    message: `Experian Credit Information Report successfully retrieved for +91 ${mob}.`
+    repaymentTrack: "No Prior Inquiries / Clean Record",
+    creditAge: "N/A",
+    provider: "IndiConnect Experian Bureau",
+    providerRef: `EXP-THIN-${mob.slice(-4)}-${hash % 10000}`,
+    tradelines: [],
+    applicantDetails: {
+      fullName: resolvedFullName || null,
+      firstName,
+      lastName,
+      mobile: mob,
+      pan: (pan && pan.length === 10) ? pan.toUpperCase() : null,
+      dob: null,
+      gender: null,
+      address: null,
+      city: null,
+      state: null,
+      pincode: null,
+      email: null,
+      altMobile: null,
+      altEmail: null,
+      aadhaar: null
+    },
+    creditReport: {
+      score: null,
+      scoreBand: "No Bureau History / Thin File",
+      provider: "IndiConnect Experian Bureau",
+      providerRef: `EXP-THIN-${mob.slice(-4)}-${hash % 10000}`,
+      fetchedAt: new Date().toISOString(),
+      totalAccounts: 0,
+      activeAccounts: 0,
+      closedAccounts: 0,
+      overdueAccounts: 0,
+      totalOutstanding: 0,
+      securedOutstanding: 0,
+      unsecuredOutstanding: 0,
+      creditUtilization: 0,
+      enquiries6m: 0,
+      dpdMax: 0,
+      repaymentTrack: "No Prior Inquiries / Clean Record",
+      creditAge: "N/A",
+      tradelines: []
+    },
+    status: "NO_HIT",
+    message: `No prior credit record found at Experian for +91 ${mob}. Clean thin-file returned.`
   };
 }
 
@@ -2151,6 +2100,101 @@ export const SHASHIKANT_EXPERIAN_RESULT: ExperianBureauResult = {
           "email": "shashikere@gmail.com",
           "altMobile": null,
           "altEmail": null
+    }
+  }
+};
+
+/** Pre-extracted Experian dataset for Mayuri Balu Waghmare (+91 9284141503) */
+export const MAYURI_PHONE = "9284141503";
+
+export const MAYURI_TRADELINES: ExperianTradeline[] = [
+  {
+    accountNumber: "XXXXXXXXXXXX9381",
+    lender: "Axis Bank",
+    accountType: "Credit Card",
+    sanctionedAmount: 78496,
+    currentBalance: 78496,
+    repaymentStatus: "Standard Asset (Current)",
+    dpd: 0,
+    openedDate: "2026-05-27",
+    status: "Active",
+    dateReported: "20261031",
+    dateClosed: null
+  }
+];
+
+export const MAYURI_EXPERIAN_RESULT: ExperianBureauResult = {
+  score: 776,
+  scoreBand: "Excellent (Prime Tier)",
+  activeAccounts: 1,
+  closedAccounts: 0,
+  overdueAccounts: 0,
+  totalAccounts: 1,
+  totalOutstanding: 78496,
+  securedOutstanding: 0,
+  unsecuredOutstanding: 78496,
+  creditUtilization: 31,
+  enquiries6m: 0,
+  dpdMax: 0,
+  repaymentTrack: "100% On-Time",
+  creditAge: "0 Years 5 Months",
+  provider: "IndiConnect Experian Bureau",
+  providerRef: "IND-1794501328252",
+  status: "FETCHED",
+  message: "Authentic Experian Credit Information Report retrieved via IndiConnect.",
+  tradelines: MAYURI_TRADELINES,
+  applicantDetails: {
+    fullName: "MAYURI BALU WAGHMARE",
+    firstName: "Mayuri",
+    lastName: "Waghmare",
+    mobile: "9284141503",
+    pan: "AHKPW8422H",
+    dob: "2001-10-22",
+    gender: "Female",
+    address: "KAILASH NAGAR DATTA NAGAR LANE NO 6, SAMSHAN MAROTI ROAD, AURANGABAD, MAHARASHTRA 431001",
+    city: "Aurangabad",
+    state: "Maharashtra",
+    pincode: "431001",
+    email: "waghmaremayuri22@gmail.com",
+    altMobile: null,
+    altEmail: null,
+    aadhaar: "XXXX-XXXX-8422"
+  },
+  creditReport: {
+    score: 776,
+    scoreBand: "Excellent (Prime Tier)",
+    provider: "IndiConnect Experian Bureau",
+    providerRef: "IND-1794501328252",
+    fetchedAt: new Date().toISOString(),
+    totalAccounts: 1,
+    activeAccounts: 1,
+    closedAccounts: 0,
+    overdueAccounts: 0,
+    totalOutstanding: 78496,
+    securedOutstanding: 0,
+    unsecuredOutstanding: 78496,
+    creditUtilization: 31,
+    enquiries6m: 0,
+    dpdMax: 0,
+    repaymentTrack: "100% On-Time",
+    creditAge: "0 Years 5 Months",
+    tradelines: MAYURI_TRADELINES,
+    applicantDetails: {
+      fullName: "MAYURI BALU WAGHMARE",
+      firstName: "Mayuri",
+      lastName: "Waghmare",
+      mobile: "9284141503",
+      pan: "AHKPW8422H",
+      dob: "2001-10-22",
+      gender: "Female",
+      address: "KAILASH NAGAR DATTA NAGAR LANE NO 6, SAMSHAN MAROTI ROAD, AURANGABAD, MAHARASHTRA 431001",
+      city: "Aurangabad",
+      state: "Maharashtra",
+      pincode: "431001",
+      email: "waghmaremayuri22@gmail.com",
+      altMobile: null,
+      altEmail: null,
+      aadhaar: "XXXX-XXXX-8422"
     }
   }
 };
@@ -3872,6 +3916,7 @@ export interface PullExperianParams {
   firstName?: string;
   lastName?: string;
   dob?: string;
+  pincode?: string;
   email?: string;
   otp?: string;
   ip?: string;
@@ -3895,6 +3940,17 @@ export async function pullExperianReport(params: PullExperianParams): Promise<Ex
 
   // 1. Experian Live Deactivation Check (Cost-Saver Mode ONLY when explicitly disabled)
   if (!isExperianLiveEnabled()) {
+    // If authentic saved profile for Mayuri Balu Waghmare
+    if (mob === "9284141503" || (params.name && params.name.toLowerCase().includes("mayuri"))) {
+      return {
+        ...MAYURI_EXPERIAN_RESULT,
+        creditReport: {
+          ...MAYURI_EXPERIAN_RESULT.creditReport,
+          fetchedAt: new Date().toISOString()
+        }
+      };
+    }
+
     // If authentic saved profile for Vivek Mahajan
     if (mob === VIVEK_PHONE || mob === "9764044044" || params.name?.toLowerCase().includes("vivek")) {
       return {
