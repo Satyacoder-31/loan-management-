@@ -18,21 +18,12 @@ async function resolveApp() {
 
 function proxyToVps(req, res, targetPath) {
   return new Promise((resolve, reject) => {
-    const options = {
-      hostname: "201.18.198.110",
-      port: 8787,
-      path: targetPath,
-      method: req.method,
-      headers: {
-        ...req.headers,
-        host: "201.18.198.110:8787",
-        "x-forwarded-for": req.headers["x-forwarded-for"] || req.socket?.remoteAddress || ""
-      },
-      timeout: 15000
-    };
+    const fwdHeaders = { ...req.headers };
+    delete fwdHeaders["host"];
+    delete fwdHeaders["connection"];
 
     let bodyBuffer = null;
-    if (req.body) {
+    if (req.body && req.method !== "GET" && req.method !== "HEAD") {
       if (Buffer.isBuffer(req.body)) {
         bodyBuffer = req.body;
       } else if (typeof req.body === "object") {
@@ -40,10 +31,29 @@ function proxyToVps(req, res, targetPath) {
       } else if (typeof req.body === "string") {
         bodyBuffer = Buffer.from(req.body);
       }
-      if (bodyBuffer) {
-        options.headers["content-length"] = bodyBuffer.length;
-      }
     }
+
+    if (bodyBuffer) {
+      fwdHeaders["content-length"] = bodyBuffer.length;
+      if (!fwdHeaders["content-type"]) {
+        fwdHeaders["content-type"] = "application/json";
+      }
+    } else if (req.method === "GET" || req.method === "HEAD" || req.method === "DELETE") {
+      delete fwdHeaders["content-length"];
+    }
+
+    const options = {
+      hostname: "201.18.198.110",
+      port: 8787,
+      path: targetPath,
+      method: req.method,
+      headers: {
+        ...fwdHeaders,
+        host: "201.18.198.110:8787",
+        "x-forwarded-for": req.headers["x-forwarded-for"] || req.socket?.remoteAddress || ""
+      },
+      timeout: 12000
+    };
 
     const proxyReq = http.request(options, (proxyRes) => {
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
@@ -62,6 +72,8 @@ function proxyToVps(req, res, targetPath) {
 
     if (bodyBuffer) {
       proxyReq.write(bodyBuffer);
+      proxyReq.end();
+    } else if (req.method === "GET" || req.method === "HEAD" || !req.readable || req.readableEnded) {
       proxyReq.end();
     } else {
       req.pipe(proxyReq);
