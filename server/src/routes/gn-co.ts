@@ -910,6 +910,19 @@ gnCoRouter.get("/gn/co/gstin-pdf/:gstin", asyncH(async (req, res) => {
   const gstin = req.params.gstin.trim().toUpperCase();
   const details = await verifyGstinAdvanced(gstin);
 
+  if (req.query.format === "json") {
+    res.json({
+      ok: true,
+      gstin: details.gstin,
+      legal_name: details.legalName,
+      trade_name: details.tradeName,
+      status: details.status,
+      taxpayer_type: details.taxpayerType,
+      details
+    });
+    return;
+  }
+
   if (req.query.format === "html" || (req.headers.accept && req.headers.accept.includes("text/html") && !req.query.download)) {
     res.type("html").send(generateGstinHtml(details));
     return;
