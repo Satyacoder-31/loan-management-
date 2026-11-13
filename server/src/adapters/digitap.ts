@@ -1717,7 +1717,6 @@ export function isShashikantMatch(mobile?: string, name?: string): boolean {
   if (!name) return false;
   const n = name.toLowerCase().trim();
   if (n.includes("shashikant")) return true;
-  if (n.includes("kere") && !n.includes("satya") && !n.includes("jayshree")) return true;
   return false;
 }
 
@@ -3862,23 +3861,23 @@ export async function pullExperianReport(params: PullExperianParams): Promise<Ex
       };
     }
 
-    // If authentic saved profile for Shashikant Kere
-    if (isShashikantMatch(mob, params.name)) {
-      return {
-        ...SHASHIKANT_EXPERIAN_RESULT,
-        creditReport: {
-          ...SHASHIKANT_EXPERIAN_RESULT.creditReport,
-          fetchedAt: new Date().toISOString()
-        }
-      };
-    }
-
     // If authentic saved profile for Satyajeet Kere
     if (mob === SATYAJEET_PHONE || mob === "8838864869" || (params.name && params.name.toLowerCase().includes("satya"))) {
       return {
         ...SATYAJEET_EXPERIAN_RESULT,
         creditReport: {
           ...SATYAJEET_EXPERIAN_RESULT.creditReport,
+          fetchedAt: new Date().toISOString()
+        }
+      };
+    }
+
+    // If authentic saved profile for Shashikant Kere
+    if (isShashikantMatch(mob, params.name)) {
+      return {
+        ...SHASHIKANT_EXPERIAN_RESULT,
+        creditReport: {
+          ...SHASHIKANT_EXPERIAN_RESULT.creditReport,
           fetchedAt: new Date().toISOString()
         }
       };
