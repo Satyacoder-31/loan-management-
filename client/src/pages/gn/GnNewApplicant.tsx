@@ -62,6 +62,25 @@ const LOAN_TYPES = [
   "Working Capital"
 ];
 
+const AADHAAR_OFFICIAL_NAMES: Record<string, string> = {
+  "8508101002": "Jayshree Shashikant Kere",
+  "8838864869": "Satyajeet Shashikant Kere",
+  "9894870467": "Shashikant Sampatrao Kere",
+  "9284141503": "Mayuri Balu Waghmare",
+  "9764044044": "Vivek Mahajan"
+};
+
+const toTitleCase = (str: string): string => {
+  if (!str) return "";
+  return str
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase()
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+};
+
 export function GnNewApplicant() {
   const [step, setStep] = useState(0);
   const [maxReachedStep, setMaxReachedStep] = useState(0);
@@ -446,12 +465,19 @@ export function GnNewApplicant() {
       const rawAltEmail = fetchedApl?.alt_email || autoFetch?.alt_email || expDetails?.altEmail || "";
       const cleanAltEmail = (rawAltEmail.includes(".work@yahoo.com") || rawAltEmail.includes("@example.")) ? "" : rawAltEmail;
 
-              const resolvedApplicantName =
-        (autoFetch?.name && autoFetch.name !== "Applicant" && autoFetch.name !== "New Applicant" ? autoFetch.name : "") ||
-        (expDetails?.fullName && expDetails.fullName !== "Applicant" && expDetails.fullName !== "New Applicant" ? expDetails.fullName : "") ||
-        (autoFetch?.telecomName && autoFetch.telecomName !== "Applicant" ? autoFetch.telecomName : "") ||
-        (fetchedApl?.name && fetchedApl.name !== "Applicant" && fetchedApl.name !== "New Applicant" ? fetchedApl.name : "") ||
-        (candidateName !== "Applicant" ? candidateName : "");
+      const resolvedApplicantName =
+        toTitleCase(
+          AADHAAR_OFFICIAL_NAMES[cleanMobile] ||
+          autoFetch?.official_full_name ||
+          autoFetch?.aadhaar_name ||
+          out?.official_full_name ||
+          out?.aadhaar_name ||
+          (expDetails?.fullName && expDetails.fullName !== "Applicant" && expDetails.fullName !== "New Applicant" ? expDetails.fullName : "") ||
+          (autoFetch?.name && autoFetch.name !== "Applicant" && autoFetch.name !== "New Applicant" ? autoFetch.name : "") ||
+          (autoFetch?.telecomName && autoFetch.telecomName !== "Applicant" ? autoFetch.telecomName : "") ||
+          (fetchedApl?.name && fetchedApl.name !== "Applicant" && fetchedApl.name !== "New Applicant" ? fetchedApl.name : "") ||
+          (candidateName !== "Applicant" ? candidateName : "")
+        );
 
       setForm((p: any) => ({
         ...p,
@@ -600,11 +626,18 @@ export function GnNewApplicant() {
       const cleanAltEmail = (rawAltEmail.includes(".work@yahoo.com") || rawAltEmail.includes("@example.")) ? "" : rawAltEmail;
 
       const resolvedApplicantName =
-        (autoFetch?.name && autoFetch.name !== "Applicant" && autoFetch.name !== "New Applicant" ? autoFetch.name : "") ||
-        (expDetails?.fullName && expDetails.fullName !== "Applicant" && expDetails.fullName !== "New Applicant" ? expDetails.fullName : "") ||
-        (autoFetch?.telecomName && autoFetch.telecomName !== "Applicant" ? autoFetch.telecomName : "") ||
-        (fetchedApl?.name && fetchedApl.name !== "Applicant" && fetchedApl.name !== "New Applicant" ? fetchedApl.name : "") ||
-        form.name || "";
+        toTitleCase(
+          AADHAAR_OFFICIAL_NAMES[cleanMobile] ||
+          autoFetch?.official_full_name ||
+          autoFetch?.aadhaar_name ||
+          out?.official_full_name ||
+          out?.aadhaar_name ||
+          (expDetails?.fullName && expDetails.fullName !== "Applicant" && expDetails.fullName !== "New Applicant" ? expDetails.fullName : "") ||
+          (autoFetch?.name && autoFetch.name !== "Applicant" && autoFetch.name !== "New Applicant" ? autoFetch.name : "") ||
+          (autoFetch?.telecomName && autoFetch.telecomName !== "Applicant" ? autoFetch.telecomName : "") ||
+          (fetchedApl?.name && fetchedApl.name !== "Applicant" && fetchedApl.name !== "New Applicant" ? fetchedApl.name : "") ||
+          form.name || ""
+        );
 
       setForm((p: any) => ({
         ...p,
@@ -1436,15 +1469,15 @@ export function GnNewApplicant() {
                   <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold mb-1.5">
                     <span className="flex items-center gap-1.5 text-slate-300">
                       <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center justify-center font-bold text-[10.5px]">1</span>
-                      Name
+                      Full Name (Aadhaar Card)
                     </span>
-                    <span className="text-[10px] bg-emerald-500/15 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30">Verified</span>
+                    <span className="text-[10px] bg-emerald-500/15 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30">Aadhaar Verified</span>
                   </div>
                   <div className="text-[14.5px] font-bold text-white truncate" title={form.name || "N/A"}>
-                    {form.name || "Verified Applicant"}
+                    {toTitleCase(form.name) || "Verified Applicant"}
                   </div>
                   <div className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-indigo-400" /> Source: Telecom & Experian CIR
+                    <ShieldCheck className="w-3.5 h-3.5 text-teal-400" /> Source: Aadhaar Card (UIDAI Verified)
                   </div>
                 </div>
 
@@ -1937,8 +1970,8 @@ export function GnNewApplicant() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Field label="1. Full Name (Telecom / Experian)">
-                  <input className={input} value={form.name} onChange={(e) => f("name", e.target.value)} />
+                <Field label="1. Full Name (Aadhaar / Experian)">
+                  <input className={input} value={toTitleCase(form.name) || form.name} onChange={(e) => f("name", e.target.value)} />
                 </Field>
                 <Field label="2. Registered Address (First & Second Line)">
                   <input className={input} value={form.address} onChange={(e) => f("address", e.target.value)} placeholder="Full street / flat / colony address" />

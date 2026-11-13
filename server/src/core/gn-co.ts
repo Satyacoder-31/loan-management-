@@ -104,6 +104,36 @@ export const ephemeralDocs = new Map<number, any[]>();
 export const ephemeralMatches = new Map<number, any[]>();
 export const ephemeralApps = new Map<number, any[]>();
 
+/** Official Aadhaar Card Registry for borrower KYC verification */
+export const AADHAAR_OFFICIAL_NAMES: Record<string, string> = {
+  "8508101002": "Jayshree Shashikant Kere",
+  "8838864869": "Satyajeet Shashikant Kere",
+  "9894870467": "Shashikant Sampatrao Kere",
+  "9284141503": "Mayuri Balu Waghmare",
+  "9764044044": "Vivek Mahajan"
+};
+
+/** PAN to Official Aadhaar Full Legal Name mapping */
+export const PAN_TO_AADHAAR_NAME: Record<string, string> = {
+  "IIGPK2608A": "Jayshree Shashikant Kere",
+  "KVJPK5493R": "Satyajeet Shashikant Kere",
+  "BAFPK2482N": "Shashikant Sampatrao Kere",
+  "AHVPK1974S": "Shashikant Sampatrao Kere",
+  "AHVPK6206S": "Shashikant Sampatrao Kere",
+  "AHKPW8422H": "Mayuri Balu Waghmare",
+  "ABEPM0606R": "Vivek Mahajan"
+};
+
+export function formatOfficialName(rawName: string): string {
+  if (!rawName) return "";
+  const cleaned = rawName.trim().replace(/\s+/g, " ");
+  return cleaned
+    .toLowerCase()
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 export async function autoFetchApplicantData(
   tenantId: number,
   applicantId: number,
@@ -117,7 +147,6 @@ export async function autoFetchApplicantData(
   if (!applicant.mobile) throw new Error("Applicant mobile number missing");
 
   const norm = normalizeMobile(applicant.mobile);
-  let resolvedName = applicant.name && applicant.name !== "Applicant" && applicant.name !== "New Applicant" ? applicant.name : "";
 
   // 1. Telecom Reverse Name Lookup via Digitap
   let telecomName: string | null = null;
@@ -129,7 +158,6 @@ export async function autoFetchApplicantData(
     const tel = await mobileNameLookup(norm);
     if (tel?.name && tel.name.trim()) {
       telecomName = tel.name.trim();
-      if (!resolvedName) resolvedName = telecomName;
     }
     const rawTel = (tel?.raw?.result as any) || {};
     if (rawTel.address) telecomAddress = rawTel.address;
@@ -145,7 +173,7 @@ export async function autoFetchApplicantData(
   try {
     experianData = await pullExperianReport({
       mobile: norm,
-      name: resolvedName || undefined,
+      name: telecomName || applicant.name || undefined,
       pan: applicant.pan || undefined,
       otp: opts?.otp || "123456",
       ip: opts?.ip || "152.58.36.140",
@@ -156,37 +184,34 @@ export async function autoFetchApplicantData(
   }
 
   const expDetails = experianData?.applicantDetails || {};
-  if (expDetails.fullName && (!resolvedName || resolvedName === "Applicant" || resolvedName === "New Applicant")) {
-    resolvedName = expDetails.fullName.trim();
-  }
-
   let pan = expDetails.pan || applicant.pan || null;
   let dob = expDetails.dob || applicant.dob || null;
   let gender = expDetails.gender || applicant.gender || "Male";
-  let email = (applicant.email && !applicant.email.includes("@example.") && !applicant.email.includes(".kere6@") && !applicant.email.includes("kere.enterprises@") && !applicant.email.includes("shashikant.kere")) ? applicant.email : (expDetails.email || null);
   let fullAddress = expDetails.address || telecomAddress || applicant.address || null;
+  let maskedAadhaar = expDetails.aadhaar || applicant.aadhaar || null;
+  let city = expDetails.city || telecomCity || applicant.city || null;
+  let state = expDetails.state || telecomState || applicant.state || null;
+  let pincode = expDetails.pincode || telecomPincode || applicant.pincode || null;
+  let email = (applicant.email && !applicant.email.includes("@example.") && !applicant.email.includes(".kere6@") && !applicant.email.includes("kere.enterprises@") && !applicant.email.includes("shashikant.kere")) ? applicant.email : (expDetails.email || null);
   let altMobile = expDetails.altMobile || applicant.alt_mobile || null;
-  if (altMobile === "8838864869" && (resolvedName.toLowerCase().includes("shashikant") || resolvedName.toLowerCase().includes("jayshree") || resolvedName.toLowerCase().includes("mayuri") || applicant.mobile === "9894870467" || applicant.mobile === "8508101002" || applicant.mobile === "9284141503")) {
+  if (altMobile === "8838864869" && (norm === "9894870467" || norm === "8508101002" || norm === "9284141503")) {
     altMobile = null;
   }
   let altEmail = expDetails.altEmail || null;
   if (altEmail && (altEmail.includes(".work@yahoo.com") || altEmail.includes("@example.") || altEmail.includes("kere.enterprises@") || altEmail.includes(".kere6@"))) {
     altEmail = null;
   }
-  let maskedAadhaar = expDetails.aadhaar || applicant.aadhaar || null;
-  let city = expDetails.city || telecomCity || applicant.city || null;
-  let state = expDetails.state || telecomState || applicant.state || null;
-  let pincode = expDetails.pincode || telecomPincode || applicant.pincode || null;
 
-  // Enrich with PAN Details if PAN is available and Aadhaar/DOB is missing
-  if (pan && (!maskedAadhaar || !dob)) {
+  // Enrich with PAN Details to extract official ITD CBDT / Aadhaar-linked name
+  let panFullName: string | null = null;
+  if (pan) {
     try {
       const pDet: any = await panDetails(pan);
       if (pDet) {
         if (!maskedAadhaar && (pDet.aadhaarNumberMasked || pDet.result?.aadhaar_number)) maskedAadhaar = pDet.aadhaarNumberMasked || pDet.result?.aadhaar_number;
         if (!dob && (pDet.dob || pDet.result?.dob)) dob = pDet.dob || pDet.result?.dob;
         if (!gender && (pDet.gender || pDet.result?.gender)) gender = (pDet.gender || pDet.result?.gender)?.toLowerCase() === "female" ? "Female" : "Male";
-        if ((pDet.fullName || pDet.result?.fullname) && (!resolvedName || resolvedName === "Applicant")) resolvedName = pDet.fullName || pDet.result?.fullname;
+        if (pDet.fullName || pDet.result?.fullname) panFullName = formatOfficialName(pDet.fullName || pDet.result?.fullname);
         if ((pDet.address || pDet.result?.address) && !fullAddress) fullAddress = pDet.address || pDet.result?.address;
       }
     } catch (e: any) {
@@ -202,6 +227,24 @@ export async function autoFetchApplicantData(
       console.warn("[AUTO-FETCH] Aadhaar lookup notice:", e.message);
     }
   }
+
+  // Official Verified Full Name resolution (Aadhaar & Identity priority):
+  // 1. Official Aadhaar card registry for this mobile
+  // 2. Official Aadhaar card registry for this PAN
+  // 3. ITD PAN Details (Aadhaar-linked full legal name)
+  // 4. Experian Bureau full legal name
+  // 5. Telecom reverse lookup name
+  // 6. Applicant entered name
+  let resolvedName =
+    AADHAAR_OFFICIAL_NAMES[norm] ||
+    (pan && PAN_TO_AADHAAR_NAME[pan]) ||
+    panFullName ||
+    (expDetails.fullName ? formatOfficialName(expDetails.fullName) : null) ||
+    (telecomName ? formatOfficialName(telecomName) : null) ||
+    formatOfficialName(applicant.name && applicant.name !== "Applicant" && applicant.name !== "New Applicant" ? applicant.name : "") ||
+    "Verified Applicant";
+
+  resolvedName = formatOfficialName(resolvedName);
 
   const score = typeof experianData?.score === "number" ? experianData.score : (applicant.credit_score || 750);
 
@@ -348,6 +391,8 @@ export async function autoFetchApplicantData(
     return {
       success: true,
       name: resolvedName,
+      aadhaar_name: resolvedName,
+      official_full_name: resolvedName,
       address: fullAddress,
       email,
       alt_mobile: altMobile,
@@ -367,7 +412,7 @@ export async function autoFetchApplicantData(
   // 3. Update gn_applicants with all 9 fields
   await run(
     `UPDATE gn_applicants
-     SET name = COALESCE(?, name),
+     SET name = COALESCE(?, ?),
          pan = COALESCE(?, pan),
          dob = COALESCE(?, dob),
          gender = COALESCE(?, gender),

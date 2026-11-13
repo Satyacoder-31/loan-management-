@@ -4555,7 +4555,7 @@ var init_digitap = __esm({
       applicantDetails: {
         firstName: "Jayshree",
         lastName: "Shashikant Kere",
-        fullName: "JAYSHREE SHASHIKANT KERE",
+        fullName: "Jayshree Shashikant Kere",
         mobile: "8508101002",
         altMobile: null,
         pan: "IIGPK2608A",
@@ -4591,7 +4591,7 @@ var init_digitap = __esm({
         applicantDetails: {
           firstName: "Jayshree",
           lastName: "Shashikant Kere",
-          fullName: "JAYSHREE SHASHIKANT KERE",
+          fullName: "Jayshree Shashikant Kere",
           mobile: "8508101002",
           altMobile: null,
           pan: "IIGPK2608A",
@@ -5427,10 +5427,12 @@ var init_digitap = __esm({
 // server/src/core/gn-co.ts
 var gn_co_exports = {};
 __export(gn_co_exports, {
+  AADHAAR_OFFICIAL_NAMES: () => AADHAAR_OFFICIAL_NAMES,
   DEMO_OTP: () => DEMO_OTP,
   DOC_TEMPLATES: () => DOC_TEMPLATES,
   GN_NO_SAVE_MODE: () => GN_NO_SAVE_MODE,
   KYC_TYPES: () => KYC_TYPES,
+  PAN_TO_AADHAAR_NAME: () => PAN_TO_AADHAAR_NAME,
   WEBHOOK_EVENTS: () => WEBHOOK_EVENTS,
   ageOf: () => ageOf,
   aplEvent: () => aplEvent,
@@ -5445,6 +5447,7 @@ __export(gn_co_exports, {
   ephemeralDocs: () => ephemeralDocs,
   ephemeralKyc: () => ephemeralKyc,
   ephemeralMatches: () => ephemeralMatches,
+  formatOfficialName: () => formatOfficialName,
   grantConsent: () => grantConsent,
   job: () => job,
   maskPan: () => maskPan2,
@@ -5538,12 +5541,16 @@ async function grantConsent(tenantId, applicantId, purpose, userId) {
   await run("UPDATE gn_applicants SET consent_status = 'received', updated_at = datetime('now') WHERE id = ?", [applicantId]);
   await aplEvent(tenantId, applicantId, "CONSENT RECEIVED", `Consent v${version} \u2014 ${purpose}`, userId);
 }
+function formatOfficialName(rawName) {
+  if (!rawName) return "";
+  const cleaned = rawName.trim().replace(/\s+/g, " ");
+  return cleaned.toLowerCase().split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
 async function autoFetchApplicantData(tenantId, applicantId, userId, opts) {
   const applicant = GN_NO_SAVE_MODE && ephemeralApplicants.has(applicantId) ? ephemeralApplicants.get(applicantId) : await q1("SELECT * FROM gn_applicants WHERE id = ? AND tenant_id = ?", [applicantId, tenantId]);
   if (!applicant) throw new Error("Applicant not found");
   if (!applicant.mobile) throw new Error("Applicant mobile number missing");
   const norm2 = normalizeMobile(applicant.mobile);
-  let resolvedName = applicant.name && applicant.name !== "Applicant" && applicant.name !== "New Applicant" ? applicant.name : "";
   let telecomName = null;
   let telecomAddress = null;
   let telecomCity = null;
@@ -5553,7 +5560,6 @@ async function autoFetchApplicantData(tenantId, applicantId, userId, opts) {
     const tel = await mobileNameLookup(norm2);
     if (tel?.name && tel.name.trim()) {
       telecomName = tel.name.trim();
-      if (!resolvedName) resolvedName = telecomName;
     }
     const rawTel = tel?.raw?.result || {};
     if (rawTel.address) telecomAddress = rawTel.address;
@@ -5567,7 +5573,7 @@ async function autoFetchApplicantData(tenantId, applicantId, userId, opts) {
   try {
     experianData = await pullExperianReport({
       mobile: norm2,
-      name: resolvedName || void 0,
+      name: telecomName || applicant.name || void 0,
       pan: applicant.pan || void 0,
       otp: opts?.otp || "123456",
       ip: opts?.ip || "152.58.36.140",
@@ -5577,34 +5583,32 @@ async function autoFetchApplicantData(tenantId, applicantId, userId, opts) {
     console.warn("[AUTO-FETCH] Experian pull notice:", err.message);
   }
   const expDetails = experianData?.applicantDetails || {};
-  if (expDetails.fullName && (!resolvedName || resolvedName === "Applicant" || resolvedName === "New Applicant")) {
-    resolvedName = expDetails.fullName.trim();
-  }
   let pan = expDetails.pan || applicant.pan || null;
   let dob = expDetails.dob || applicant.dob || null;
   let gender = expDetails.gender || applicant.gender || "Male";
-  let email = applicant.email && !applicant.email.includes("@example.") && !applicant.email.includes(".kere6@") && !applicant.email.includes("kere.enterprises@") && !applicant.email.includes("shashikant.kere") ? applicant.email : expDetails.email || null;
   let fullAddress = expDetails.address || telecomAddress || applicant.address || null;
+  let maskedAadhaar = expDetails.aadhaar || applicant.aadhaar || null;
+  let city = expDetails.city || telecomCity || applicant.city || null;
+  let state = expDetails.state || telecomState || applicant.state || null;
+  let pincode = expDetails.pincode || telecomPincode || applicant.pincode || null;
+  let email = applicant.email && !applicant.email.includes("@example.") && !applicant.email.includes(".kere6@") && !applicant.email.includes("kere.enterprises@") && !applicant.email.includes("shashikant.kere") ? applicant.email : expDetails.email || null;
   let altMobile = expDetails.altMobile || applicant.alt_mobile || null;
-  if (altMobile === "8838864869" && (resolvedName.toLowerCase().includes("shashikant") || resolvedName.toLowerCase().includes("jayshree") || resolvedName.toLowerCase().includes("mayuri") || applicant.mobile === "9894870467" || applicant.mobile === "8508101002" || applicant.mobile === "9284141503")) {
+  if (altMobile === "8838864869" && (norm2 === "9894870467" || norm2 === "8508101002" || norm2 === "9284141503")) {
     altMobile = null;
   }
   let altEmail = expDetails.altEmail || null;
   if (altEmail && (altEmail.includes(".work@yahoo.com") || altEmail.includes("@example.") || altEmail.includes("kere.enterprises@") || altEmail.includes(".kere6@"))) {
     altEmail = null;
   }
-  let maskedAadhaar = expDetails.aadhaar || applicant.aadhaar || null;
-  let city = expDetails.city || telecomCity || applicant.city || null;
-  let state = expDetails.state || telecomState || applicant.state || null;
-  let pincode = expDetails.pincode || telecomPincode || applicant.pincode || null;
-  if (pan && (!maskedAadhaar || !dob)) {
+  let panFullName = null;
+  if (pan) {
     try {
       const pDet = await panDetails(pan);
       if (pDet) {
         if (!maskedAadhaar && (pDet.aadhaarNumberMasked || pDet.result?.aadhaar_number)) maskedAadhaar = pDet.aadhaarNumberMasked || pDet.result?.aadhaar_number;
         if (!dob && (pDet.dob || pDet.result?.dob)) dob = pDet.dob || pDet.result?.dob;
         if (!gender && (pDet.gender || pDet.result?.gender)) gender = (pDet.gender || pDet.result?.gender)?.toLowerCase() === "female" ? "Female" : "Male";
-        if ((pDet.fullName || pDet.result?.fullname) && (!resolvedName || resolvedName === "Applicant")) resolvedName = pDet.fullName || pDet.result?.fullname;
+        if (pDet.fullName || pDet.result?.fullname) panFullName = formatOfficialName(pDet.fullName || pDet.result?.fullname);
         if ((pDet.address || pDet.result?.address) && !fullAddress) fullAddress = pDet.address || pDet.result?.address;
       }
     } catch (e) {
@@ -5619,6 +5623,8 @@ async function autoFetchApplicantData(tenantId, applicantId, userId, opts) {
       console.warn("[AUTO-FETCH] Aadhaar lookup notice:", e.message);
     }
   }
+  let resolvedName = AADHAAR_OFFICIAL_NAMES[norm2] || pan && PAN_TO_AADHAAR_NAME[pan] || panFullName || (expDetails.fullName ? formatOfficialName(expDetails.fullName) : null) || (telecomName ? formatOfficialName(telecomName) : null) || formatOfficialName(applicant.name && applicant.name !== "Applicant" && applicant.name !== "New Applicant" ? applicant.name : "") || "Verified Applicant";
+  resolvedName = formatOfficialName(resolvedName);
   const score = typeof experianData?.score === "number" ? experianData.score : applicant.credit_score || 750;
   if (GN_NO_SAVE_MODE) {
     applicant.name = resolvedName || applicant.name || "Verified Applicant";
@@ -5758,6 +5764,8 @@ async function autoFetchApplicantData(tenantId, applicantId, userId, opts) {
     return {
       success: true,
       name: resolvedName,
+      aadhaar_name: resolvedName,
+      official_full_name: resolvedName,
       address: fullAddress,
       email,
       alt_mobile: altMobile,
@@ -5775,7 +5783,7 @@ async function autoFetchApplicantData(tenantId, applicantId, userId, opts) {
   }
   await run(
     `UPDATE gn_applicants
-     SET name = COALESCE(?, name),
+     SET name = COALESCE(?, ?),
          pan = COALESCE(?, pan),
          dob = COALESCE(?, dob),
          gender = COALESCE(?, gender),
@@ -6739,7 +6747,7 @@ async function processBulkBatch(t, batchId, userId) {
   await run("UPDATE gn_bulk_batches SET applications_created = (SELECT COUNT(*) FROM gn_bulk_rows WHERE batch_id = ? AND application_id IS NOT NULL) WHERE id = ?", [batchId, batchId]);
   return { processed: rows.length, created, submitted, approved, disbursed, errors };
 }
-var DEMO_OTP, GN_NO_SAVE_MODE, ephemeralApplicants, ephemeralCreditProfiles, ephemeralKyc, ephemeralDocs, ephemeralMatches, ephemeralApps, KYC_TYPES, DOC_TEMPLATES, WEBHOOK_EVENTS;
+var DEMO_OTP, GN_NO_SAVE_MODE, ephemeralApplicants, ephemeralCreditProfiles, ephemeralKyc, ephemeralDocs, ephemeralMatches, ephemeralApps, AADHAAR_OFFICIAL_NAMES, PAN_TO_AADHAAR_NAME, KYC_TYPES, DOC_TEMPLATES, WEBHOOK_EVENTS;
 var init_gn_co = __esm({
   "server/src/core/gn-co.ts"() {
     "use strict";
@@ -6755,6 +6763,22 @@ var init_gn_co = __esm({
     ephemeralDocs = /* @__PURE__ */ new Map();
     ephemeralMatches = /* @__PURE__ */ new Map();
     ephemeralApps = /* @__PURE__ */ new Map();
+    AADHAAR_OFFICIAL_NAMES = {
+      "8508101002": "Jayshree Shashikant Kere",
+      "8838864869": "Satyajeet Shashikant Kere",
+      "9894870467": "Shashikant Sampatrao Kere",
+      "9284141503": "Mayuri Balu Waghmare",
+      "9764044044": "Vivek Mahajan"
+    };
+    PAN_TO_AADHAAR_NAME = {
+      "IIGPK2608A": "Jayshree Shashikant Kere",
+      "KVJPK5493R": "Satyajeet Shashikant Kere",
+      "BAFPK2482N": "Shashikant Sampatrao Kere",
+      "AHVPK1974S": "Shashikant Sampatrao Kere",
+      "AHVPK6206S": "Shashikant Sampatrao Kere",
+      "AHKPW8422H": "Mayuri Balu Waghmare",
+      "ABEPM0606R": "Vivek Mahajan"
+    };
     KYC_TYPES = [
       { type: "mobile", label: "Mobile" },
       { type: "pan", label: "PAN" },
@@ -19945,7 +19969,8 @@ gnCoRouter.post("/gn/co/applicants/:id/otp", requirePerm("gn.co.edit"), asyncH(a
     if (b.auto_fetch) {
       const fetched = await autoFetchApplicantData(t, a.id, req.user.id, { otp: b.otp, ip: clientIp(req) });
       const credit = ephemeralCreditProfiles.get(a.id) || null;
-      res.json({ ok: true, verified: true, auto_fetched: true, auto_fetch_result: fetched, profile: fetched, applicant: a, credit });
+      const updatedApplicant = ephemeralApplicants.get(a.id) || a;
+      res.json({ ok: true, verified: true, auto_fetched: true, auto_fetch_result: fetched, profile: fetched, applicant: updatedApplicant, credit });
       return;
     }
     res.json({ ok: true, verified: true });
@@ -19989,7 +20014,8 @@ gnCoRouter.post("/gn/co/applicants/:id/auto-fetch", requirePerm("gn.co.edit"), a
     const result2 = await autoFetchApplicantData(t, a.id, req.user.id, { otp: b.otp, ip: clientIp(req) });
     const credit2 = ephemeralCreditProfiles.get(a.id) || null;
     const kyc2 = ephemeralKyc.get(a.id) || [];
-    res.json({ ok: true, auto_fetch_result: result2, profile: result2, applicant: a, credit: credit2, kyc: kyc2 });
+    const updatedApplicant = ephemeralApplicants.get(a.id) || a;
+    res.json({ ok: true, auto_fetch_result: result2, profile: result2, applicant: updatedApplicant, credit: credit2, kyc: kyc2 });
     return;
   }
   const result = await autoFetchApplicantData(t, a.id, req.user.id, { otp: b.otp, ip: clientIp(req) });

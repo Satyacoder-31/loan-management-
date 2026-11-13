@@ -521,7 +521,8 @@ gnCoRouter.post("/gn/co/applicants/:id/otp", requirePerm("gn.co.edit"), asyncH(a
     if (b.auto_fetch) {
       const fetched = await autoFetchApplicantData(t, a.id, req.user!.id, { otp: b.otp, ip: clientIp(req) });
       const credit = ephemeralCreditProfiles.get(a.id) || null;
-      res.json({ ok: true, verified: true, auto_fetched: true, auto_fetch_result: fetched, profile: fetched, applicant: a, credit });
+      const updatedApplicant = ephemeralApplicants.get(a.id) || a;
+      res.json({ ok: true, verified: true, auto_fetched: true, auto_fetch_result: fetched, profile: fetched, applicant: updatedApplicant, credit });
       return;
     }
     res.json({ ok: true, verified: true });
@@ -563,7 +564,8 @@ gnCoRouter.post("/gn/co/applicants/:id/auto-fetch", requirePerm("gn.co.edit"), a
     const result = await autoFetchApplicantData(t, a.id, req.user!.id, { otp: b.otp, ip: clientIp(req) });
     const credit = ephemeralCreditProfiles.get(a.id) || null;
     const kyc = ephemeralKyc.get(a.id) || [];
-    res.json({ ok: true, auto_fetch_result: result, profile: result, applicant: a, credit, kyc });
+    const updatedApplicant = ephemeralApplicants.get(a.id) || a;
+    res.json({ ok: true, auto_fetch_result: result, profile: result, applicant: updatedApplicant, credit, kyc });
     return;
   }
 

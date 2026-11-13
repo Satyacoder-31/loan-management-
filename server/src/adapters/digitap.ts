@@ -2413,7 +2413,7 @@ export const JAYSHREE_EXPERIAN_RESULT: ExperianBureauResult = {
   applicantDetails: {
     firstName: "Jayshree",
     lastName: "Shashikant Kere",
-    fullName: "JAYSHREE SHASHIKANT KERE",
+    fullName: "Jayshree Shashikant Kere",
     mobile: "8508101002",
     altMobile: null,
     pan: "IIGPK2608A",
@@ -2449,7 +2449,7 @@ export const JAYSHREE_EXPERIAN_RESULT: ExperianBureauResult = {
     applicantDetails: {
       firstName: "Jayshree",
       lastName: "Shashikant Kere",
-      fullName: "JAYSHREE SHASHIKANT KERE",
+      fullName: "Jayshree Shashikant Kere",
       mobile: "8508101002",
       altMobile: null,
       pan: "IIGPK2608A",
