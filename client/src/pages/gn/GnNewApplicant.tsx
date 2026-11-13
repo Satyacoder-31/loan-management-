@@ -2104,7 +2104,6 @@ export function GnNewApplicant() {
                         className={input}
                         value={form.annual_turnover}
                         onChange={(e) => f("annual_turnover", e.target.value)}
-                        placeholder="e.g. 5000000"
                       />
                     </Field>
                     <Field label="Monthly Net Profit / Income (₹)">
@@ -2113,42 +2112,8 @@ export function GnNewApplicant() {
                         className={input}
                         value={form.monthly_income}
                         onChange={(e) => f("monthly_income", e.target.value)}
-                        placeholder="e.g. 150000"
                       />
                     </Field>
-
-                    {/* Corporate Tax Rule: If Turnover > 3 Million -> 9% Corporate Tax on Profit */}
-                    <div className="col-span-1 md:col-span-2 rounded-xl p-3.5 border transition-all text-[12px] flex items-center justify-between flex-wrap gap-2 shadow-sm bg-[#090d16] border-[#1e293b]">
-                      <div className="flex items-center gap-2.5">
-                        <div className={`p-2 rounded-lg font-bold text-[11px] ${
-                          Number(form.annual_turnover) >= 3000000
-                            ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                            : "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
-                        }`}>
-                          {Number(form.annual_turnover) >= 3000000 ? "9% Corporate Tax" : "Small Business Relief"}
-                        </div>
-                        <div>
-                          <div className="font-bold text-white text-[12.5px]">
-                            {Number(form.annual_turnover) >= 3000000
-                              ? "Corporate Tax Applied (Turnover > 3 Million)"
-                              : "Small Business Relief (Turnover ≤ 3 Million)"}
-                          </div>
-                          <div className="text-[11px] text-slate-400">
-                            {Number(form.annual_turnover) >= 3000000
-                              ? "Statutory Rule: Business turnover exceeds 3M threshold — 9% corporate tax is assessed on annual net profit."
-                              : "Turnover within 3M threshold qualifies for 0% Small Business Relief."}
-                          </div>
-                        </div>
-                      </div>
-                      {Number(form.annual_turnover) >= 3000000 && (
-                        <div className="text-right font-mono">
-                          <span className="text-[10px] text-slate-400 block uppercase">Annual 9% Corp Tax Due</span>
-                          <span className="text-[14px] font-extrabold text-amber-300">
-                            {fmtInr(Math.round(((Number(form.monthly_income) || 0) * 12) * 0.09))}
-                          </span>
-                        </div>
-                      )}
-                    </div>
                     <Field label="GSTIN (Goods & Services Tax)">
                       <div className="flex gap-1.5">
                         <input
@@ -4028,14 +3993,6 @@ export function GnNewApplicant() {
                                 <span className="text-slate-400">1. Gross Business Turnover / Gross Receipts</span>
                                 <span className="font-mono font-semibold text-white">₹{(form.annual_turnover || 0).toLocaleString("en-IN")}</span>
                               </div>
-                              {Number(form.annual_turnover) >= 3000000 && (
-                                <div className="flex justify-between py-0.5 bg-amber-500/10 px-2 rounded border border-amber-500/20">
-                                  <span className="text-amber-300 font-bold">Turnover &gt; 3M Corporate Tax (9% on Profit)</span>
-                                  <span className="font-mono font-bold text-amber-300">
-                                    {fmtInr(Math.round(((Number(form.monthly_income) || 0) * 12) * 0.09))}
-                                  </span>
-                                </div>
-                              )}
                               <div className="flex justify-between py-0.5">
                                 <span className="text-slate-400">2. Gross Total Income from Business & Profession</span>
                                 <span className="font-mono font-semibold text-white">₹24,00,000</span>
