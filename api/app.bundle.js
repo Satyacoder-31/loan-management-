@@ -2256,30 +2256,6 @@ function generateDeterministicExperianReport(mobile, name, pan) {
         openedDate: "2025-06-05",
         status: "Closed",
         paymentHistory: "000000000000000000000000"
-      },
-      {
-        accountNumber: "SBIN-****9201",
-        lender: "State Bank of India",
-        accountType: "Student Overdraft Facility",
-        sanctionedAmount: 15e3,
-        currentBalance: 0,
-        repaymentStatus: "Closed / Paid in Full",
-        dpd: 0,
-        openedDate: "2024-01-15",
-        status: "Closed",
-        paymentHistory: "000000000000000000000000"
-      },
-      {
-        accountNumber: "BAJA-****6041",
-        lender: "Bajaj Finance Ltd",
-        accountType: "Consumer Durable Loan",
-        sanctionedAmount: 25e3,
-        currentBalance: 0,
-        repaymentStatus: "Closed / Satisfactory",
-        dpd: 0,
-        openedDate: "2023-11-20",
-        status: "Closed",
-        paymentHistory: "000000000000000000000000"
       }
     ];
     const satyaApplicant = {
@@ -2305,9 +2281,9 @@ function generateDeterministicExperianReport(mobile, name, pan) {
       provider: "Experian Credit Analytics (Digitap)",
       providerRef: "EXP-LOCAL-8838864869",
       fetchedAt: (/* @__PURE__ */ new Date()).toISOString(),
-      totalAccounts: 10,
-      activeAccounts: 3,
-      closedAccounts: 7,
+      totalAccounts: 8,
+      activeAccounts: 4,
+      closedAccounts: 4,
       overdueAccounts: 1,
       totalOutstanding: 726805,
       securedOutstanding: 725125,
@@ -2322,10 +2298,10 @@ function generateDeterministicExperianReport(mobile, name, pan) {
     return {
       score: 714,
       scoreBand: "Near Prime",
-      activeAccounts: 3,
-      closedAccounts: 7,
+      activeAccounts: 4,
+      closedAccounts: 4,
       overdueAccounts: 1,
-      totalAccounts: 10,
+      totalAccounts: 8,
       totalOutstanding: 726805,
       securedOutstanding: 725125,
       unsecuredOutstanding: 1680,
@@ -4264,10 +4240,10 @@ var init_digitap = __esm({
     SATYAJEET_EXPERIAN_RESULT = {
       score: 714,
       scoreBand: "Near Prime",
-      activeAccounts: 3,
-      closedAccounts: 7,
+      activeAccounts: 4,
+      closedAccounts: 4,
       overdueAccounts: 1,
-      totalAccounts: 10,
+      totalAccounts: 8,
       totalOutstanding: 726805,
       securedOutstanding: 725125,
       unsecuredOutstanding: 1680,
@@ -4376,30 +4352,6 @@ var init_digitap = __esm({
           openedDate: "2025-06-05",
           status: "Closed",
           paymentHistory: "000000000000000000000000"
-        },
-        {
-          accountNumber: "SBIN-****9201",
-          lender: "State Bank of India",
-          accountType: "Student Overdraft Facility",
-          sanctionedAmount: 15e3,
-          currentBalance: 0,
-          repaymentStatus: "Closed / Paid in Full",
-          dpd: 0,
-          openedDate: "2024-01-15",
-          status: "Closed",
-          paymentHistory: "000000000000000000000000"
-        },
-        {
-          accountNumber: "BAJA-****6041",
-          lender: "Bajaj Finance Ltd",
-          accountType: "Consumer Durable Loan",
-          sanctionedAmount: 25e3,
-          currentBalance: 0,
-          repaymentStatus: "Closed / Satisfactory",
-          dpd: 0,
-          openedDate: "2023-11-20",
-          status: "Closed",
-          paymentHistory: "000000000000000000000000"
         }
       ],
       applicantDetails: {
@@ -4425,9 +4377,9 @@ var init_digitap = __esm({
         provider: "Experian Credit Analytics (Digitap)",
         providerRef: "EXP-LOCAL-8838864869",
         fetchedAt: (/* @__PURE__ */ new Date()).toISOString(),
-        totalAccounts: 10,
-        activeAccounts: 3,
-        closedAccounts: 7,
+        totalAccounts: 8,
+        activeAccounts: 4,
+        closedAccounts: 4,
         overdueAccounts: 1,
         totalOutstanding: 726805,
         securedOutstanding: 725125,
@@ -4531,30 +4483,6 @@ var init_digitap = __esm({
             repaymentStatus: "Closed / Paid in Full",
             dpd: 0,
             openedDate: "2025-06-05",
-            status: "Closed",
-            paymentHistory: "000000000000000000000000"
-          },
-          {
-            accountNumber: "SBIN-****9201",
-            lender: "State Bank of India",
-            accountType: "Student Overdraft Facility",
-            sanctionedAmount: 15e3,
-            currentBalance: 0,
-            repaymentStatus: "Closed / Paid in Full",
-            dpd: 0,
-            openedDate: "2024-01-15",
-            status: "Closed",
-            paymentHistory: "000000000000000000000000"
-          },
-          {
-            accountNumber: "BAJA-****6041",
-            lender: "Bajaj Finance Ltd",
-            accountType: "Consumer Durable Loan",
-            sanctionedAmount: 25e3,
-            currentBalance: 0,
-            repaymentStatus: "Closed / Satisfactory",
-            dpd: 0,
-            openedDate: "2023-11-20",
             status: "Closed",
             paymentHistory: "000000000000000000000000"
           }
