@@ -1062,123 +1062,133 @@ export function GnNewApplicant() {
         actions={<Link to="/gn/co/applicants" className="btn btn-secondary text-[12px]">Back to Applicants</Link>}
       />
 
-      {/* In-Memory Ephemeral Sandbox / No-Save Mode Banner */}
-      <div className="rounded-xl border border-indigo-500/30 bg-indigo-950/30 px-4 py-3 flex items-center justify-between flex-wrap gap-2 text-[12px] text-indigo-200 shadow-sm">
-        <div className="flex items-center gap-2.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse shrink-0"></span>
-          <div>
-            <span className="font-bold text-white">In-Memory Sandbox Mode:</span>{" "}
-            <span className="text-indigo-200/90">
-              All bureau pulls & form operations run live in-memory. Database writing is paused — zero records will be saved to the database.
+      {/* Executive Command Console: Sandbox Mode & Experian Bureau Gateway */}
+      <div className="rounded-2xl border border-slate-800 bg-[#0b101b] shadow-2xl overflow-hidden">
+        {/* Top Status Micro-Ribbon */}
+        <div className="bg-[#0e1627] px-4 py-2 border-b border-slate-800/80 flex items-center justify-between flex-wrap gap-2 text-[11.5px]">
+          <div className="flex items-center gap-2 text-indigo-300">
+            <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+            <span className="font-bold text-white">In-Memory Sandbox Active:</span>
+            <span className="text-slate-400">All bureau pulls & form operations run live in-memory with zero disk persistence.</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-indigo-500/15 text-indigo-300 px-2.5 py-0.5 rounded border border-indigo-500/30">
+              Database Writes Paused
             </span>
+            {applicant && (
+              <div className="flex items-center gap-1.5 text-[11px] bg-slate-900/80 border border-slate-700/60 px-2.5 py-0.5 rounded text-slate-300 font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span>Ref: <strong className="text-white">{applicant.ref || `APL-${applicant.id}`}</strong></span>
+                <Link
+                  to={`/gn/co/applicants?q=${encodeURIComponent(applicant.mobile || applicant.ref || "")}`}
+                  target="_blank"
+                  className="text-indigo-400 hover:text-indigo-300 underline font-semibold flex items-center gap-0.5 ml-1"
+                >
+                  Pipeline <ExternalLink className="w-3 h-3" />
+                </Link>
+              </div>
+            )}
           </div>
         </div>
-        <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded border border-indigo-500/40 shrink-0">
-          Database Writes Paused
-        </span>
-      </div>
 
-      {/* Experian API Gateway & Billing Guard Banner */}
-      <div
-        className={`rounded-2xl border p-4.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-all shadow-xl backdrop-blur-md ${
-          experianLive
-            ? "bg-gradient-to-r from-amber-950/40 via-[#18181b]/90 to-amber-900/20 border-amber-500/40 shadow-amber-500/5"
-            : "bg-gradient-to-r from-emerald-950/40 via-[#111827] to-teal-950/30 border-emerald-500/40 shadow-emerald-500/5"
-        }`}
-      >
-        <div className="flex items-start sm:items-center gap-3">
-          <div
-            className={`p-2.5 rounded-xl border shrink-0 ${
-              experianLive
-                ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
-                : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-            }`}
-          >
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-[13.5px] font-bold text-white tracking-tight">
-                Experian Credit Bureau Status:
-              </span>
-              <span
-                className={`text-[10.5px] font-extrabold px-2.5 py-0.5 rounded-full border ${
-                  experianLive
-                    ? "bg-amber-500/20 text-amber-300 border-amber-400/50 shadow-xs"
-                    : "bg-emerald-500/20 text-emerald-300 border-emerald-400/50 shadow-xs"
-                }`}
-              >
+        {/* Main Gateway Console Body */}
+        <div
+          className={`p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 transition-all ${
+            experianLive
+              ? "bg-gradient-to-r from-amber-950/30 via-[#0e1526] to-amber-950/15"
+              : "bg-gradient-to-r from-emerald-950/20 via-[#0e1526] to-teal-950/15"
+          }`}
+        >
+          {/* Left: Bureau Status & Intelligence */}
+          <div className="flex items-center gap-3.5">
+            <div
+              className={`w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 shadow-lg ${
+                experianLive
+                  ? "bg-gradient-to-br from-amber-500/20 to-amber-600/10 border-amber-500/40 text-amber-400 shadow-amber-500/10"
+                  : "bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border-emerald-500/40 text-emerald-400 shadow-emerald-500/10"
+              }`}
+            >
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className="text-[14.5px] font-black text-white tracking-tight">
+                  Experian Credit Bureau Status:
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1.5 text-[11px] font-black px-3 py-1 rounded-full border shadow-sm ${
+                    experianLive
+                      ? "bg-amber-500/20 text-amber-300 border-amber-400/50 shadow-amber-500/10"
+                      : "bg-emerald-500/20 text-emerald-300 border-emerald-400/50 shadow-emerald-500/10"
+                  }`}
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      experianLive ? "bg-amber-400 animate-ping" : "bg-emerald-400"
+                    }`}
+                  />
+                  {experianLive
+                    ? "LIVE PRODUCTION KEY ACTIVE (Billable)"
+                    : "COST-SAVER MODE (Deactivated — Free)"}
+                </span>
+              </div>
+              <div className="text-[12px] text-slate-300 mt-1 leading-relaxed">
                 {experianLive
-                  ? "⚡ LIVE PRODUCTION KEY ACTIVE (Billable)"
-                  : "🛡️ COST-SAVER MODE (Deactivated — Free)"}
-              </span>
-            </div>
-            <div className="text-[11.5px] text-slate-300 mt-1 leading-relaxed">
-              {experianLive
-                ? "Production Experian API is active. Live bureau pulls incur charges per request."
-                : "Experian API is running in cost-saver mode. Real-time test bureau profiles are simulated with ₹0 billing."}
+                  ? "Production Experian API is active. Real-time CIR query engine with official bureau credit intelligence."
+                  : "Experian API is running in cost-saver mode. Simulated bureau dataset active with ₹0 query charges."}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
-          {applicant && (
-            <div className="hidden sm:flex items-center gap-2 text-[11px] bg-[#0c1220] border border-slate-700/70 px-3 py-1.5 rounded-xl text-slate-300 shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Saved: <strong className="text-white font-mono">{applicant.ref || `APL-${applicant.id}`}</strong></span>
-              <Link
-                to={`/gn/co/applicants?q=${encodeURIComponent(applicant.mobile || applicant.ref || "")}`}
-                target="_blank"
-                className="text-indigo-400 hover:text-indigo-300 underline font-semibold flex items-center gap-0.5 ml-1"
-                title="View this applicant in the GN Command Center All Applicants Pipeline"
-              >
-                Pipeline <ExternalLink className="w-3 h-3" />
-              </Link>
-            </div>
-          )}
+          {/* Right: Consolidated Action Toolbar */}
+          <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setShowReportModal(true)}
+              className="btn text-[12px] px-4 py-2.5 font-bold shadow-md rounded-xl transition-all bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white border border-indigo-400/30 flex items-center gap-2 cursor-pointer shadow-indigo-950/40"
+              title="View Full Experian Credit Information Report (CIR)"
+            >
+              <Eye className="w-4 h-4 text-indigo-200" />
+              <span>Credit Report (CIR)</span>
+              {tradelinesList.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] bg-white/20 text-white font-mono font-black">
+                  {tradelinesList.length}
+                </span>
+              )}
+            </button>
 
-          <button
-            type="button"
-            onClick={handleRestartApplication}
-            className="btn text-[11.5px] px-3 py-2 font-bold shadow-md rounded-xl transition-all bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/50 flex items-center gap-1.5 cursor-pointer shadow-rose-950/30"
-            title="Clear form and start a fresh application"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            Restart Application
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowReportModal(true)}
-            className="btn text-[11.5px] px-3.5 py-2 font-bold shadow-md rounded-xl transition-all bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/40 flex items-center gap-1.5 cursor-pointer shadow-indigo-900/30"
-            title="View Full Experian Credit Information Report (CIR)"
-          >
-            <Eye className="w-4 h-4" />
-            Credit Report (CIR)
-            {tradelinesList.length > 0 && (
-              <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[9.5px] bg-white/20 text-white font-extrabold">
-                {tradelinesList.length}
+            <button
+              type="button"
+              disabled={togglingExperian}
+              onClick={toggleExperianMode}
+              className={`btn text-[12px] px-4 py-2.5 font-bold shadow-md rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+                experianLive
+                  ? "bg-[#141d30] hover:bg-[#1a263e] text-slate-200 border border-slate-700 hover:border-slate-500"
+                  : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-950/40 border border-emerald-400/40"
+              }`}
+            >
+              {togglingExperian ? (
+                <Loader2 className="w-4 h-4 animate-spin text-slate-300" />
+              ) : (
+                <Sparkles className="w-4 h-4 text-amber-300" />
+              )}
+              <span>
+                {experianLive
+                  ? "Deactivate (Cost-Saver Mode)"
+                  : "Activate Live Production Key"}
               </span>
-            )}
-          </button>
-          <button
-            type="button"
-            disabled={togglingExperian}
-            onClick={toggleExperianMode}
-            className={`btn text-[11.5px] px-3.5 py-2 font-bold shadow-md rounded-xl transition-all ${
-              experianLive
-                ? "bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700"
-                : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-900/30"
-            }`}
-          >
-            {togglingExperian ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
-            ) : experianLive ? (
-              "Deactivate Experian (Cost-Saver Mode)"
-            ) : (
-              "Activate Live Experian (Billable)"
-            )}
-          </button>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleRestartApplication}
+              className="btn text-[12px] px-3.5 py-2.5 font-bold shadow-sm rounded-xl transition-all bg-rose-950/30 hover:bg-rose-900/50 text-rose-300 border border-rose-800/40 flex items-center gap-1.5 cursor-pointer shadow-rose-950/20"
+              title="Clear form and start a fresh application"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+              <span>Restart Application</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -2074,7 +2084,7 @@ export function GnNewApplicant() {
             STEP 2: Employment & Financial Profile Assessment
             (Strictly Separated: Business -> GSTIN & ITR; Salaried -> Salary Slip 1/3/6 mo)
            ========================================================================= */}
-        {step === 5 && (
+        {step === 2 && (
           <div className="space-y-6">
             <StepTitle
               n={3}
@@ -2884,7 +2894,7 @@ export function GnNewApplicant() {
             STEP 3: Loan Requirement & Financing Terms
            ========================================================================= */}
 
-        {step === 2 && (
+        {step === 3 && (
           <div className="space-y-6">
             <StepTitle
               n={4}
@@ -3050,7 +3060,7 @@ export function GnNewApplicant() {
             STEP 4: Client Document Upload & Verification
             (Prior to Lender Match)
            ========================================================================= */}
-        {step === 3 && (
+        {step === 4 && (
           <div className="space-y-6">
             <StepTitle
               n={5}
@@ -3803,7 +3813,7 @@ export function GnNewApplicant() {
         {/* =========================================================================
             STEP 5: Lender / Product Matching
            ========================================================================= */}
-        {step === 4 && (
+        {step === 5 && (
           <div className="space-y-4">
             <StepTitle
               n={6}
@@ -3887,7 +3897,7 @@ export function GnNewApplicant() {
         {/* =========================================================================
             STEP 6: Application Summary
            ========================================================================= */}
-        {step === 8 && app && (
+        {step === 6 && app && (
           <div className="space-y-4">
             <StepTitle n={7} title="Application Summary & Verification" sub="Review the generated application before submitting to the lender." />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[12px]">
@@ -3927,7 +3937,7 @@ export function GnNewApplicant() {
         {/* =========================================================================
             STEP 7: Lender Processing & Approval Journey
            ========================================================================= */}
-        {step === 6 && app && (
+        {step === 7 && app && (
           <div className="space-y-4">
             <StepTitle n={8} title="Lender Underwriting & Disbursement Flow" sub="Execute lender lifecycle stages from underwriting to disbursement." />
             <div className="flex flex-wrap gap-2.5">
@@ -3999,7 +4009,7 @@ export function GnNewApplicant() {
         {/* =========================================================================
             STEP 8: Completed / Disbursed
            ========================================================================= */}
-        {step === 7 && app && (
+        {step === 8 && app && (
           <div className="space-y-4 text-center py-8">
             <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center mx-auto shadow-inner">
               <CheckCircle2 className="w-8 h-8 text-emerald-400" />
