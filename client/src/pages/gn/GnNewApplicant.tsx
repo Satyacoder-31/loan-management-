@@ -996,6 +996,22 @@ export function GnNewApplicant() {
         actions={<Link to="/gn/co/applicants" className="btn btn-secondary text-[12px]">Back to Applicants</Link>}
       />
 
+      {/* In-Memory Ephemeral Sandbox / No-Save Mode Banner */}
+      <div className="rounded-xl border border-indigo-500/30 bg-indigo-950/30 px-4 py-3 flex items-center justify-between flex-wrap gap-2 text-[12px] text-indigo-200 shadow-sm">
+        <div className="flex items-center gap-2.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse shrink-0"></span>
+          <div>
+            <span className="font-bold text-white">In-Memory Sandbox Mode:</span>{" "}
+            <span className="text-indigo-200/90">
+              All bureau pulls & form operations run live in-memory. Database writing is paused — zero records will be saved to the database.
+            </span>
+          </div>
+        </div>
+        <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded border border-indigo-500/40 shrink-0">
+          Database Writes Paused
+        </span>
+      </div>
+
       {/* Experian API Gateway & Billing Guard Banner */}
       <div
         className={`rounded-2xl border p-4.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-all shadow-xl backdrop-blur-md ${

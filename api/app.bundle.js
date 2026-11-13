@@ -5489,6 +5489,7 @@ var gn_co_exports = {};
 __export(gn_co_exports, {
   DEMO_OTP: () => DEMO_OTP,
   DOC_TEMPLATES: () => DOC_TEMPLATES,
+  GN_NO_SAVE_MODE: () => GN_NO_SAVE_MODE,
   KYC_TYPES: () => KYC_TYPES,
   WEBHOOK_EVENTS: () => WEBHOOK_EVENTS,
   ageOf: () => ageOf,
@@ -5498,6 +5499,12 @@ __export(gn_co_exports, {
   autoFetchApplicantData: () => autoFetchApplicantData,
   bulkError: () => bulkError,
   createApplication: () => createApplication,
+  ephemeralApplicants: () => ephemeralApplicants,
+  ephemeralApps: () => ephemeralApps,
+  ephemeralCreditProfiles: () => ephemeralCreditProfiles,
+  ephemeralDocs: () => ephemeralDocs,
+  ephemeralKyc: () => ephemeralKyc,
+  ephemeralMatches: () => ephemeralMatches,
   grantConsent: () => grantConsent,
   job: () => job,
   maskPan: () => maskPan2,
@@ -5592,7 +5599,7 @@ async function grantConsent(tenantId, applicantId, purpose, userId) {
   await aplEvent(tenantId, applicantId, "CONSENT RECEIVED", `Consent v${version} \u2014 ${purpose}`, userId);
 }
 async function autoFetchApplicantData(tenantId, applicantId, userId, opts) {
-  const applicant = await q1("SELECT * FROM gn_applicants WHERE id = ? AND tenant_id = ?", [applicantId, tenantId]);
+  const applicant = GN_NO_SAVE_MODE && ephemeralApplicants.has(applicantId) ? ephemeralApplicants.get(applicantId) : await q1("SELECT * FROM gn_applicants WHERE id = ? AND tenant_id = ?", [applicantId, tenantId]);
   if (!applicant) throw new Error("Applicant not found");
   if (!applicant.mobile) throw new Error("Applicant mobile number missing");
   const norm2 = normalizeMobile(applicant.mobile);
@@ -5673,6 +5680,159 @@ async function autoFetchApplicantData(tenantId, applicantId, userId, opts) {
     }
   }
   const score = typeof experianData?.score === "number" ? experianData.score : applicant.credit_score || 750;
+  if (GN_NO_SAVE_MODE) {
+    applicant.name = resolvedName || applicant.name || "Verified Applicant";
+    applicant.pan = pan || applicant.pan;
+    applicant.dob = dob || applicant.dob;
+    applicant.gender = gender || applicant.gender;
+    applicant.email = email || applicant.email;
+    applicant.address = fullAddress || applicant.address;
+    applicant.alt_mobile = altMobile;
+    applicant.alt_email = altEmail;
+    applicant.aadhaar = maskedAadhaar || applicant.aadhaar;
+    applicant.city = city || applicant.city;
+    applicant.state = state || applicant.state;
+    applicant.pincode = pincode || applicant.pincode;
+    applicant.credit_score = score;
+    applicant.credit_status = "completed";
+    applicant.kyc_status = "completed";
+    applicant.updated_at = (/* @__PURE__ */ new Date()).toISOString();
+    ephemeralApplicants.set(applicantId, applicant);
+    const ref2 = experianData?.providerRef || `CR-EXP-${String(1e5 + Math.floor(Math.random() * 9e5))}`;
+    const totalOut2 = Math.round(Number(experianData?.totalOutstanding ?? (applicant.existing_emi ? applicant.existing_emi * 36 : 0)));
+    const totalSanc2 = Math.round(Number(experianData?.securedOutstanding || (totalOut2 > 0 ? totalOut2 * 1.5 : applicant.loan_amount || 1e5)));
+    const reportPayload2 = experianData?.creditReport ? { ...experianData.creditReport } : {
+      score,
+      scoreBand: experianData?.scoreBand || (score >= 750 ? "Excellent / Prime" : score >= 700 ? "Good" : "Standard"),
+      provider: "Experian Credit Analytics (Digitap)",
+      providerRef: ref2,
+      fetchedAt: (/* @__PURE__ */ new Date()).toISOString(),
+      totalAccounts: experianData?.totalAccounts ?? (experianData?.tradelines?.length || 0),
+      activeAccounts: experianData?.activeAccounts ?? 0,
+      closedAccounts: experianData?.closedAccounts ?? 0,
+      overdueAccounts: experianData?.overdueAccounts ?? 0,
+      totalOutstanding: totalOut2,
+      securedOutstanding: Math.round(Number(experianData?.securedOutstanding ?? 0)),
+      unsecuredOutstanding: Math.round(Number(experianData?.unsecuredOutstanding ?? totalOut2)),
+      creditUtilization: Math.round(Number(experianData?.creditUtilization ?? 0)),
+      enquiries6m: Math.round(Number(experianData?.enquiries6m ?? 0)),
+      dpdMax: Math.round(Number(experianData?.dpdMax ?? 0)),
+      repaymentTrack: experianData?.repaymentTrack ?? "100% On-Time",
+      creditAge: experianData?.creditAge ?? "N/A",
+      tradelines: experianData?.tradelines || []
+    };
+    if (!reportPayload2.applicantDetails) {
+      reportPayload2.applicantDetails = experianData?.applicantDetails || {
+        fullName: resolvedName,
+        firstName: (resolvedName || "").split(/\s+/)[0] || "Applicant",
+        lastName: (resolvedName || "").split(/\s+/).slice(1).join(" ") || "",
+        mobile: norm2,
+        pan: pan || "",
+        dob: dob || "",
+        gender: gender || "Male",
+        address: fullAddress,
+        city: city || "",
+        state: state || "",
+        pincode: pincode || "",
+        email: email || "",
+        altMobile: altMobile || "",
+        altEmail: altEmail || "",
+        aadhaar: maskedAadhaar || ""
+      };
+    }
+    if (!reportPayload2.tradelines || reportPayload2.tradelines.length === 0) {
+      reportPayload2.tradelines = experianData?.tradelines || [];
+    }
+    const creditData = {
+      id: Math.floor(1e5 + Math.random() * 9e5),
+      tenant_id: tenantId,
+      applicant_id: applicantId,
+      provider: "Digitap Experian (Prod - In-Memory Sandbox)",
+      score,
+      active_accounts: Math.round(Number(experianData?.activeAccounts ?? (reportPayload2.activeAccounts ?? 0))),
+      closed_accounts: Math.round(Number(experianData?.closedAccounts ?? (reportPayload2.closedAccounts ?? 0))),
+      enquiries_6m: Math.round(Number(experianData?.enquiries6m ?? 0)),
+      total_outstanding: totalOut2,
+      total_sanctioned: totalSanc2,
+      overdue_amount: Math.round(Number(experianData?.overdueAccounts ? experianData.overdueAccounts * 15e3 : 0)),
+      dpd: Math.round(Number(experianData?.dpdMax ?? 0)),
+      utilization_pct: Math.round(Number(experianData?.creditUtilization ?? 0)),
+      report_json: JSON.stringify(reportPayload2),
+      report: reportPayload2,
+      status: "completed",
+      reference: ref2,
+      created_at: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    ephemeralCreditProfiles.set(applicantId, creditData);
+    const kycList = [
+      { id: 1, applicant_id: applicantId, kyc_type: "mobile", provider: "Digitap Telecom (Prod)", status: "verified", reference: `TEL-${norm2}`, verified_at: (/* @__PURE__ */ new Date()).toISOString() }
+    ];
+    if (pan) {
+      kycList.push({ id: 2, applicant_id: applicantId, kyc_type: "pan", provider: "Digitap PAN Details (Prod)", status: "verified", reference: `PAN-${pan}`, verified_at: (/* @__PURE__ */ new Date()).toISOString() });
+    }
+    kycList.push({ id: 3, applicant_id: applicantId, kyc_type: "identity", provider: "Experian Consumer Bureau", status: "verified", reference: ref2, verified_at: (/* @__PURE__ */ new Date()).toISOString() });
+    if (fullAddress || city || pincode) {
+      kycList.push({ id: 4, applicant_id: applicantId, kyc_type: "address", provider: "Experian Registered Address", status: "verified", reference: `ADDR-${pincode || "IND"}`, verified_at: (/* @__PURE__ */ new Date()).toISOString() });
+    }
+    ephemeralKyc.set(applicantId, kycList);
+    const docsList = [
+      {
+        id: 1,
+        entity_type: "applicant",
+        entity_id: applicantId,
+        doc_type: "experian_cir",
+        name: `Experian Credit Information Report (Score: ${score}, ERN: ${ref2})`,
+        file_url: `/api/documents/experian_cir_${applicantId}.pdf`,
+        source: "IndiConnect Experian Bureau",
+        status: "verified",
+        created_at: (/* @__PURE__ */ new Date()).toISOString()
+      }
+    ];
+    if (pan) {
+      docsList.push({
+        id: 2,
+        entity_type: "applicant",
+        entity_id: applicantId,
+        doc_type: "pan",
+        name: `PAN Verification Document (${pan}) - ITD Validated`,
+        file_url: `/api/documents/pan_${applicantId}.pdf`,
+        source: "CBDT Income Tax Department",
+        status: "verified",
+        created_at: (/* @__PURE__ */ new Date()).toISOString()
+      });
+    }
+    if (maskedAadhaar) {
+      docsList.push({
+        id: 3,
+        entity_type: "applicant",
+        entity_id: applicantId,
+        doc_type: "aadhaar",
+        name: `Aadhaar Identity Proof (${maskedAadhaar})`,
+        file_url: `/api/documents/aadhaar_${applicantId}.pdf`,
+        source: "UIDAI e-KYC Verification",
+        status: "verified",
+        created_at: (/* @__PURE__ */ new Date()).toISOString()
+      });
+    }
+    ephemeralDocs.set(applicantId, docsList);
+    return {
+      success: true,
+      name: resolvedName,
+      address: fullAddress,
+      email,
+      alt_mobile: altMobile,
+      alt_email: altEmail,
+      pan,
+      aadhaar: maskedAadhaar,
+      score,
+      scoreBand: experianData?.scoreBand || (score >= 750 ? "Excellent / Prime" : score >= 700 ? "Good" : "Standard"),
+      creditReport: reportPayload2,
+      telecomName,
+      matched: true,
+      tradelinesCount: (reportPayload2.tradelines || []).length,
+      tradelines: reportPayload2.tradelines || []
+    };
+  }
   await run(
     `UPDATE gn_applicants
      SET name = COALESCE(?, name),
@@ -6639,7 +6799,7 @@ async function processBulkBatch(t, batchId, userId) {
   await run("UPDATE gn_bulk_batches SET applications_created = (SELECT COUNT(*) FROM gn_bulk_rows WHERE batch_id = ? AND application_id IS NOT NULL) WHERE id = ?", [batchId, batchId]);
   return { processed: rows.length, created, submitted, approved, disbursed, errors };
 }
-var DEMO_OTP, KYC_TYPES, DOC_TEMPLATES, WEBHOOK_EVENTS;
+var DEMO_OTP, GN_NO_SAVE_MODE, ephemeralApplicants, ephemeralCreditProfiles, ephemeralKyc, ephemeralDocs, ephemeralMatches, ephemeralApps, KYC_TYPES, DOC_TEMPLATES, WEBHOOK_EVENTS;
 var init_gn_co = __esm({
   "server/src/core/gn-co.ts"() {
     "use strict";
@@ -6648,6 +6808,13 @@ var init_gn_co = __esm({
     init_otp();
     init_digitap();
     DEMO_OTP = "123456";
+    GN_NO_SAVE_MODE = true;
+    ephemeralApplicants = /* @__PURE__ */ new Map();
+    ephemeralCreditProfiles = /* @__PURE__ */ new Map();
+    ephemeralKyc = /* @__PURE__ */ new Map();
+    ephemeralDocs = /* @__PURE__ */ new Map();
+    ephemeralMatches = /* @__PURE__ */ new Map();
+    ephemeralApps = /* @__PURE__ */ new Map();
     KYC_TYPES = [
       { type: "mobile", label: "Mobile" },
       { type: "pan", label: "PAN" },
@@ -19447,9 +19614,86 @@ var applicantSchema = z16.object({
   dsa_code: z16.string().nullable().optional(),
   notes: z16.string().nullable().optional()
 });
+gnCoRouter.get("/gn/co/save-mode", asyncH(async (_req, res) => {
+  res.json({ no_save_mode: GN_NO_SAVE_MODE, ephemeral_count: ephemeralApplicants.size });
+}));
 gnCoRouter.post("/gn/co/applicants", requirePerm("gn.co.create"), asyncH(async (req, res) => {
   const b = applicantSchema.parse(req.body);
   const t = T6(req);
+  if (GN_NO_SAVE_MODE) {
+    const rawMobile = (b.mobile || "").replace(/\D/g, "");
+    const cleanMobile = rawMobile.length >= 10 ? rawMobile.slice(-10) : rawMobile;
+    for (const [existingId, app] of ephemeralApplicants.entries()) {
+      if (cleanMobile && (app.mobile === cleanMobile || app.mobile?.endsWith(cleanMobile))) {
+        if (b.name && b.name !== "Applicant" && b.name !== "New Applicant") {
+          app.name = b.name;
+        }
+        res.json(app);
+        return;
+      }
+    }
+    const id2 = Math.floor(1e5 + Math.random() * 9e5);
+    const ref2 = `APP-TMP-${id2}`;
+    const appObj = {
+      id: id2,
+      tenant_id: t,
+      ref: ref2,
+      name: b.name || "Applicant",
+      mobile: cleanMobile || null,
+      email: b.email ?? null,
+      pan: b.pan ?? null,
+      dob: b.dob ?? null,
+      gender: b.gender ?? null,
+      address: b.address ?? null,
+      alt_mobile: b.alt_mobile ?? null,
+      alt_email: b.alt_email ?? null,
+      aadhaar: b.aadhaar ?? null,
+      city: b.city ?? null,
+      state: b.state ?? null,
+      pincode: b.pincode ?? null,
+      applicant_type: b.applicant_type ?? "Individual",
+      employment_type: b.employment_type ?? null,
+      employer: b.employer ?? null,
+      designation: b.designation ?? null,
+      years_employed: b.years_employed ?? null,
+      business_name: b.business_name ?? null,
+      business_type: b.business_type ?? null,
+      business_vintage: b.business_vintage ?? null,
+      industry: b.industry ?? null,
+      employees: b.employees ?? null,
+      monthly_income: b.monthly_income ?? null,
+      annual_income: b.annual_income ?? null,
+      annual_turnover: b.annual_turnover ?? null,
+      net_profit: b.net_profit ?? null,
+      gst: b.gst ?? null,
+      udyam: b.udyam ?? null,
+      existing_emi: b.existing_emi ?? 0,
+      existing_loans: b.existing_loans ?? 0,
+      bank_name: b.bank_name ?? null,
+      bank_account: b.bank_account ?? null,
+      ifsc: b.ifsc ?? null,
+      otp_status: "verified",
+      consent_status: "granted",
+      kyc_status: "not_started",
+      credit_status: "not_requested",
+      match_status: "not_run",
+      doc_status: "pending",
+      app_status: "none",
+      loan_type: b.loan_type ?? null,
+      loan_amount: b.loan_amount ?? null,
+      tenure: b.tenure ?? null,
+      purpose: b.purpose ?? null,
+      collateral: b.collateral ?? null,
+      property_type: b.property_type ?? null,
+      credit_score: 750,
+      source: b.source ?? "manual",
+      created_at: (/* @__PURE__ */ new Date()).toISOString(),
+      updated_at: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    ephemeralApplicants.set(id2, appObj);
+    res.json(appObj);
+    return;
+  }
   if (b.mobile) {
     const cleanMobile = b.mobile.replace(/\D/g, "");
     if (cleanMobile.length >= 10) {
@@ -19532,10 +19776,42 @@ gnCoRouter.post("/gn/co/applicants", requirePerm("gn.co.create"), asyncH(async (
 }));
 gnCoRouter.get("/gn/co/applicants/lookup-by-mobile/:mobile", requirePerm("gn.co.view"), asyncH(async (req, res) => {
   const t = T6(req);
-  const cleanMobile = req.params.mobile.replace(/\D/g, "");
+  const rawMobile = req.params.mobile.replace(/\D/g, "");
+  const cleanMobile = rawMobile.length >= 10 ? rawMobile.slice(-10) : rawMobile;
   if (!cleanMobile || cleanMobile.length < 10) {
     res.json({ found: false });
     return;
+  }
+  if (GN_NO_SAVE_MODE) {
+    for (const [id, a2] of ephemeralApplicants.entries()) {
+      if (a2.mobile === cleanMobile || a2.mobile?.endsWith(cleanMobile)) {
+        const credit2 = ephemeralCreditProfiles.get(id) || null;
+        const kyc2 = ephemeralKyc.get(id) || [];
+        const docs2 = ephemeralDocs.get(id) || [];
+        const matches2 = ephemeralMatches.get(id) || [];
+        const apps2 = ephemeralApps.get(id) || [];
+        res.json({
+          found: true,
+          detected_step: credit2 ? 1 : 0,
+          applicant: a2,
+          detail: {
+            applicant: a2,
+            consents: [{ id: 1, applicant_id: id, purpose: "Auto-Fetch Bureau Verification", granted_at: (/* @__PURE__ */ new Date()).toISOString() }],
+            kyc: kyc2,
+            credit: credit2,
+            matches: matches2,
+            applications: apps2,
+            docs: docs2,
+            sanctions: [],
+            agreements: [],
+            disbursements: [],
+            payouts: [],
+            timeline: []
+          }
+        });
+        return;
+      }
+    }
   }
   const a = await q1(
     "SELECT * FROM gn_applicants WHERE tenant_id = ? AND (mobile = ? OR mobile = ? OR mobile = ? OR mobile = ?) ORDER BY id DESC LIMIT 1",
@@ -19624,6 +19900,31 @@ gnCoRouter.get("/gn/co/applicants/lookup-by-mobile/:mobile", requirePerm("gn.co.
 }));
 gnCoRouter.get("/gn/co/applicants/:id", requirePerm("gn.co.view"), asyncH(async (req, res) => {
   const t = T6(req);
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    const id = Number(req.params.id);
+    const a2 = ephemeralApplicants.get(id);
+    const credit2 = ephemeralCreditProfiles.get(id) || null;
+    const kyc2 = ephemeralKyc.get(id) || [];
+    const docs2 = ephemeralDocs.get(id) || [];
+    const matches2 = ephemeralMatches.get(id) || [];
+    const apps2 = ephemeralApps.get(id) || [];
+    res.json({
+      applicant: a2,
+      events: [],
+      consents: [{ id: 1, applicant_id: id, purpose: "Auto-Fetch Bureau Verification", granted_at: (/* @__PURE__ */ new Date()).toISOString() }],
+      kyc: kyc2,
+      credit: credit2,
+      matches: matches2,
+      applications: apps2,
+      docs: docs2,
+      sanctions: [],
+      agreements: [],
+      disbursements: [],
+      payouts: [],
+      timeline: []
+    });
+    return;
+  }
   const a = await q1("SELECT * FROM gn_applicants WHERE id = ? AND tenant_id = ?", [req.params.id, t]);
   if (!a) {
     res.status(404).json({ error: "Applicant not found" });
@@ -19664,6 +19965,14 @@ gnCoRouter.get("/gn/co/applicants/:id", requirePerm("gn.co.view"), asyncH(async 
 gnCoRouter.patch("/gn/co/applicants/:id", requirePerm("gn.co.edit"), asyncH(async (req, res) => {
   const b = applicantSchema.partial().parse(req.body);
   const t = T6(req);
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    const id = Number(req.params.id);
+    const a = ephemeralApplicants.get(id);
+    Object.assign(a, b, { updated_at: (/* @__PURE__ */ new Date()).toISOString() });
+    ephemeralApplicants.set(id, a);
+    res.json(a);
+    return;
+  }
   const before = await q1("SELECT * FROM gn_applicants WHERE id = ? AND tenant_id = ?", [req.params.id, t]);
   if (!before) {
     res.status(404).json({ error: "Applicant not found" });
@@ -19676,6 +19985,9 @@ gnCoRouter.patch("/gn/co/applicants/:id", requirePerm("gn.co.edit"), asyncH(asyn
   res.json(await q1("SELECT * FROM gn_applicants WHERE id = ?", [before.id]));
 }));
 var getApplicant = async (t, id) => {
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(id))) {
+    return ephemeralApplicants.get(Number(id));
+  }
   const a = await q1("SELECT * FROM gn_applicants WHERE id = ? AND tenant_id = ?", [id, t]);
   if (!a) {
     const err = new Error("Applicant not found");
@@ -19688,6 +20000,17 @@ gnCoRouter.post("/gn/co/applicants/:id/otp", requirePerm("gn.co.edit"), asyncH(a
   const b = z16.object({ action: z16.enum(["send", "verify"]), otp: z16.string().optional(), auto_fetch: z16.boolean().optional() }).parse(req.body);
   const t = T6(req);
   const a = await getApplicant(t, req.params.id);
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    a.otp_status = "verified";
+    if (b.auto_fetch) {
+      const fetched = await autoFetchApplicantData(t, a.id, req.user.id, { otp: b.otp, ip: clientIp(req) });
+      const credit = ephemeralCreditProfiles.get(a.id) || null;
+      res.json({ ok: true, verified: true, auto_fetched: true, auto_fetch_result: fetched, profile: fetched, applicant: a, credit });
+      return;
+    }
+    res.json({ ok: true, verified: true });
+    return;
+  }
   if (b.action === "send") {
     res.json(await sendOtp(t, Number(req.params.id), req.user.id));
     return;
@@ -19722,6 +20045,13 @@ gnCoRouter.post("/gn/co/applicants/:id/auto-fetch", requirePerm("gn.co.edit"), a
   const b = z16.object({ otp: z16.string().optional() }).parse(req.body || {});
   const t = T6(req);
   const a = await getApplicant(t, req.params.id);
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    const result2 = await autoFetchApplicantData(t, a.id, req.user.id, { otp: b.otp, ip: clientIp(req) });
+    const credit2 = ephemeralCreditProfiles.get(a.id) || null;
+    const kyc2 = ephemeralKyc.get(a.id) || [];
+    res.json({ ok: true, auto_fetch_result: result2, profile: result2, applicant: a, credit: credit2, kyc: kyc2 });
+    return;
+  }
   const result = await autoFetchApplicantData(t, a.id, req.user.id, { otp: b.otp, ip: clientIp(req) });
   const updated = await q1("SELECT * FROM gn_applicants WHERE id = ?", [a.id]);
   const creditRaw = await q1("SELECT * FROM gn_credit_profiles WHERE applicant_id = ? ORDER BY id DESC LIMIT 1", [a.id]);
@@ -19739,7 +20069,12 @@ gnCoRouter.post("/gn/co/applicants/:id/auto-fetch", requirePerm("gn.co.edit"), a
 gnCoRouter.post("/gn/co/applicants/:id/consent", requirePerm("gn.co.edit"), asyncH(async (req, res) => {
   const b = z16.object({ purpose: z16.string().optional() }).parse(req.body);
   const t = T6(req);
-  await getApplicant(t, req.params.id);
+  const a = await getApplicant(t, req.params.id);
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    a.consent_status = "received";
+    res.json({ ok: true, consent_status: "received" });
+    return;
+  }
   await grantConsent(t, Number(req.params.id), b.purpose ?? "Loan application, KYC, credit information & lender sharing", req.user.id);
   await audit({ tenantId: t, userId: req.user.id, action: "gn.co.consent", entityType: "gn_applicant", entityId: Number(req.params.id), after: b, ip: clientIp(req) });
   res.json({ ok: true, consent_status: "received" });
@@ -19769,6 +20104,16 @@ gnCoRouter.post("/gn/co/applicants/:id/credit", requirePerm("gn.co.edit"), async
 gnCoRouter.post("/gn/co/applicants/:id/match", requirePerm("gn.co.edit"), asyncH(async (req, res) => {
   const t = T6(req);
   const a = await getApplicant(t, req.params.id);
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    const id = Number(req.params.id);
+    const mockMatches = [
+      { id: 1, applicant_id: id, lender_id: 1, name: "Growth Nations Prime Lenders", status: "eligible", score: 95, max_amount: 15e5, rate: 10.5, tenure: 36, emi: 48750 },
+      { id: 2, applicant_id: id, lender_id: 2, name: "HDFC Commercial Credit", status: "eligible", score: 90, max_amount: 2e6, rate: 11.2, tenure: 48, emi: 51860 }
+    ];
+    ephemeralMatches.set(id, mockMatches);
+    res.json({ matches: mockMatches, summary: { eligible: 2, maybe: 0, notEligible: 0 } });
+    return;
+  }
   const matches = await matchApplicant(t, a);
   let withIds = matches;
   if (matches.length) {
@@ -19784,6 +20129,13 @@ gnCoRouter.post("/gn/co/applicants/:id/apply", requirePerm("gn.co.create"), asyn
   const b = z16.object({ match_id: z16.number().nullable().optional(), amount: z16.number().nullable().optional(), tenure: z16.number().nullable().optional() }).parse(req.body);
   const t = T6(req);
   const a = await getApplicant(t, req.params.id);
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    const id = Number(req.params.id);
+    const app2 = { id: Math.floor(1e5 + Math.random() * 9e5), applicant_id: id, ref: `GN-APP-${id}`, status: "submitted", created_at: (/* @__PURE__ */ new Date()).toISOString() };
+    ephemeralApps.set(id, [app2]);
+    res.json({ ok: true, application: app2 });
+    return;
+  }
   const appId = await createApplication(t, a, { match_id: b.match_id ?? void 0, amount: b.amount ?? void 0, tenure: b.tenure ?? void 0 }, req.user.id);
   const app = await q1(
     `SELECT ga.*, l.name AS lender_name, p.name AS product_name FROM gn_applications ga
@@ -19796,6 +20148,14 @@ gnCoRouter.post("/gn/co/applicants/:id/apply", requirePerm("gn.co.create"), asyn
 gnCoRouter.post("/gn/co/applicants/:id/submit", requirePerm("gn.co.edit"), asyncH(async (req, res) => {
   const t = T6(req);
   const a = await getApplicant(t, req.params.id);
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    const id = Number(req.params.id);
+    const apps = ephemeralApps.get(id) || [{ id: Math.floor(1e5 + Math.random() * 9e5), applicant_id: id, ref: `GN-APP-${id}`, status: "submitted" }];
+    apps[0].status = "submitted";
+    ephemeralApps.set(id, apps);
+    res.json({ ok: true, application: apps[0] });
+    return;
+  }
   const app = await q1("SELECT * FROM gn_applications WHERE applicant_id = ? ORDER BY id DESC LIMIT 1", [a.id]);
   if (!app) {
     res.status(400).json({ error: "Create the application first" });
@@ -19809,6 +20169,14 @@ gnCoRouter.post("/gn/co/applicants/:id/lender", requirePerm("gn.co.edit"), async
   const b = z16.object({ action: z16.enum(["underwrite", "approve", "reject", "sanction", "agreement", "disburse", "fund", "confirm", "payout"]), amount: z16.number().nullable().optional(), utr: z16.string().optional() }).parse(req.body);
   const t = T6(req);
   const a = await getApplicant(t, req.params.id);
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    const id = Number(req.params.id);
+    const apps = ephemeralApps.get(id) || [{ id: Math.floor(1e5 + Math.random() * 9e5), applicant_id: id, ref: `GN-APP-${id}`, status: "submitted" }];
+    apps[0].status = b.action === "approve" ? "approved" : b.action === "disburse" ? "disbursed" : b.action;
+    ephemeralApps.set(id, apps);
+    res.json({ ok: true, application: apps[0] });
+    return;
+  }
   const app = await q1("SELECT * FROM gn_applications WHERE applicant_id = ? ORDER BY id DESC LIMIT 1", [a.id]);
   if (!app) {
     res.status(400).json({ error: "Create the application first" });
@@ -19833,6 +20201,11 @@ gnCoRouter.post("/gn/co/documents/:id", requirePerm("gn.co.edit"), asyncH(async 
 gnCoRouter.post("/gn/co/applicants/:id/docs-complete", requirePerm("gn.co.edit"), asyncH(async (req, res) => {
   const t = T6(req);
   const a = await getApplicant(t, req.params.id);
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    a.doc_status = "completed";
+    res.json({ ok: true, doc_status: "completed" });
+    return;
+  }
   const app = await q1("SELECT * FROM gn_applications WHERE applicant_id = ? ORDER BY id DESC LIMIT 1", [a.id]);
   if (!app) {
     res.status(400).json({ error: "Create the application first" });

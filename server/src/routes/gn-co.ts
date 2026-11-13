@@ -7,7 +7,8 @@ import { asyncH, authRequired, clientIp, requirePerm, type AuthedRequest } from 
 import {
   applicantRef, aplEvent, grantConsent, matchApplicant, runCredit, runKyc, runDemoScenario,
   sendOtp, storeMatches, verifyOtp, createApplication, submitApplication, simulateLender, safeJson,
-  autoFetchApplicantData
+  autoFetchApplicantData, GN_NO_SAVE_MODE, ephemeralApplicants, ephemeralCreditProfiles,
+  ephemeralKyc, ephemeralDocs, ephemeralMatches, ephemeralApps
 } from "../core/gn-co.js";
 import { gnTimeline, gnStatusLabel } from "../core/gn.js";
 import { isExperianLiveEnabled, setExperianLiveEnabled } from "../adapters/digitap.js";
@@ -153,9 +154,89 @@ const applicantSchema = z.object({
   notes: z.string().nullable().optional()
 });
 
+gnCoRouter.get("/gn/co/save-mode", asyncH(async (_req, res) => {
+  res.json({ no_save_mode: GN_NO_SAVE_MODE, ephemeral_count: ephemeralApplicants.size });
+}));
+
 gnCoRouter.post("/gn/co/applicants", requirePerm("gn.co.create"), asyncH(async (req: AuthedRequest, res) => {
   const b = applicantSchema.parse(req.body);
   const t = T(req);
+
+  // In-Memory Ephemeral Sandbox Mode: Never write to PostgreSQL
+  if (GN_NO_SAVE_MODE) {
+    const rawMobile = (b.mobile || "").replace(/\D/g, "");
+    const cleanMobile = rawMobile.length >= 10 ? rawMobile.slice(-10) : rawMobile;
+    for (const [existingId, app] of ephemeralApplicants.entries()) {
+      if (cleanMobile && (app.mobile === cleanMobile || app.mobile?.endsWith(cleanMobile))) {
+        if (b.name && b.name !== "Applicant" && b.name !== "New Applicant") {
+          app.name = b.name;
+        }
+        res.json(app);
+        return;
+      }
+    }
+    const id = Math.floor(100000 + Math.random() * 900000);
+    const ref = `APP-TMP-${id}`;
+    const appObj: any = {
+      id,
+      tenant_id: t,
+      ref,
+      name: b.name || "Applicant",
+      mobile: cleanMobile || null,
+      email: b.email ?? null,
+      pan: b.pan ?? null,
+      dob: b.dob ?? null,
+      gender: b.gender ?? null,
+      address: b.address ?? null,
+      alt_mobile: b.alt_mobile ?? null,
+      alt_email: b.alt_email ?? null,
+      aadhaar: b.aadhaar ?? null,
+      city: b.city ?? null,
+      state: b.state ?? null,
+      pincode: b.pincode ?? null,
+      applicant_type: b.applicant_type ?? "Individual",
+      employment_type: b.employment_type ?? null,
+      employer: b.employer ?? null,
+      designation: b.designation ?? null,
+      years_employed: b.years_employed ?? null,
+      business_name: b.business_name ?? null,
+      business_type: b.business_type ?? null,
+      business_vintage: b.business_vintage ?? null,
+      industry: b.industry ?? null,
+      employees: b.employees ?? null,
+      monthly_income: b.monthly_income ?? null,
+      annual_income: b.annual_income ?? null,
+      annual_turnover: b.annual_turnover ?? null,
+      net_profit: b.net_profit ?? null,
+      gst: b.gst ?? null,
+      udyam: b.udyam ?? null,
+      existing_emi: b.existing_emi ?? 0,
+      existing_loans: b.existing_loans ?? 0,
+      bank_name: b.bank_name ?? null,
+      bank_account: b.bank_account ?? null,
+      ifsc: b.ifsc ?? null,
+      otp_status: "verified",
+      consent_status: "granted",
+      kyc_status: "not_started",
+      credit_status: "not_requested",
+      match_status: "not_run",
+      doc_status: "pending",
+      app_status: "none",
+      loan_type: b.loan_type ?? null,
+      loan_amount: b.loan_amount ?? null,
+      tenure: b.tenure ?? null,
+      purpose: b.purpose ?? null,
+      collateral: b.collateral ?? null,
+      property_type: b.property_type ?? null,
+      credit_score: 750,
+      source: b.source ?? "manual",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    ephemeralApplicants.set(id, appObj);
+    res.json(appObj);
+    return;
+  }
 
   // If applicant with this mobile number already exists, reuse it instead of creating duplicates
   if (b.mobile) {
@@ -200,10 +281,44 @@ gnCoRouter.post("/gn/co/applicants", requirePerm("gn.co.create"), asyncH(async (
 
 gnCoRouter.get("/gn/co/applicants/lookup-by-mobile/:mobile", requirePerm("gn.co.view"), asyncH(async (req: AuthedRequest, res) => {
   const t = T(req);
-  const cleanMobile = req.params.mobile.replace(/\D/g, "");
+  const rawMobile = req.params.mobile.replace(/\D/g, "");
+  const cleanMobile = rawMobile.length >= 10 ? rawMobile.slice(-10) : rawMobile;
   if (!cleanMobile || cleanMobile.length < 10) {
     res.json({ found: false });
     return;
+  }
+
+  // In-Memory Ephemeral Sandbox Mode: Check in-memory store first
+  if (GN_NO_SAVE_MODE) {
+    for (const [id, a] of ephemeralApplicants.entries()) {
+      if (a.mobile === cleanMobile || a.mobile?.endsWith(cleanMobile)) {
+        const credit = ephemeralCreditProfiles.get(id) || null;
+        const kyc = ephemeralKyc.get(id) || [];
+        const docs = ephemeralDocs.get(id) || [];
+        const matches = ephemeralMatches.get(id) || [];
+        const apps = ephemeralApps.get(id) || [];
+        res.json({
+          found: true,
+          detected_step: credit ? 1 : 0,
+          applicant: a,
+          detail: {
+            applicant: a,
+            consents: [{ id: 1, applicant_id: id, purpose: "Auto-Fetch Bureau Verification", granted_at: new Date().toISOString() }],
+            kyc,
+            credit,
+            matches,
+            applications: apps,
+            docs,
+            sanctions: [],
+            agreements: [],
+            disbursements: [],
+            payouts: [],
+            timeline: []
+          }
+        });
+        return;
+      }
+    }
   }
   const a = await q1<Record<string, any>>(
     "SELECT * FROM gn_applicants WHERE tenant_id = ? AND (mobile = ? OR mobile = ? OR mobile = ? OR mobile = ?) ORDER BY id DESC LIMIT 1",
@@ -302,6 +417,34 @@ gnCoRouter.get("/gn/co/applicants/lookup-by-mobile/:mobile", requirePerm("gn.co.
 
 gnCoRouter.get("/gn/co/applicants/:id", requirePerm("gn.co.view"), asyncH(async (req: AuthedRequest, res) => {
   const t = T(req);
+
+  // In-Memory Ephemeral Sandbox Mode: Return in-memory detail without database query
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    const id = Number(req.params.id);
+    const a = ephemeralApplicants.get(id);
+    const credit = ephemeralCreditProfiles.get(id) || null;
+    const kyc = ephemeralKyc.get(id) || [];
+    const docs = ephemeralDocs.get(id) || [];
+    const matches = ephemeralMatches.get(id) || [];
+    const apps = ephemeralApps.get(id) || [];
+    res.json({
+      applicant: a,
+      events: [],
+      consents: [{ id: 1, applicant_id: id, purpose: "Auto-Fetch Bureau Verification", granted_at: new Date().toISOString() }],
+      kyc,
+      credit,
+      matches,
+      applications: apps,
+      docs,
+      sanctions: [],
+      agreements: [],
+      disbursements: [],
+      payouts: [],
+      timeline: []
+    });
+    return;
+  }
+
   const a = await q1<Record<string, any>>("SELECT * FROM gn_applicants WHERE id = ? AND tenant_id = ?", [req.params.id, t]);
   if (!a) { res.status(404).json({ error: "Applicant not found" }); return; }
   const events = await q<Record<string, any>>(`SELECT e.*, u.name AS actor_name FROM gn_applicant_events e LEFT JOIN users u ON u.id = e.actor WHERE e.applicant_id = ? ORDER BY e.id DESC LIMIT 40`, [a.id]);
@@ -337,6 +480,17 @@ gnCoRouter.get("/gn/co/applicants/:id", requirePerm("gn.co.view"), asyncH(async 
 gnCoRouter.patch("/gn/co/applicants/:id", requirePerm("gn.co.edit"), asyncH(async (req: AuthedRequest, res) => {
   const b = applicantSchema.partial().parse(req.body);
   const t = T(req);
+
+  // In-Memory Ephemeral Sandbox Mode: Update memory store directly
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    const id = Number(req.params.id);
+    const a = ephemeralApplicants.get(id);
+    Object.assign(a, b, { updated_at: new Date().toISOString() });
+    ephemeralApplicants.set(id, a);
+    res.json(a);
+    return;
+  }
+
   const before = await q1<Record<string, any>>("SELECT * FROM gn_applicants WHERE id = ? AND tenant_id = ?", [req.params.id, t]);
   if (!before) { res.status(404).json({ error: "Applicant not found" }); return; }
   const sets = Object.keys(b).map((k) => `${k} = ?`);
@@ -349,6 +503,9 @@ gnCoRouter.patch("/gn/co/applicants/:id", requirePerm("gn.co.edit"), asyncH(asyn
 /* ================= Pipeline actions ================= */
 
 const getApplicant = async (t: number, id: string) => {
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(id))) {
+    return ephemeralApplicants.get(Number(id));
+  }
   const a = await q1<Record<string, any>>("SELECT * FROM gn_applicants WHERE id = ? AND tenant_id = ?", [id, t]);
   if (!a) { const err: any = new Error("Applicant not found"); err.status = 404; throw err; }
   return a;
@@ -358,6 +515,19 @@ gnCoRouter.post("/gn/co/applicants/:id/otp", requirePerm("gn.co.edit"), asyncH(a
   const b = z.object({ action: z.enum(["send", "verify"]), otp: z.string().optional(), auto_fetch: z.boolean().optional() }).parse(req.body);
   const t = T(req);
   const a = await getApplicant(t, req.params.id);
+
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    a.otp_status = "verified";
+    if (b.auto_fetch) {
+      const fetched = await autoFetchApplicantData(t, a.id, req.user!.id, { otp: b.otp, ip: clientIp(req) });
+      const credit = ephemeralCreditProfiles.get(a.id) || null;
+      res.json({ ok: true, verified: true, auto_fetched: true, auto_fetch_result: fetched, profile: fetched, applicant: a, credit });
+      return;
+    }
+    res.json({ ok: true, verified: true });
+    return;
+  }
+
   if (b.action === "send") { res.json(await sendOtp(t, Number(req.params.id), req.user!.id)); return; }
   const out = await verifyOtp(t, Number(req.params.id), b.otp ?? "", req.user!.id);
   if (!out.ok) { res.status(400).json(out); return; }
@@ -388,6 +558,15 @@ gnCoRouter.post("/gn/co/applicants/:id/auto-fetch", requirePerm("gn.co.edit"), a
   const b = z.object({ otp: z.string().optional() }).parse(req.body || {});
   const t = T(req);
   const a = await getApplicant(t, req.params.id);
+
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    const result = await autoFetchApplicantData(t, a.id, req.user!.id, { otp: b.otp, ip: clientIp(req) });
+    const credit = ephemeralCreditProfiles.get(a.id) || null;
+    const kyc = ephemeralKyc.get(a.id) || [];
+    res.json({ ok: true, auto_fetch_result: result, profile: result, applicant: a, credit, kyc });
+    return;
+  }
+
   const result = await autoFetchApplicantData(t, a.id, req.user!.id, { otp: b.otp, ip: clientIp(req) });
   const updated = await q1("SELECT * FROM gn_applicants WHERE id = ?", [a.id]);
   const creditRaw = await q1<Record<string, any>>("SELECT * FROM gn_credit_profiles WHERE applicant_id = ? ORDER BY id DESC LIMIT 1", [a.id]);
@@ -405,7 +584,13 @@ gnCoRouter.post("/gn/co/applicants/:id/auto-fetch", requirePerm("gn.co.edit"), a
 gnCoRouter.post("/gn/co/applicants/:id/consent", requirePerm("gn.co.edit"), asyncH(async (req: AuthedRequest, res) => {
   const b = z.object({ purpose: z.string().optional() }).parse(req.body);
   const t = T(req);
-  await getApplicant(t, req.params.id);
+  const a = await getApplicant(t, req.params.id);
+
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    a.consent_status = "received";
+    res.json({ ok: true, consent_status: "received" });
+    return;
+  }
   await grantConsent(t, Number(req.params.id), b.purpose ?? "Loan application, KYC, credit information & lender sharing", req.user!.id);
   await audit({ tenantId: t, userId: req.user!.id, action: "gn.co.consent", entityType: "gn_applicant", entityId: Number(req.params.id), after: b, ip: clientIp(req) });
   res.json({ ok: true, consent_status: "received" });
@@ -432,6 +617,18 @@ gnCoRouter.post("/gn/co/applicants/:id/credit", requirePerm("gn.co.edit"), async
 gnCoRouter.post("/gn/co/applicants/:id/match", requirePerm("gn.co.edit"), asyncH(async (req: AuthedRequest, res) => {
   const t = T(req);
   const a = await getApplicant(t, req.params.id);
+
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    const id = Number(req.params.id);
+    const mockMatches = [
+      { id: 1, applicant_id: id, lender_id: 1, name: "Growth Nations Prime Lenders", status: "eligible", score: 95, max_amount: 1500000, rate: 10.5, tenure: 36, emi: 48750 },
+      { id: 2, applicant_id: id, lender_id: 2, name: "HDFC Commercial Credit", status: "eligible", score: 90, max_amount: 2000000, rate: 11.2, tenure: 48, emi: 51860 }
+    ];
+    ephemeralMatches.set(id, mockMatches);
+    res.json({ matches: mockMatches, summary: { eligible: 2, maybe: 0, notEligible: 0 } });
+    return;
+  }
+
   const matches = await matchApplicant(t, a);
   let withIds: any[] = matches;
   if (matches.length) {
@@ -448,6 +645,15 @@ gnCoRouter.post("/gn/co/applicants/:id/apply", requirePerm("gn.co.create"), asyn
   const b = z.object({ match_id: z.number().nullable().optional(), amount: z.number().nullable().optional(), tenure: z.number().nullable().optional() }).parse(req.body);
   const t = T(req);
   const a = await getApplicant(t, req.params.id);
+
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    const id = Number(req.params.id);
+    const app = { id: Math.floor(100000 + Math.random() * 900000), applicant_id: id, ref: `GN-APP-${id}`, status: "submitted", created_at: new Date().toISOString() };
+    ephemeralApps.set(id, [app]);
+    res.json({ ok: true, application: app });
+    return;
+  }
+
   const appId = await createApplication(t, a, { match_id: b.match_id ?? undefined, amount: b.amount ?? undefined, tenure: b.tenure ?? undefined }, req.user!.id);
   const app = await q1<Record<string, any>>(
     `SELECT ga.*, l.name AS lender_name, p.name AS product_name FROM gn_applications ga
@@ -459,6 +665,16 @@ gnCoRouter.post("/gn/co/applicants/:id/apply", requirePerm("gn.co.create"), asyn
 gnCoRouter.post("/gn/co/applicants/:id/submit", requirePerm("gn.co.edit"), asyncH(async (req: AuthedRequest, res) => {
   const t = T(req);
   const a = await getApplicant(t, req.params.id);
+
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    const id = Number(req.params.id);
+    const apps = ephemeralApps.get(id) || [{ id: Math.floor(100000 + Math.random() * 900000), applicant_id: id, ref: `GN-APP-${id}`, status: "submitted" }];
+    apps[0].status = "submitted";
+    ephemeralApps.set(id, apps);
+    res.json({ ok: true, application: apps[0] });
+    return;
+  }
+
   const app = await q1<Record<string, any>>("SELECT * FROM gn_applications WHERE applicant_id = ? ORDER BY id DESC LIMIT 1", [a.id]);
   if (!app) { res.status(400).json({ error: "Create the application first" }); return; }
   const next = await submitApplication(t, app.id, req.user!.id);
@@ -470,6 +686,16 @@ gnCoRouter.post("/gn/co/applicants/:id/lender", requirePerm("gn.co.edit"), async
   const b = z.object({ action: z.enum(["underwrite", "approve", "reject", "sanction", "agreement", "disburse", "fund", "confirm", "payout"]), amount: z.number().nullable().optional(), utr: z.string().optional() }).parse(req.body);
   const t = T(req);
   const a = await getApplicant(t, req.params.id);
+
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    const id = Number(req.params.id);
+    const apps = ephemeralApps.get(id) || [{ id: Math.floor(100000 + Math.random() * 900000), applicant_id: id, ref: `GN-APP-${id}`, status: "submitted" }];
+    apps[0].status = b.action === "approve" ? "approved" : b.action === "disburse" ? "disbursed" : b.action;
+    ephemeralApps.set(id, apps);
+    res.json({ ok: true, application: apps[0] });
+    return;
+  }
+
   const app = await q1<Record<string, any>>("SELECT * FROM gn_applications WHERE applicant_id = ? ORDER BY id DESC LIMIT 1", [a.id]);
   if (!app) { res.status(400).json({ error: "Create the application first" }); return; }
   const next = await simulateLender(t, app.id, b.action, req.user!.id, { amount: b.amount ?? undefined, utr: b.utr });
@@ -490,6 +716,12 @@ gnCoRouter.post("/gn/co/documents/:id", requirePerm("gn.co.edit"), asyncH(async 
 gnCoRouter.post("/gn/co/applicants/:id/docs-complete", requirePerm("gn.co.edit"), asyncH(async (req: AuthedRequest, res) => {
   const t = T(req);
   const a = await getApplicant(t, req.params.id);
+
+  if (GN_NO_SAVE_MODE && ephemeralApplicants.has(Number(req.params.id))) {
+    a.doc_status = "completed";
+    res.json({ ok: true, doc_status: "completed" });
+    return;
+  }
   const app = await q1<Record<string, any>>("SELECT * FROM gn_applications WHERE applicant_id = ? ORDER BY id DESC LIMIT 1", [a.id]);
   if (!app) { res.status(400).json({ error: "Create the application first" }); return; }
   await run("UPDATE gn_documents SET status = 'verified', verified_at = datetime('now') WHERE tenant_id = ? AND entity_type = 'application' AND entity_id = ? AND status = 'pending'", [t, app.id]);
