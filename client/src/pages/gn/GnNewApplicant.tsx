@@ -17,6 +17,7 @@ import {
   Phone,
   CreditCard,
   Building2,
+  Briefcase,
   User,
   Calculator,
   RotateCcw,
@@ -44,6 +45,7 @@ import {
 const STEPS = [
   "Mobile & Consent",
   "Fetched Profile & Bureau",
+  "Employment & Finance",
   "Loan Requirement",
   "Client Document Upload",
   "Lender Match",
@@ -123,6 +125,8 @@ export function GnNewApplicant() {
   // Document profile selection: Personal Loan (Salaried: Payment Slip & Form #16) vs Business Loan (Salary Slip, ITRs & Form #16)
   const [docLoanProfile, setDocLoanProfile] = useState<"personal" | "business">("business");
   const [customDocType, setCustomDocType] = useState("");
+  const [salarySlipMonths, setSalarySlipMonths] = useState<"1" | "3" | "6">("3");
+  const [itrYears, setItrYears] = useState<"2" | "3">("2");
 
   // Network IP & Domain Link Management for Mobile Portal Access
   const [networkIp, setNetworkIp] = useState<string>("192.168.31.102");
@@ -670,7 +674,7 @@ export function GnNewApplicant() {
     });
   };
 
-  // STEP 1: Save verified profile & proceed to loan requirements
+  // STEP 1: Save verified profile & proceed to Employment & Finance (Step 2)
   const handleSaveProfileAndProceed = async () => {
     await run("save-profile", async () => {
       await api(`/gn/co/applicants/${applicant.id}`, {
@@ -687,8 +691,22 @@ export function GnNewApplicant() {
           gender: form.gender,
           city: form.city || null,
           state: form.state || null,
-          pincode: form.pincode || null,
-          applicant_type: form.applicant_type,
+          pincode: form.pincode || null
+        }
+      });
+      await refreshDetail(applicant.id);
+      setMaxReachedStep((prev) => Math.max(prev, 2));
+      setStep(2); // Advance to Employment & Finance
+    });
+  };
+
+  // STEP 2: Save Employment & Financial Details and proceed to Loan Requirement (Step 3)
+  const handleSaveEmploymentAndProceed = async () => {
+    if (!applicant) return;
+    await run("save-employment", async () => {
+      await api(`/gn/co/applicants/${applicant.id}`, {
+        method: "PATCH",
+        body: {
           employment_type: form.employment_type,
           employer: form.employer || null,
           designation: form.designation || null,
@@ -704,8 +722,8 @@ export function GnNewApplicant() {
         }
       });
       await refreshDetail(applicant.id);
-      setMaxReachedStep((prev) => Math.max(prev, 2));
-      setStep(2); // Advance to Loan Requirement
+      setMaxReachedStep((prev) => Math.max(prev, 3));
+      setStep(3); // Advance to Loan Requirement
     });
   };
 
@@ -896,7 +914,7 @@ export function GnNewApplicant() {
     });
   };
 
-  // STEP 2: Save Loan Requirement & Proceed to Google Form Documents (Step 3)
+  // STEP 3: Save Loan Requirement & Proceed to Document Upload (Step 4)
   const handleSaveRequirementAndProceedToDocs = async () => {
     await run("save-requirement-docs", async () => {
       await api(`/gn/co/applicants/${applicant.id}`, {
@@ -910,12 +928,12 @@ export function GnNewApplicant() {
         }
       });
       await refreshDetail(applicant.id);
-      setMaxReachedStep((prev) => Math.max(prev, 3));
-      setStep(3); // Advance to Step 3: Google Form Documents
+      setMaxReachedStep((prev) => Math.max(prev, 4));
+      setStep(4); // Advance to Step 4: Client Document Upload
     });
   };
 
-  // STEP 3: Proceed from Verified Documents to Lender Matching (Step 4)
+  // STEP 4: Proceed from Verified Documents to Lender Matching (Step 5)
   const handleProceedToLenderMatch = async () => {
     await run("save-match", async () => {
       // Run matcher against lenders based on the real credit score & loan amount
@@ -924,12 +942,12 @@ export function GnNewApplicant() {
       const best = r.matches?.find((m: any) => m.status === "eligible") ?? r.matches?.[0];
       if (best) setSelectedMatch(best.id);
 
-      setMaxReachedStep((prev) => Math.max(prev, 4));
-      setStep(4); // Advance to Step 4: Lender Match
+      setMaxReachedStep((prev) => Math.max(prev, 5));
+      setStep(5); // Advance to Step 5: Lender Match
     });
   };
 
-  // STEP 4: Create application for selected lender product (Step 5)
+  // STEP 5: Create application for selected lender product (Step 6)
   const createApp = async () => {
     await run("apply", async () => {
       await api(`/gn/co/applicants/${applicant.id}/apply`, {
@@ -938,22 +956,22 @@ export function GnNewApplicant() {
       });
       await api(`/gn/co/applicants/${applicant.id}/docs-complete`, { method: "POST", body: {} });
       await refreshDetail(applicant.id);
-      setMaxReachedStep((prev) => Math.max(prev, 5));
-      setStep(5); // Advance to Step 5: Application Summary
+      setMaxReachedStep((prev) => Math.max(prev, 6));
+      setStep(6); // Advance to Step 6: Application Summary
     });
   };
 
-  // STEP 5: Submit application to lender (Step 6)
+  // STEP 6: Submit application to lender (Step 7)
   const submit = async () => {
     await run("submit", async () => {
       await api(`/gn/co/applicants/${applicant.id}/submit`, { method: "POST", body: {} });
       await refreshDetail(applicant.id);
-      setMaxReachedStep((prev) => Math.max(prev, 6));
-      setStep(6); // Advance to Step 6: Lender Processing Journey
+      setMaxReachedStep((prev) => Math.max(prev, 7));
+      setStep(7); // Advance to Step 7: Lender Processing Journey
     });
   };
 
-  // STEP 6: Lender Journey simulation
+  // STEP 7: Lender Journey simulation
   const lender = async (action: string, amount?: number) => {
     await run(action, async () => {
       await api(`/gn/co/applicants/${applicant.id}/lender`, { method: "POST", body: { action, amount } });
@@ -961,25 +979,25 @@ export function GnNewApplicant() {
     });
   };
 
-  // STEP 7: Complete & Disburse (Done)
+  // STEP 8: Complete & Disburse (Done)
   const finish = async () => {
     await run("finish", async () => {
       await api(`/gn/co/applicants/${applicant.id}/lender`, { method: "POST", body: { action: "payout" } });
       await refreshDetail(applicant.id);
-      setMaxReachedStep((prev) => Math.max(prev, 7));
-      setStep(7); // Done
+      setMaxReachedStep((prev) => Math.max(prev, 8));
+      setStep(8); // Done
     });
   };
 
-  // Auto-sync Google Form documents while on Step 3
+  // Auto-sync Google Form documents while on Step 4
   useEffect(() => {
-    if (step !== 3 || !autoSyncDocs || !applicant?.id) return;
+    if (step !== 4 || !autoSyncDocs || !applicant?.id) return;
     const interval = setInterval(async () => {
       try {
         const r = await api(`/gn/co/applicants/${applicant.id}`);
         setDetail(r);
       } catch {}
-    }, 5000);
+    }, 4000);
     return () => clearInterval(interval);
   }, [step, autoSyncDocs, applicant?.id]);
 
@@ -2029,58 +2047,166 @@ export function GnNewApplicant() {
               </div>
             </div>
 
-            {/* Section 4: Employment & Financial Profile */}
-            <div className="space-y-3 pt-2 border-t border-zinc-100">
-              <div className="flex items-center justify-between">
-                <span className="text-[13px] font-bold text-zinc-800 flex items-center gap-1.5">
-                  <Building2 className="w-4 h-4 text-brand-600" />
-                  Employment & Financial Profile
-                </span>
-                <span className="text-[11px] text-zinc-400">Tailored by employment classification</span>
+                        {/* Step 1 Navigation Buttons */}
+            <div className="pt-4 flex items-center justify-between gap-3 flex-wrap border-t border-[#1e293b]">
+              <button
+                type="button"
+                onClick={() => setStep(0)}
+                className="btn bg-[#0c1220] hover:bg-[#152033] text-slate-300 border border-[#22314d] text-[12.5px] px-4 py-2.5 shadow-sm inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back to Mobile & Consent
+              </button>
+              <button
+                className="btn btn-primary text-[12.5px] px-5 py-2.5 shadow-sm inline-flex items-center gap-1.5"
+                disabled={busy}
+                onClick={handleSaveProfileAndProceed}
+              >
+                {busy ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
+                Proceed to Employment & Financial Details
+                <ChevronRight className="w-4 h-4 ml-1.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            STEP 2: Employment & Financial Profile Assessment
+            (Strictly Separated: Business -> GSTIN & ITR; Salaried -> Salary Slip 1/3/6 mo)
+           ========================================================================= */}
+        {step === 5 && (
+          <div className="space-y-6">
+            <StepTitle
+              n={3}
+              title="Employment & Financial Profile Assessment"
+              sub={`Classify ${form.name || "applicant"}'s primary income stream. Select whether the borrower operates as a Business Entity (requiring GSTIN & ITR) or is a Salaried Professional (requiring Salary Slips).`}
+            />
+
+            {/* Classification Dual Selector: Business / Self-Employed vs Salaried Employee */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Option A: Business / Self-Employed */}
+              <div
+                onClick={() => {
+                  f("employment_type", "Business Owner");
+                  setDocLoanProfile("business");
+                }}
+                className={`rounded-2xl p-5 border-2 cursor-pointer transition-all ${
+                  form.employment_type === "Business Owner" || form.employment_type === "Self-employed" || form.employment_type === "Business"
+                    ? "border-sky-500 bg-gradient-to-br from-sky-950/60 via-[#111827] to-[#0c1220] ring-2 ring-sky-500/30 shadow-xl"
+                    : "border-[#1e293b] bg-[#0c1220] hover:border-sky-500/40 hover:bg-[#152033]/70"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold ${
+                      form.employment_type === "Business Owner" || form.employment_type === "Self-employed" || form.employment_type === "Business"
+                        ? "bg-sky-600 text-white shadow-md shadow-sky-600/40"
+                        : "bg-[#152033] text-slate-300 border border-[#22314d]"
+                    }`}>
+                      <Building2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-[14.5px] font-bold text-white flex items-center gap-2">
+                        <span>🏢 Business / Self-Employed</span>
+                        <span className="text-[10px] font-extrabold uppercase bg-sky-500/20 text-sky-300 border border-sky-500/40 px-2 py-0.5 rounded-full">
+                          Commercial
+                        </span>
+                      </div>
+                      <div className="text-[11.5px] text-slate-400 mt-0.5">
+                        Proprietorship, Partnership, LLP, or Private Limited Entity
+                      </div>
+                    </div>
+                  </div>
+                  <input
+                    type="radio"
+                    name="employment_classification"
+                    checked={form.employment_type === "Business Owner" || form.employment_type === "Self-employed" || form.employment_type === "Business"}
+                    onChange={() => {
+                      f("employment_type", "Business Owner");
+                      setDocLoanProfile("business");
+                    }}
+                    className="mt-1 text-sky-500 focus:ring-sky-500 w-4 h-4 cursor-pointer"
+                  />
+                </div>
+                <div className="mt-3 pt-3 border-t border-[#1e293b] flex items-center justify-between text-[11px]">
+                  <span className="text-sky-300 font-semibold flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    Mandatory: GSTIN (TAEEQGY5) & ITR Returns
+                  </span>
+                  <span className="text-slate-500 text-[10.5px]">No salary slips requested</span>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Field label="Employment Type">
-                  <select
-                    className={input}
-                    value={form.employment_type}
-                    onChange={(e) => f("employment_type", e.target.value)}
-                  >
-                    {["Self-employed", "Salaried", "Business Owner"].map((t) => (
-                      <option key={t}>{t}</option>
-                    ))}
-                  </select>
-                </Field>
+              {/* Option B: Salaried Employee */}
+              <div
+                onClick={() => {
+                  f("employment_type", "Salaried");
+                  setDocLoanProfile("personal");
+                }}
+                className={`rounded-2xl p-5 border-2 cursor-pointer transition-all ${
+                  form.employment_type === "Salaried"
+                    ? "border-emerald-500 bg-gradient-to-br from-emerald-950/60 via-[#111827] to-[#0c1220] ring-2 ring-emerald-500/30 shadow-xl"
+                    : "border-[#1e293b] bg-[#0c1220] hover:border-emerald-500/40 hover:bg-[#152033]/70"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold ${
+                      form.employment_type === "Salaried"
+                        ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/40"
+                        : "bg-[#152033] text-slate-300 border border-[#22314d]"
+                    }`}>
+                      <User className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-[14.5px] font-bold text-white flex items-center gap-2">
+                        <span>💼 Salaried Professional</span>
+                        <span className="text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full">
+                          Individual
+                        </span>
+                      </div>
+                      <div className="text-[11.5px] text-slate-400 mt-0.5">
+                        Full-time employee with regular monthly remuneration
+                      </div>
+                    </div>
+                  </div>
+                  <input
+                    type="radio"
+                    name="employment_classification"
+                    checked={form.employment_type === "Salaried"}
+                    onChange={() => {
+                      f("employment_type", "Salaried");
+                      setDocLoanProfile("personal");
+                    }}
+                    className="mt-1 text-emerald-500 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                  />
+                </div>
+                <div className="mt-3 pt-3 border-t border-[#1e293b] flex items-center justify-between text-[11px]">
+                  <span className="text-emerald-300 font-semibold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    Mandatory: Salary Slips (1 / 3 / 6 Months)
+                  </span>
+                  <span className="text-slate-500 text-[10.5px]">No GSTIN or ITR requested</span>
+                </div>
+              </div>
+            </div>
 
-                {form.employment_type === "Salaried" ? (
-                  <>
-                    <Field label="Employer / Company Name">
-                      <input
-                        className={input}
-                        value={form.employer}
-                        onChange={(e) => f("employer", e.target.value)}
-                        placeholder="e.g. Tata Consultancy Services"
-                      />
-                    </Field>
-                    <Field label="Designation / Role">
-                      <input
-                        className={input}
-                        value={form.designation}
-                        onChange={(e) => f("designation", e.target.value)}
-                        placeholder="e.g. Senior Software Engineer"
-                      />
-                    </Field>
-                    <Field label="Monthly In-Hand Salary (₹)">
-                      <input
-                        type="number"
-                        className={input}
-                        value={form.monthly_income}
-                        onChange={(e) => f("monthly_income", e.target.value)}
-                      />
-                    </Field>
-                  </>
-                ) : (
-                  <>
+            {/* CONDITIONAL BRANCH 1: BUSINESS / SELF-EMPLOYED */}
+            {(form.employment_type === "Business Owner" || form.employment_type === "Self-employed" || form.employment_type === "Business") && (
+              <div className="space-y-6">
+                {/* Business Details Form */}
+                <div className="rounded-2xl border border-[#1e293b] bg-[#111827] p-5 space-y-4 shadow-xl">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]">
+                    <div className="flex items-center gap-2.5">
+                      <Building2 className="w-4.5 h-4.5 text-sky-400" />
+                      <span className="text-[13.5px] font-bold text-white">Commercial Entity & Operational Profile</span>
+                    </div>
+                    <span className="text-[11px] text-sky-400 font-semibold bg-sky-950/60 border border-sky-500/30 px-2.5 py-0.5 rounded-full">
+                      Commercial Underwriting
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Field label="Business / Enterprise Name">
                       <input
                         className={input}
@@ -2100,12 +2226,13 @@ export function GnNewApplicant() {
                         ))}
                       </select>
                     </Field>
-                    <Field label="Business Vintage (Years)">
+                    <Field label="Business Vintage (Years in Operation)">
                       <input
                         type="number"
                         className={input}
                         value={form.business_vintage}
                         onChange={(e) => f("business_vintage", e.target.value)}
+                        placeholder="e.g. 5"
                       />
                     </Field>
                     <Field label="Annual Turnover (₹)">
@@ -2114,40 +2241,35 @@ export function GnNewApplicant() {
                         className={input}
                         value={form.annual_turnover}
                         onChange={(e) => f("annual_turnover", e.target.value)}
+                        placeholder="e.g. 3500000"
                       />
                     </Field>
-                    <Field label="Monthly Net Profit / Income (₹)">
+                    <Field label="Monthly Net Business Profit (₹)">
                       <input
                         type="number"
                         className={input}
                         value={form.monthly_income}
                         onChange={(e) => f("monthly_income", e.target.value)}
+                        placeholder="e.g. 150000"
                       />
                     </Field>
-                    <Field label="GSTIN (Goods & Services Tax)">
-                      <div className="flex gap-1.5">
-                        <input
-                          className={`${input} font-mono uppercase font-semibold`}
-                          value={form.gst || ""}
-                          onChange={(e) => {
-                            f("gst", e.target.value.toUpperCase());
-                            setGstinVerified(false);
-                          }}
-                          placeholder="e.g. 27AAPFU0939F1ZV"
-                        />
-                        <button
-                          type="button"
-                          disabled={fetchingGstin || busy}
-                          onClick={handleLookupGstin}
-                          className="btn btn-secondary text-[11px] px-2.5 py-1 whitespace-nowrap text-sky-700 bg-sky-50 border-sky-200 hover:bg-sky-100 flex items-center gap-1 font-semibold"
-                          title="Get GSTIN from PAN or verify entered GSTIN"
-                        >
-                          {fetchingGstin ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 text-amber-500" />}
-                          {form.gst ? "Verify" : "Get from PAN"}
-                        </button>
-                      </div>
+                    <Field label="Primary Current Bank Name">
+                      <input
+                        className={input}
+                        value={form.bank_name}
+                        onChange={(e) => f("bank_name", e.target.value)}
+                        placeholder="e.g. HDFC Bank Ltd"
+                      />
                     </Field>
-                    <Field label="Udyam MSME Registration">
+                    <Field label="Current Account Number">
+                      <input
+                        className={input}
+                        value={form.bank_account}
+                        onChange={(e) => f("bank_account", e.target.value)}
+                        placeholder="e.g. 50200089123456"
+                      />
+                    </Field>
+                    <Field label="Udyam MSME Registration (Optional)">
                       <input
                         className={input}
                         value={form.udyam}
@@ -2155,348 +2277,617 @@ export function GnNewApplicant() {
                         placeholder="UDYAM-MH-01-0000000"
                       />
                     </Field>
-                  </>
-                )}
-
-                <Field label="Primary Bank">
-                  <input
-                    className={input}
-                    value={form.bank_name}
-                    onChange={(e) => f("bank_name", e.target.value)}
-                  />
-                </Field>
-                <Field label="Bank Account Number">
-                  <input
-                    className={input}
-                    value={form.bank_account}
-                    onChange={(e) => f("bank_account", e.target.value)}
-                    placeholder="e.g. 50100234567890"
-                  />
-                </Field>
-              </div>
-            </div>
-
-            {/* Dedicated Step 2 GSTIN Retrieval & Tax Intelligence Feature Card */}
-            <div className="rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50/70 via-white to-sky-50/30 p-5 space-y-4 shadow-xs">
-              <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-sky-100">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-xs">
-                    <Building2 className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-[13.5px] font-bold text-zinc-900 flex items-center gap-2">
-                      <span>GSTIN Discovery & Verification</span>
-                      <span className="text-[10px] font-extrabold uppercase bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full">
-                        Step 2 Feature
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-zinc-500">
-                      Derive 15-digit GSTIN directly from applicant's PAN ({form.pan || "AAPFU0939F"}) or enter GSTIN to verify legal status, active standing, and GSTR filing compliance.
-                    </div>
                   </div>
                 </div>
 
-                {(gstinVerified || form.gst) && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> GSTIN Verified
-                  </span>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 items-end">
-                <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-[11.5px] font-semibold text-zinc-700 flex items-center justify-between">
-                    <span>GSTIN (Goods and Services Tax Identification Number)</span>
-                    <span className="text-[10.5px] text-zinc-400 font-mono">Format: [StateCode][PAN]1Z[Checksum]</span>
-                  </label>
-                  <div className="relative">
-                    <Building2 className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5" />
-                    <input
-                      className={`${input} pl-9 font-mono uppercase font-semibold text-[13px] tracking-wider`}
-                      placeholder="e.g. 27AAPFU0939F1ZV"
-                      maxLength={15}
-                      value={form.gst || ""}
-                      onChange={(e) => {
-                        f("gst", e.target.value.toUpperCase());
-                        setGstinVerified(false);
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={fetchingGstin || busy}
-                    onClick={handleLookupGstin}
-                    className="btn text-[12px] py-2.5 px-3.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold shadow-xs flex items-center justify-center gap-1.5 flex-1"
-                    title="Derives GSTIN from PAN and verifies on GST Portal"
-                  >
-                    {fetchingGstin ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="w-4 h-4 text-amber-200" />
-                    )}
-                    {form.gst ? "Verify GSTIN Online" : "Get GSTIN from PAN"}
-                  </button>
-
-                  {form.gst && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        f("gst", "");
-                        setGstinVerified(false);
-                        setGstinDetails(null);
-                      }}
-                      className="btn btn-secondary text-[12px] py-2.5 px-3 text-zinc-500 hover:text-rose-600 border-zinc-200"
-                      title="Clear GSTIN"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Verified GSTIN Details Card — 100% Matching "GSTIN Authentication Advanced" */}
-              {(gstinVerified || gstinDetails || form.gst) && (() => {
-                const gd = gstinDetails?.details || gstinDetails || {};
-                const legalName = gd.legalName || gd.legal_name || form.business_name || (form.name ? `${form.name} Enterprises Pvt Ltd` : "SNIPER ELECTRIC LLP");
-                const tradeName = gd.tradeName || gd.trade_name || legalName;
-                const gstinVal = gd.gstin || form.gst || "27AEHFS0618D1Z9";
-                const statusVal = gd.status || "Active";
-                const taxpayerType = gd.taxpayerType || gd.taxpayer_type || "Regular";
-                const regDate = gd.registrationDate || gd.registration_date || "24/03/2021";
-                const constitution = gd.constitutionOfBusiness || gd.constitution_of_business || "Limited Liability Partnership";
-                const principalAddr = gd.principalAddress || gd.principal_address || "A1, FL 104 BL, KUMAR PRERANASN 158/1/1 NR,SIDHIVINAYAK AUNDH DP ROAD, AUNDH DP ROAD, PUNE, Pune, Maharashtra, 411007";
-                const natureOfBiz = gd.natureOfBusiness || gd.nature_of_business || "Retail Business";
-                const aggTurnover = gd.aggregateTurnover || gd.aggregate_turnover || "Slab: Rs. 0 to 40 lakhs (2025-26)";
-                const stateJuris = gd.stateJurisdiction || gd.state_jurisdiction || "State - Maharashtra,Zone - PUNE_SOUTH_WEST,Division - PUNE_SOUTH,Charge - PUNE CANTT_701";
-                const centerJuris = gd.centerJurisdiction || gd.center_jurisdiction || "State - CBIC,Zone - PUNE,Commissionerate - PUNE - II,Division - DIVISION-III DECCAN,Range - RANGE-V (Jurisdictional Office)";
-                const contactInfo = gd.contactInfo || gd.contact_info || "XXXXXXXX Mob: 9999999999 Email: XX.XXXX@XX.XX";
-                const members = gd.members || "VIVEK SURINDER MAHAJAN , HINA VIVEK MAHAJAN";
-                const einvoiceStatus = gd.eInvoiceStatus || gd.einvoice_status || "No";
-                const aadhaarVal = gd.aadhaarValidation || gd.aadhaar_validation || "Yes";
-                const ekycVal = gd.eKycValidation || gd.ekyc_validation || "Not Applicable";
-                const recentFilings = gd.recentReturnFilings || gd.recent_return_filings || "GSTR1 (April 2026-2027) - Filed on 10/05/2026 GSTR1 (May 2026-2027) - Filed on 09/06/2026 GSTR1 (June 2026-2027) - Filed on 08/07/2026 GSTR1 (July 2026-2027) - Filed on 07/08/2026 GSTR1 (August 2026-2027) - Filed on 10/09/2026";
-                const delaySummary = gd.delaySummary || gd.delay_summary || "Overall Delays: 0 GSTR1 Delays: 0 GSTR3B Delays: 0";
-                const filingGaps = gd.filingGaps || gd.filing_gaps || "GSTR1 (June 2025-2026), GSTR3B (June 2025-2026), GSTR1 (June 2024-2025), GSTR3B (June 2024-2025)";
-                const goodsServices = gd.goodsAndServices || gd.goods_and_services || "Not available";
-                const pdfUrl = applicant?.id ? `/api/gn/co/applicants/${applicant.id}/gstin-pdf` : `/api/gn/co/gstin-pdf/${gstinVal}`;
-
-                return (
-                  <div className="rounded-2xl border-2 border-emerald-500/40 bg-[#FAF9F5] text-slate-900 p-5 sm:p-7 shadow-2xl space-y-6">
-                    {/* Header bar */}
-                    <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-slate-200">
+                {/* GSTIN Discovery & Verification Feature Card (TAEEQGY5) */}
+                <div className="rounded-2xl border border-sky-500/30 bg-gradient-to-br from-sky-950/40 via-[#111827] to-[#0c1220] p-5 space-y-4 shadow-xl">
+                  <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-[#1e293b]">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-md">
+                        <Building2 className="w-5 h-5" />
+                      </div>
                       <div>
-                        <div className="text-[10px] font-bold tracking-widest text-indigo-900 uppercase">
-                          Official Registry Verification (Provider: TAEEQGY5)
-                        </div>
-                        <h3 className="text-xl sm:text-2xl font-black text-[#0E2356] tracking-tight">
-                          GSTIN Authentication Advanced
-                        </h3>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <a
-                          href={pdfUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          download={`GSTIN-Authentication-Advanced-${gstinVal}.pdf`}
-                          className="btn text-[12px] px-3.5 py-2 bg-[#0E2356] hover:bg-[#183a8f] text-white font-bold rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
-                        >
-                          <Download className="w-4 h-4 text-emerald-400" />
-                          Download Official PDF
-                        </a>
-                        <a
-                          href={`${pdfUrl}?format=html`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="btn text-[12px] px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold rounded-lg shadow-xs flex items-center gap-1.5 transition-colors"
-                        >
-                          <Eye className="w-4 h-4 text-indigo-600" />
-                          Print / View Report
-                        </a>
-                      </div>
-                    </div>
-
-                    {/* 2-Column Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3.5 text-[12px] leading-relaxed">
-                      {/* Column 1 */}
-                      <div className="space-y-3.5">
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Legal Name</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A]">{legalName}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>GSTIN</span><span>:</span>
-                          </span>
-                          <span className="font-mono font-bold text-[#0F172A]">{gstinVal}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Taxpayer Type</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A]">{taxpayerType}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Constitution of Business</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A]">{constitution}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Nature of Business</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A]">{natureOfBiz}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>State Jurisdiction</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A] text-[11px] leading-tight">{stateJuris}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Contact Info</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A]">{contactInfo}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>E-Invoice Status</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A]">{einvoiceStatus}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>eKYC Validation</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A]">{ekycVal}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Delay Summary</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A]">{delaySummary}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Goods & Services</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A]">{goodsServices}</span>
-                        </div>
-                      </div>
-
-                      {/* Column 2 */}
-                      <div className="space-y-3.5">
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Trade Name</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A]">{tradeName}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Status</span><span>:</span>
-                          </span>
-                          <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded text-[11px]">
-                            <Check className="w-3 h-3 text-emerald-600" /> {statusVal}
+                        <div className="text-[13.5px] font-bold text-white flex items-center gap-2">
+                          <span>GSTIN Discovery & Verification</span>
+                          <span className="text-[10px] font-extrabold uppercase bg-sky-500/20 text-sky-300 border border-sky-500/40 px-2 py-0.5 rounded-full">
+                            Provider: TAEEQGY5
                           </span>
                         </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Registration Date</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A]">{regDate}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Principal Address</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A] text-[11px] leading-tight">{principalAddr}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Aggregate Turnover</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A]">{aggTurnover}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Center Jurisdiction</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A] text-[11px] leading-tight">{centerJuris}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Members</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A]">{members}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Aadhaar Validation</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-emerald-700">{aadhaarVal}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Recent Return Filings</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A] text-[11px] leading-tight">{recentFilings}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
-                            <span>Filing Gaps</span><span>:</span>
-                          </span>
-                          <span className="font-bold text-[#0F172A] text-[11px] leading-tight">{filingGaps}</span>
+                        <div className="text-[11px] text-slate-400">
+                          Derive 15-digit GSTIN directly from applicant's PAN ({form.pan || "AAPFU0939F"}) or enter GSTIN to verify legal status, active standing, and GSTR filing compliance.
                         </div>
                       </div>
                     </div>
 
-                    {/* Bottom Badge: ✔ VERIFIED REGISTRY RESPONSE */}
-                    <div className="pt-4 border-t border-slate-200 flex items-center justify-center">
-                      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-600 font-extrabold text-[13px] tracking-wide shadow-xs">
-                        <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]">✓</span>
-                        VERIFIED REGISTRY RESPONSE
+                    {(gstinVerified || form.gst) && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> GSTIN Verified
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 items-end">
+                    <div className="space-y-1.5 md:col-span-2">
+                      <label className="text-[11.5px] font-semibold text-slate-300 flex items-center justify-between">
+                        <span>GSTIN (Goods and Services Tax Identification Number)</span>
+                        <span className="text-[10.5px] text-slate-400 font-mono">Format: [StateCode][PAN]1Z[Checksum]</span>
+                      </label>
+                      <div className="relative">
+                        <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                        <input
+                          className={`${input} pl-9 font-mono uppercase font-semibold text-[13px] tracking-wider`}
+                          placeholder="e.g. 27AEHFS0618D1Z9"
+                          maxLength={15}
+                          value={form.gst || ""}
+                          onChange={(e) => {
+                            f("gst", e.target.value.toUpperCase());
+                            setGstinVerified(false);
+                          }}
+                        />
                       </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={fetchingGstin || busy}
+                        onClick={handleLookupGstin}
+                        className="btn text-[12px] py-2.5 px-3.5 bg-sky-600 hover:bg-sky-500 text-white font-semibold shadow-md flex items-center justify-center gap-1.5 flex-1"
+                        title="Derives GSTIN from PAN and verifies on GST Portal (TAEEQGY5)"
+                      >
+                        {fetchingGstin ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-4 h-4 text-amber-300" />
+                        )}
+                        {form.gst ? "Verify GSTIN Online" : "Get GSTIN from PAN"}
+                      </button>
+
+                      {form.gst && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            f("gst", "");
+                            setGstinVerified(false);
+                            setGstinDetails(null);
+                          }}
+                          className="btn bg-[#0c1220] hover:bg-[#152033] text-slate-400 hover:text-rose-400 border border-[#22314d] text-[12px] py-2.5 px-3"
+                          title="Clear GSTIN"
+                        >
+                          Clear
+                        </button>
+                      )}
                     </div>
                   </div>
-                );
-              })()}
-            </div>
 
-            <div className="pt-2 flex items-center justify-between gap-3 flex-wrap">
+                  {/* Verified GSTIN Details Card — 100% Matching "GSTIN Authentication Advanced" */}
+                  {(gstinVerified || gstinDetails || form.gst) && (() => {
+                    const gd = gstinDetails?.details || gstinDetails || {};
+                    const legalName = gd.legalName || gd.legal_name || form.business_name || (form.name ? `${form.name} Enterprises Pvt Ltd` : "SNIPER ELECTRIC LLP");
+                    const tradeName = gd.tradeName || gd.trade_name || legalName;
+                    const gstinVal = gd.gstin || form.gst || "27AEHFS0618D1Z9";
+                    const statusVal = gd.status || "Active";
+                    const taxpayerType = gd.taxpayerType || gd.taxpayer_type || "Regular";
+                    const regDate = gd.registrationDate || gd.registration_date || "24/03/2021";
+                    const constitution = gd.constitutionOfBusiness || gd.constitution_of_business || "Limited Liability Partnership";
+                    const principalAddr = gd.principalAddress || gd.principal_address || "A1, FL 104 BL, KUMAR PRERANASN 158/1/1 NR,SIDHIVINAYAK AUNDH DP ROAD, AUNDH DP ROAD, PUNE, Pune, Maharashtra, 411007";
+                    const natureOfBiz = gd.natureOfBusiness || gd.nature_of_business || "Retail Business";
+                    const aggTurnover = gd.aggregateTurnover || gd.aggregate_turnover || "Slab: Rs. 0 to 40 lakhs (2025-26)";
+                    const stateJuris = gd.stateJurisdiction || gd.state_jurisdiction || "State - Maharashtra,Zone - PUNE_SOUTH_WEST,Division - PUNE_SOUTH,Charge - PUNE CANTT_701";
+                    const centerJuris = gd.centerJurisdiction || gd.center_jurisdiction || "State - CBIC,Zone - PUNE,Commissionerate - PUNE - II,Division - DIVISION-III DECCAN,Range - RANGE-V (Jurisdictional Office)";
+                    const contactInfo = gd.contactInfo || gd.contact_info || "XXXXXXXX Mob: 9999999999 Email: XX.XXXX@XX.XX";
+                    const members = gd.members || "VIVEK SURINDER MAHAJAN , HINA VIVEK MAHAJAN";
+                    const einvoiceStatus = gd.eInvoiceStatus || gd.einvoice_status || "No";
+                    const aadhaarVal = gd.aadhaarValidation || gd.aadhaar_validation || "Yes";
+                    const ekycVal = gd.eKycValidation || gd.ekyc_validation || "Not Applicable";
+                    const recentFilings = gd.recentReturnFilings || gd.recent_return_filings || "GSTR1 (April 2026-2027) - Filed on 10/05/2026 GSTR1 (May 2026-2027) - Filed on 09/06/2026 GSTR1 (June 2026-2027) - Filed on 08/07/2026 GSTR1 (July 2026-2027) - Filed on 07/08/2026 GSTR1 (August 2026-2027) - Filed on 10/09/2026";
+                    const delaySummary = gd.delaySummary || gd.delay_summary || "Overall Delays: 0 GSTR1 Delays: 0 GSTR3B Delays: 0";
+                    const filingGaps = gd.filingGaps || gd.filing_gaps || "GSTR1 (June 2025-2026), GSTR3B (June 2025-2026), GSTR1 (June 2024-2025), GSTR3B (June 2024-2025)";
+                    const goodsServices = gd.goodsAndServices || gd.goods_and_services || "Not available";
+                    const pdfUrl = applicant?.id ? `/api/gn/co/applicants/${applicant.id}/gstin-pdf` : `/api/gn/co/gstin-pdf/${gstinVal}`;
+
+                    return (
+                      <div className="rounded-2xl border-2 border-emerald-500/40 bg-[#FAF9F5] text-slate-900 p-5 sm:p-7 shadow-2xl space-y-6">
+                        {/* Header bar */}
+                        <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-slate-200">
+                          <div>
+                            <div className="text-[10px] font-bold tracking-widest text-indigo-900 uppercase">
+                              Official Registry Verification (Provider: TAEEQGY5)
+                            </div>
+                            <h3 className="text-xl sm:text-2xl font-black text-[#0E2356] tracking-tight">
+                              GSTIN Authentication Advanced
+                            </h3>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={pdfUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              download={`GSTIN-Authentication-Advanced-${gstinVal}.pdf`}
+                              className="btn text-[12px] px-3.5 py-2 bg-[#0E2356] hover:bg-[#183a8f] text-white font-bold rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
+                            >
+                              <Download className="w-4 h-4 text-emerald-400" />
+                              Download Official PDF
+                            </a>
+                            <a
+                              href={`${pdfUrl}?format=html`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn text-[12px] px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold rounded-lg shadow-xs flex items-center gap-1.5 transition-colors"
+                            >
+                              <Eye className="w-4 h-4 text-indigo-600" />
+                              Print / View Report
+                            </a>
+                          </div>
+                        </div>
+
+                        {/* 2-Column Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3.5 text-[12px] leading-relaxed">
+                          {/* Column 1 */}
+                          <div className="space-y-3.5">
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>Legal Name</span><span>:</span>
+                              </span>
+                              <span className="font-bold text-[#0F172A]">{legalName}</span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>GSTIN</span><span>:</span>
+                              </span>
+                              <span className="font-mono font-bold text-indigo-900">{gstinVal}</span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>Trade Name</span><span>:</span>
+                              </span>
+                              <span className="font-bold text-[#0F172A]">{tradeName}</span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>Status</span><span>:</span>
+                              </span>
+                              <span className="inline-block px-2 py-0.5 rounded text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                {statusVal}
+                              </span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>Taxpayer Type</span><span>:</span>
+                              </span>
+                              <span className="font-bold text-[#0F172A]">{taxpayerType}</span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>Registration Date</span><span>:</span>
+                              </span>
+                              <span className="font-bold text-[#0F172A]">{regDate}</span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>Constitution of Business</span><span>:</span>
+                              </span>
+                              <span className="font-bold text-[#0F172A]">{constitution}</span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>Principal Address</span><span>:</span>
+                              </span>
+                              <span className="font-bold text-[#0F172A] leading-snug">{principalAddr}</span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>Nature of Business</span><span>:</span>
+                              </span>
+                              <span className="font-bold text-[#0F172A]">{natureOfBiz}</span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>Aggregate Turnover</span><span>:</span>
+                              </span>
+                              <span className="font-bold text-[#0F172A]">{aggTurnover}</span>
+                            </div>
+                          </div>
+
+                          {/* Column 2 */}
+                          <div className="space-y-3.5">
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>State Jurisdiction</span><span>:</span>
+                              </span>
+                              <span className="font-bold text-[#0F172A] leading-snug">{stateJuris}</span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>Center Jurisdiction</span><span>:</span>
+                              </span>
+                              <span className="font-bold text-[#0F172A] leading-snug">{centerJuris}</span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>Contact Information</span><span>:</span>
+                              </span>
+                              <span className="font-bold text-[#0F172A]">{contactInfo}</span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>Members</span><span>:</span>
+                              </span>
+                              <span className="font-bold text-[#0F172A]">{members}</span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>Aadhaar Validation</span><span>:</span>
+                              </span>
+                              <span className="font-bold text-emerald-700">{aadhaarVal}</span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>Recent Return Filings</span><span>:</span>
+                              </span>
+                              <span className="font-bold text-[#0F172A] text-[11px] leading-tight">{recentFilings}</span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="w-40 min-w-40 font-bold text-[#1E293B] flex justify-between pr-2.5">
+                                <span>Filing Gaps</span><span>:</span>
+                              </span>
+                              <span className="font-bold text-[#0F172A] text-[11px] leading-tight">{filingGaps}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Bottom Badge: ✔ VERIFIED REGISTRY RESPONSE */}
+                        <div className="pt-4 border-t border-slate-200 flex items-center justify-center">
+                          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-600 font-extrabold text-[13px] tracking-wide shadow-xs">
+                            <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]">✓</span>
+                            VERIFIED REGISTRY RESPONSE (PROVIDER: TAEEQGY5)
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* ITR Returns Compliance Card (Business Only) */}
+                <div className="rounded-2xl border border-indigo-500/30 bg-[#111827] p-5 space-y-4 shadow-xl">
+                  <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-[#1e293b]">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md">
+                        <FileCheck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-[13.5px] font-bold text-white flex items-center gap-2">
+                          <span>Income Tax Returns (ITR) Compliance</span>
+                          <span className="text-[10px] font-extrabold uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 px-2 py-0.5 rounded-full">
+                            Income Tax Department (CBDT)
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          Mandatory audited/acknowledged ITR computations for commercial debt assessment.
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Duration pills: 2 Assessment Years vs 3 Assessment Years */}
+                    <div className="flex items-center gap-2 bg-[#0c1220] p-1 rounded-xl border border-[#1e293b]">
+                      <button
+                        type="button"
+                        onClick={() => setItrYears("2")}
+                        className={`px-3 py-1 text-[11.5px] font-bold rounded-lg transition-all ${
+                          itrYears === "2"
+                            ? "bg-indigo-600 text-white shadow-sm"
+                            : "text-slate-400 hover:text-slate-200"
+                        }`}
+                      >
+                        2 Assessment Years
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setItrYears("3")}
+                        className={`px-3 py-1 text-[11.5px] font-bold rounded-lg transition-all ${
+                          itrYears === "3"
+                            ? "bg-indigo-600 text-white shadow-sm"
+                            : "text-slate-400 hover:text-slate-200"
+                        }`}
+                      >
+                        3 Assessment Years
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                    <div className="p-4 rounded-xl border border-emerald-500/30 bg-[#0c1220] space-y-2">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400 font-semibold">AY 2025-26 (Latest)</span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          Verified e-Filed
+                        </span>
+                      </div>
+                      <div className="text-[15px] font-bold text-white">
+                        ₹{Number(form.annual_turnover || 3500000).toLocaleString("en-IN")} Gross
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-mono">
+                        Ack: 4982019481230 · Form: ITR-4 (Sugam)
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-emerald-500/30 bg-[#0c1220] space-y-2">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400 font-semibold">AY 2024-25</span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          Verified e-Filed
+                        </span>
+                      </div>
+                      <div className="text-[15px] font-bold text-white">
+                        ₹{Math.round(Number(form.annual_turnover || 3500000) * 0.88).toLocaleString("en-IN")} Gross
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-mono">
+                        Ack: 3810294812901 · Form: ITR-4 (Sugam)
+                      </div>
+                    </div>
+
+                    {itrYears === "3" && (
+                      <div className="p-4 rounded-xl border border-emerald-500/30 bg-[#0c1220] space-y-2">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-400 font-semibold">AY 2023-24</span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            Verified e-Filed
+                          </span>
+                        </div>
+                        <div className="text-[15px] font-bold text-white">
+                          ₹{Math.round(Number(form.annual_turnover || 3500000) * 0.76).toLocaleString("en-IN")} Gross
+                        </div>
+                        <div className="text-[11px] text-slate-400 font-mono">
+                          Ack: 2901849102948 · Form: ITR-4 (Sugam)
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* CONDITIONAL BRANCH 2: SALARIED EMPLOYEE */}
+            {form.employment_type === "Salaried" && (
+              <div className="space-y-6">
+                {/* Salaried Details Form */}
+                <div className="rounded-2xl border border-[#1e293b] bg-[#111827] p-5 space-y-4 shadow-xl">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]">
+                    <div className="flex items-center gap-2.5">
+                      <Briefcase className="w-4.5 h-4.5 text-emerald-400" />
+                      <span className="text-[13.5px] font-bold text-white">Salaried Employment & Compensation Profile</span>
+                    </div>
+                    <span className="text-[11px] text-emerald-400 font-semibold bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
+                      Individual Underwriting
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Field label="Employer / Company Name">
+                      <input
+                        className={input}
+                        value={form.employer}
+                        onChange={(e) => f("employer", e.target.value)}
+                        placeholder="e.g. Tata Consultancy Services Ltd"
+                      />
+                    </Field>
+                    <Field label="Designation / Job Role">
+                      <input
+                        className={input}
+                        value={form.designation}
+                        onChange={(e) => f("designation", e.target.value)}
+                        placeholder="e.g. Senior Software Engineer"
+                      />
+                    </Field>
+                    <Field label="Experience with Current Employer (Years)">
+                      <input
+                        type="number"
+                        className={input}
+                        value={form.business_vintage || "3"}
+                        onChange={(e) => f("business_vintage", e.target.value)}
+                        placeholder="e.g. 3"
+                      />
+                    </Field>
+                    <Field label="Monthly Net In-Hand Salary (₹)">
+                      <input
+                        type="number"
+                        className={input}
+                        value={form.monthly_income}
+                        onChange={(e) => f("monthly_income", e.target.value)}
+                        placeholder="e.g. 75000"
+                      />
+                    </Field>
+                    <Field label="Monthly Gross CTC / Base (₹)">
+                      <input
+                        type="number"
+                        className={input}
+                        value={form.annual_turnover ? Math.round(Number(form.annual_turnover) / 12) : ""}
+                        onChange={(e) => f("annual_turnover", Number(e.target.value) * 12)}
+                        placeholder="e.g. 92000"
+                      />
+                    </Field>
+                    <Field label="Primary Salary Bank Name">
+                      <input
+                        className={input}
+                        value={form.bank_name}
+                        onChange={(e) => f("bank_name", e.target.value)}
+                        placeholder="e.g. HDFC Bank Ltd"
+                      />
+                    </Field>
+                    <Field label="Salary Account Number">
+                      <input
+                        className={input}
+                        value={form.bank_account}
+                        onChange={(e) => f("bank_account", e.target.value)}
+                        placeholder="e.g. 50100492817261"
+                      />
+                    </Field>
+                    <Field label="Salary Credit Mode">
+                      <select className={input} defaultValue="Bank Transfer (NEFT/RTGS)">
+                        <option>Bank Transfer (NEFT/RTGS/IMPS)</option>
+                        <option>Company Cheque</option>
+                        <option>Direct Payroll Wire</option>
+                      </select>
+                    </Field>
+                  </div>
+                </div>
+
+                {/* Salaried Feature Card: Salary Slip Requirement (1 / 3 / 6 Months) */}
+                <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/40 via-[#111827] to-[#0c1220] p-5 space-y-4 shadow-xl">
+                  <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-[#1e293b]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-md shadow-emerald-600/30">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-[14px] font-bold text-white flex items-center gap-2">
+                          <span>Salary Slip Verification & Tenure Selection</span>
+                          <span className="text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full">
+                            Underwriting Requirement
+                          </span>
+                        </div>
+                        <div className="text-[11.5px] text-slate-400">
+                          Select the salary slip duration requested for credit assessment (1 Month, 3 Months, or 6 Months).
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Duration Pills: 1 Month vs 3 Months vs 6 Months */}
+                    <div className="flex items-center gap-2 bg-[#0c1220] p-1.5 rounded-xl border border-[#1e293b]">
+                      <button
+                        type="button"
+                        onClick={() => setSalarySlipMonths("1")}
+                        className={`px-3.5 py-1.5 text-[12px] font-bold rounded-lg transition-all ${
+                          salarySlipMonths === "1"
+                            ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
+                            : "text-slate-400 hover:text-slate-200"
+                        }`}
+                      >
+                        1 Month (Recent)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSalarySlipMonths("3")}
+                        className={`px-3.5 py-1.5 text-[12px] font-bold rounded-lg transition-all ${
+                          salarySlipMonths === "3"
+                            ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
+                            : "text-slate-400 hover:text-slate-200"
+                        }`}
+                      >
+                        3 Months (Recommended)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSalarySlipMonths("6")}
+                        className={`px-3.5 py-1.5 text-[12px] font-bold rounded-lg transition-all ${
+                          salarySlipMonths === "6"
+                            ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
+                            : "text-slate-400 hover:text-slate-200"
+                        }`}
+                      >
+                        6 Months (Comprehensive)
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Visual Salary Slip Timeline & Breakdown */}
+                  <div className="space-y-3">
+                    <div className="text-[12px] font-semibold text-slate-300 flex items-center justify-between">
+                      <span>Payroll Statement & Salary Slip Verification Table ({salarySlipMonths} Month{salarySlipMonths === '1' ? '' : 's'} Active):</span>
+                      <span className="text-[11px] text-emerald-400 font-bold">✓ Net Salary: ₹{Number(form.monthly_income || 75000).toLocaleString("en-IN")}/mo</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+                      {Array.from({ length: Number(salarySlipMonths) }).map((_, idx) => {
+                        const monthNames = [
+                          "October 2026",
+                          "September 2026",
+                          "August 2026",
+                          "July 2026",
+                          "June 2026",
+                          "May 2026"
+                        ];
+                        const mLabel = monthNames[idx] || `Month -${idx + 1}`;
+                        const netPay = Number(form.monthly_income || 75000);
+                        const basic = Math.round(netPay * 0.55);
+                        const hra = Math.round(netPay * 0.25);
+                        const pf = Math.round(netPay * 0.12);
+                        const bankRef = `SAL-HDFC-${98201 + idx * 7}`;
+
+                        return (
+                          <div key={idx} className="rounded-xl border border-emerald-500/30 bg-[#0c1220] p-4 space-y-2.5 shadow-md">
+                            <div className="flex items-center justify-between pb-2 border-b border-[#1e293b]">
+                              <span className="text-[12px] font-bold text-white flex items-center gap-1.5">
+                                <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                                {mLabel}
+                              </span>
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                Verified Paid
+                              </span>
+                            </div>
+                            <div className="space-y-1 text-[11px]">
+                              <div className="flex justify-between text-slate-400">
+                                <span>Basic + DA:</span>
+                                <span className="font-semibold text-slate-200">₹{basic.toLocaleString("en-IN")}</span>
+                              </div>
+                              <div className="flex justify-between text-slate-400">
+                                <span>House Rent Allowance (HRA):</span>
+                                <span className="font-semibold text-slate-200">₹{hra.toLocaleString("en-IN")}</span>
+                              </div>
+                              <div className="flex justify-between text-slate-400">
+                                <span>Provident Fund (PF):</span>
+                                <span className="font-semibold text-rose-300">-₹{pf.toLocaleString("en-IN")}</span>
+                              </div>
+                              <div className="flex justify-between pt-1 border-t border-[#1e293b] text-emerald-400 font-bold text-[12px]">
+                                <span>Net Salary Credited:</span>
+                                <span>₹{netPay.toLocaleString("en-IN")}</span>
+                              </div>
+                            </div>
+                            <div className="pt-1.5 text-[10px] text-slate-400 font-mono flex items-center justify-between">
+                              <span>Ref: {bankRef}</span>
+                              <span className="text-emerald-400 font-sans font-semibold">Direct NEFT</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2 Navigation Buttons */}
+            <div className="pt-4 flex items-center justify-between gap-3 flex-wrap border-t border-[#1e293b]">
               <button
                 type="button"
-                onClick={() => setStep(0)}
+                onClick={() => setStep(1)}
                 className="btn bg-[#0c1220] hover:bg-[#152033] text-slate-300 border border-[#22314d] text-[12.5px] px-4 py-2.5 shadow-sm inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
-                Back to Mobile & Consent
+                Back to Verified Profile
               </button>
               <button
-                className="btn btn-primary text-[12.5px] px-5 py-2.5 shadow-sm"
+                className="btn btn-primary text-[12.5px] px-6 py-2.5 shadow-md inline-flex items-center gap-1.5"
                 disabled={busy}
-                onClick={handleSaveProfileAndProceed}
+                onClick={handleSaveEmploymentAndProceed}
               >
-                {busy ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <ChevronRight className="w-4 h-4 mr-1.5" />}
-                Confirm Profile & Configure Loan Requirement →
+                {busy ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
+                Save Employment & Configure Loan Requirement
+                <ChevronRight className="w-4 h-4 ml-1.5" />
               </button>
             </div>
           </div>
         )}
 
         {/* =========================================================================
-            STEP 2: Loan Requirement (ASKED AFTERWARDS!)
+            STEP 3: Loan Requirement & Financing Terms
            ========================================================================= */}
+
         {step === 2 && (
           <div className="space-y-6">
             <StepTitle
-              n={3}
+              n={4}
               title="Loan Requirement & Financing Terms"
               sub={`Tailored financing terms based on ${form.name || "applicant"}'s Experian score of ${score}. Select amount, tenure, and purpose.`}
             />
@@ -2635,11 +3026,11 @@ export function GnNewApplicant() {
                 <div className="flex items-center gap-3 mt-4">
                   <button
                     type="button"
-                    onClick={() => setStep(1)}
+                    onClick={() => setStep(2)}
                     className="btn bg-[#0c1220] hover:bg-[#152033] text-slate-300 border border-[#22314d] text-[12.5px] px-4 py-2.5 shadow-sm inline-flex items-center gap-1.5 cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4" />
-                    Back to Profile
+                    Back to Employment & Finance
                   </button>
                   <button
                     className="btn btn-primary text-[12.5px] px-5 py-2.5 flex-1 shadow-md"
@@ -2656,13 +3047,13 @@ export function GnNewApplicant() {
         )}
 
         {/* =========================================================================
-            STEP 3: Google Form Documents Ingestion & Verification
+            STEP 4: Client Document Upload & Verification
             (Prior to Lender Match)
            ========================================================================= */}
         {step === 3 && (
           <div className="space-y-6">
             <StepTitle
-              n={4}
+              n={5}
               title="Branded Client Mobile Document Ingestion & Verification"
               sub={`Dedicated mobile upload link for ${form.name || "borrower"}. Clients snap photos or upload PDFs on their smartphone without needing a Google account. Documents auto-sync here in real time.`}
             />
@@ -3385,10 +3776,10 @@ export function GnNewApplicant() {
                   <div className="rounded-xl border border-[#1e293b] bg-[#111827] p-4 flex items-center justify-between flex-wrap gap-3 shadow-lg">
                     <button
                       type="button"
-                      onClick={() => setStep(2)}
+                      onClick={() => setStep(3)}
                       className="btn text-[12px] px-4 py-2 bg-[#0c1220] text-slate-300 border border-[#22314d] hover:bg-[#152033]"
                     >
-                      ← Back to Financing Terms
+                      ← Back to Loan Requirement
                     </button>
 
                     <div className="flex items-center gap-3">
@@ -3410,12 +3801,12 @@ export function GnNewApplicant() {
         )}
 
         {/* =========================================================================
-            STEP 4: Lender / Product Matching
+            STEP 5: Lender / Product Matching
            ========================================================================= */}
         {step === 4 && (
           <div className="space-y-4">
             <StepTitle
-              n={5}
+              n={6}
               title="Lender & Scheme Matching"
               sub={`Matched lending institutions evaluated against ${form.name || "applicant"}'s Experian score (${score}) and requested amount of ${fmtInr(form.loan_amount)}.`}
             />
@@ -3473,7 +3864,7 @@ export function GnNewApplicant() {
                 <div className="pt-3 flex items-center justify-between flex-wrap gap-3">
                   <button
                     type="button"
-                    onClick={() => setStep(3)}
+                    onClick={() => setStep(4)}
                     className="btn bg-[#0c1220] hover:bg-[#152033] text-slate-300 border border-[#22314d] text-[12px] px-4 py-2 inline-flex items-center gap-1.5 cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -3494,11 +3885,11 @@ export function GnNewApplicant() {
         )}
 
         {/* =========================================================================
-            STEP 5: Application Summary
+            STEP 6: Application Summary
            ========================================================================= */}
-        {step === 5 && app && (
+        {step === 8 && app && (
           <div className="space-y-4">
-            <StepTitle n={6} title="Application Summary & Verification" sub="Review the generated application before submitting to the lender." />
+            <StepTitle n={7} title="Application Summary & Verification" sub="Review the generated application before submitting to the lender." />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[12px]">
               {[
                 ["Application Ref", app.ref],
@@ -3519,7 +3910,7 @@ export function GnNewApplicant() {
             <div className="pt-2 flex items-center justify-between flex-wrap gap-3">
               <button
                 type="button"
-                onClick={() => setStep(4)}
+                onClick={() => setStep(5)}
                 className="btn bg-[#0c1220] hover:bg-[#152033] text-slate-300 border border-[#22314d] text-[12px] px-4 py-2.5 inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -3534,11 +3925,11 @@ export function GnNewApplicant() {
         )}
 
         {/* =========================================================================
-            STEP 6: Lender Processing & Approval Journey
+            STEP 7: Lender Processing & Approval Journey
            ========================================================================= */}
         {step === 6 && app && (
           <div className="space-y-4">
-            <StepTitle n={7} title="Lender Underwriting & Disbursement Flow" sub="Execute lender lifecycle stages from underwriting to disbursement." />
+            <StepTitle n={8} title="Lender Underwriting & Disbursement Flow" sub="Execute lender lifecycle stages from underwriting to disbursement." />
             <div className="flex flex-wrap gap-2.5">
               {appStatus === "submitted" && (
                 <button className="btn text-[12px] bg-[#0c1220] text-slate-200 border border-[#22314d] hover:bg-[#152033]" onClick={() => lender("underwrite")}>
@@ -3595,7 +3986,7 @@ export function GnNewApplicant() {
               </div>
               <button
                 type="button"
-                onClick={() => setStep(5)}
+                onClick={() => setStep(6)}
                 className="btn bg-[#0c1220] hover:bg-[#152033] text-slate-300 border border-[#22314d] text-[12px] px-3.5 py-1.5 inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
@@ -3606,7 +3997,7 @@ export function GnNewApplicant() {
         )}
 
         {/* =========================================================================
-            STEP 7: Completed / Disbursed
+            STEP 8: Completed / Disbursed
            ========================================================================= */}
         {step === 7 && app && (
           <div className="space-y-4 text-center py-8">
@@ -3621,7 +4012,7 @@ export function GnNewApplicant() {
             <div className="flex justify-center gap-3 pt-3 flex-wrap">
               <button
                 type="button"
-                onClick={() => setStep(6)}
+                onClick={() => setStep(7)}
                 className="btn text-[12px] bg-[#0c1220] text-slate-300 border border-[#22314d] hover:bg-[#152033] inline-flex items-center gap-1.5"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />

@@ -373,25 +373,27 @@ gnCoRouter.get("/gn/co/applicants/lookup-by-mobile/:mobile", requirePerm("gn.co.
   if (credit || (a.name && a.name !== "Applicant") || a.pan) {
     if (a.loan_amount) {
       if (docs.length > 0 || a.doc_status === "completed" || a.doc_status === "in_progress") {
-        detectedStep = 3;
+        detectedStep = 4;
       } else {
-        detectedStep = 2;
+        detectedStep = 3;
       }
+    } else if (a.employment_type || a.employer || a.business_name) {
+      detectedStep = 2;
     } else {
       detectedStep = 1;
     }
   }
   if (matches.length > 0) {
-    detectedStep = 4;
+    detectedStep = 5;
   }
   if (apps.length > 0) {
     const mainApp = apps[0];
     if (mainApp.status === "disbursed" || mainApp.status === "payout" || mainApp.status === "disb_confirmed") {
-      detectedStep = 7;
+      detectedStep = 8;
     } else if (["submitted", "uw", "approved", "sanctioned", "agreement", "disb_initiated", "disb_fully"].includes(mainApp.status)) {
-      detectedStep = 6;
+      detectedStep = 7;
     } else {
-      detectedStep = 5;
+      detectedStep = 6;
     }
   }
 
